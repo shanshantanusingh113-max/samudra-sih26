@@ -12,73 +12,90 @@ skimmed by a non-technical judge**, with the technical proof carried by the diag
 
 # ART DIRECTION
 
-**The deck uses the SIH-provided template. Do not replace it.** The rules say so explicitly, and
-every winning deck we studied keeps it: white slide, blue footer bar reading
-`@SIH Idea submission- Template`, SIH logo top-right, slide number bottom-right.
+## The one decision that shapes everything
 
-That means the slides are **light**. Our screenshots and diagrams are dark — which is an
-advantage, not a conflict. A dark image inside a thin border on a white slide is the single
-strongest visual device available, and it is precisely what the winning decks do with their
-flowcharts and architecture panels.
+**The slides are dark, and all text is native slide text — never text inside a picture.**
 
-## What the winning decks all do (copy these)
+Boards `06`–`10` in `images/` are *design references*, not assets to paste. They show exactly
+what each slide should look like; rebuild them as real boxes and real text in PowerPoint. Text
+baked into an image cannot be edited, softens under PDF compression, and blurs on a projector.
 
-1. **Team badge top-left** — team name in a thin oval or rounded rectangle outline.
-2. **Centred title in a serif face, ALL CAPS** — `IDEA TITLE`, `TECHNICAL APPROACH`. Keep the
-   template's own title styling.
-3. **Everything lives in a bordered box.** Thin 1 pt grey/blue border, white fill. Two boxes
-   side by side, or a 2×2 grid. Almost no loose text on the slide.
-4. **Every box gets a coloured label header** in a different colour from the body text —
-   `IDEA / SOLUTION :`, `Technology stack here:`, `Use Cases :`, `Dependencies`, `Show stopper`,
-   `Impact`. Blue or green, bold, small.
-5. **Bold lead-in, colon, short explanation** for every bullet. This is the dominant pattern:
-   > **Accurate Identification**: Addresses the challenge of deepfake detection by …
+The only images that get **pasted** are the ones that genuinely cannot be recreated as text:
+screenshots of the running software.
 
-   Never a bare sentence. The bold phrase is what a judge reads when skimming.
-6. **State product status.** One winning deck says plainly *"Product Status: 80% product built
-   completed"*. **We are further along than that and must say so** — see Slide 3.
-7. **Underline or colour technology names** so the stack scans as a list of proper nouns.
+> **On the host's "use the provided template" rule.** It says you may not change the *idea
+> details pointers* — the mandated section headings. Keep every one of them exactly:
+> IDEA TITLE, TECHNICAL APPROACH, FEASIBILITY AND VIABILITY, IMPACT AND BENEFITS,
+> RESEARCH AND REFERENCES, and the title-slide fields. Several past winning decks used
+> custom visual designs while keeping those headings intact. If your team would rather not
+> take that latitude, the same content works on the plain template — set the boxes on white,
+> swap the body text to `#1B2733`, and keep the screenshots exactly as they are.
 
-## Colour (working on the template's white)
+## Palette
 
 | Role | Hex | Use |
 | --- | --- | --- |
-| Box border | `#B8C4CE` | 1 pt, all content boxes |
-| Label header | `#1E6FB8` | Box labels — "Technology stack here:" |
-| Label alt | `#2E8B57` | Second-level box labels, for contrast |
-| Body text | `#1B2733` | All bullets and prose |
-| Bold lead-in | `#0B1620` | The bold phrase before each colon |
-| **Ocean accent** | `#0E6E7A` | Our own accent — figures, key numbers, the team badge |
-| **Highlight** | `#D98324` | The single most important number on a slide. Max 2 per slide |
-| Positive | `#1E7F4F` | "Working prototype", "verified", resolved items |
+| Slide ground | `#071420` | Every slide. Deep blue-black, never pure black |
+| Box fill | `#0C1F2E` | Content boxes |
+| Box fill (emphasis) | `#102737` | The one box you want read first |
+| Box border | `#4A6B80` | 1 pt, all boxes |
+| Heading text | `#E4EEF6` | Slide titles, box titles |
+| Body text | `#B9CDDC` | Bullets |
+| Muted | `#6D8598` | Captions, units, footnotes |
+| **Cyan — accent** | `#3FB8C4` | Box labels, arrows, diagram lines, rules |
+| **Amber — highlight** | `#F5B841` | The single most important number on a slide. Max 2 |
+| Coral — problem | `#F2765F` | "Today", risks, the residual |
+| Green — resolved | `#5FD68A` | "Working prototype", "solved", verified |
 
-Our images already carry the deep-navy / cyan / amber identity internally, so the slide only
-needs the restrained palette above around them.
+Cyan is the accent. Amber marks the one number that matters. Coral only ever marks a problem,
+green only ever marks something resolved. Never decorate with them.
 
 ## Type
 
 | Role | Font | Setting |
 | --- | --- | --- |
-| Slide titles | Template's serif (Times New Roman / Georgia) | ALL CAPS, centred — keep as-is |
-| Box labels | Calibri / Arial **Bold** | 14–16 pt, in the label colour |
-| Bullets | Calibri / Arial | 12–14 pt, bold lead-in then regular |
-| Figures & units | Consolas | 11–12 pt, for dataset IDs and numbers |
+| Slide title | Chivo Black, or Arial Black | 34–40 pt, ALL CAPS, letter-spacing −2% |
+| Box label | Consolas Bold | 11–12 pt, ALL CAPS, +12% tracking, cyan |
+| Box heading | Chivo Bold / Arial Bold | 16–18 pt |
+| Bullets | Calibri or Arial | 13–15 pt, line spacing 1.4 |
+| Bold lead-in | same, **bold**, heading colour | the phrase before each colon |
+| Figures, IDs, URLs | Consolas | 11–12 pt |
 
-Use the template's fonts for anything the template already styles. This is not the place for a
-custom typeface — the mandated template wins.
+Chivo is free from Google Fonts. If you cannot install it, Arial Black + Calibri + Consolas
+gives the same structure.
 
 ## Layout rules
 
-- **Maximum 6 slides including the title.** Hard limit from the host.
-- No paragraphs. Points, boxes, diagrams, infographics only.
-- Two columns is the default. Text left, image right — or a 2×2 grid of labelled boxes.
-- Give every image a thin border and a one-line caption beneath in small grey text.
-- Leave the footer bar and slide number exactly as the template has them.
+- **6 slides maximum, including the title.** Hard limit from the host.
+- Everything sits in a bordered box — two side by side, or a 2×2 grid. Very little loose text.
+- **Every box gets a small cyan ALL-CAPS label above it**: `IDEA / SOLUTION`,
+  `TECHNOLOGIES TO BE USED`, `FEASIBILITY`, `POTENTIAL CHALLENGES AND RISKS`, and so on.
+- **Every bullet is "bold lead-in: short explanation."** Never a bare sentence — the bold
+  phrase is what a skimming judge actually reads.
+- Maximum ~6 bullets per box.
+- Screenshots get a 1 pt `#4A6B80` border and a one-line muted caption beneath.
+- Consistent 40 px margins. Slide number bottom-right in Consolas, muted.
+
+## Diagrams must be drawn, not described
+
+Two slides carry real diagrams, and both must be **drawn as shapes and connectors on the
+slide**, not written as bullet lists:
+
+- **Architecture (Slide 3)** — a genuine left-to-right flow: source boxes → adapter box →
+  Grid/Volume boxes → output boxes, joined by cyan arrows, with the adapter seam called out.
+  Use `images/07-architecture.png` as the exact reference for structure, wording and colour.
+- **Methodology (Slide 3)** — five numbered stages left to right with connectors between them.
+  Reference: `images/08-methodology.png`.
+
+Where space allows, put a **small monochrome icon beside each technology** in the stack list
+(Python, FastAPI, React, TypeScript, Three.js/WebGL, NetCDF, pytest). Tint them cyan so they
+read as one set. Skip them entirely rather than cramming — a clean list beats a crowded one.
 
 ## What to avoid
 
-Replacing the template. Dark slide backgrounds. Clip art. Stock ocean photos. Gradient text.
-Drop shadows on text. Bare sentences without a bold lead-in. More than ~7 bullets in one box.
+Text baked into images. Clip art. Stock ocean photography. Gradient text. Drop shadows.
+Bare sentences with no bold lead-in. Rotated or skewed screenshots. More than two accent
+colours on one slide. Emoji as bullet markers.
 
 ---
 
@@ -108,6 +125,7 @@ clean two-column list on the left.
 | PS Category | Software |
 | Team ID | `<fill in>` |
 | Team Name | `<fill in — as registered on the portal>` |
+| **Live prototype** | **https://rak2315.github.io/samudra-sih26/** |
 
 > ⚠️ **Team ID and Team Name are the only blanks in this deck.** Fill them before export.
 
@@ -331,18 +349,26 @@ room.
 
 ## Image inventory
 
-| File | What it shows | Best used on |
+**Paste these** — real screenshots of the running software, which is what makes the deck
+credible. They cannot be recreated as text.
+
+| File | What it shows | Use on |
 | --- | --- | --- |
-| `01-volume-full.png` | Volume view with full UI and controls | Backup / appendix |
-| `02-volume-clean.png` | The water column, no left panel | **Slide 1 hero** |
-| `03-globe-full.png` | Globe with EEZ field and floats | Slide 6 background |
-| `04-collocation-panel.png` | The comparison chart + statistics | **Slide 5 evidence** |
-| `05-collocation-full.png` | Float selected, plumb line, panel | Backup / demo still |
-| `06-gap-2d-vs-3d.png` | Today vs Samudra 3D | **Slide 2** |
-| `07-architecture.png` | Data flow and the adapter seam | **Slide 3 top** |
-| `08-methodology.png` | Five implementation stages + proof | **Slide 3 bottom** |
-| `09-feasibility-risk.png` | Risk / what happened / resolution | **Slide 4** |
-| `10-impact.png` | Who benefits + before/after bars | **Slide 5 top** |
-| `11-isosurface.png` | 20 °C isotherm surface | Spare — strong with an oceanographer |
-| `12-watermass.png` | Colourbar narrowed to isolate a water mass | Spare — visually the most striking |
-| `13-salinity.png` | Salinity field, haline palette | Spare — shows multi-variable support |
+| `02-volume-clean.png` | The water column, no UI panels | **Slide 1 hero** |
+| `01-volume-full.png` | Full application with all controls visible | **Slide 3** — proves it is a real app |
+| `03-globe-full.png` | Globe, EEZ temperature field, 88 floats | **Slide 2** |
+| `04-collocation-panel.png` | The comparison chart and its statistics | **Slide 5 evidence** |
+| `11-isosurface.png` | The 20 °C isotherm surface | **Slide 2 or 4** |
+| `12-watermass.png` | Colourbar narrowed to isolate one water mass | **Slide 2 or 5** — visually the strongest |
+| `13-salinity.png` | Salinity field, haline palette | **Slide 3** — shows multi-variable support |
+| `05-collocation-full.png` | Float selected, plumb line through the volume | Spare |
+
+**Rebuild these as native slide content** — they are layout references, not assets:
+
+| File | Rebuild as |
+| --- | --- |
+| `06-gap-2d-vs-3d.png` | Two side-by-side boxes, "Today" vs "Samudra 3D" |
+| `07-architecture.png` | A drawn flow diagram with shapes and connectors |
+| `08-methodology.png` | Five connected stage boxes plus a proof-point row |
+| `09-feasibility-risk.png` | A native table: Risk / What happened / Resolution / State |
+| `10-impact.png` | Four audience boxes plus before→after rows |
