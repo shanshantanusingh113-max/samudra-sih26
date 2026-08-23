@@ -32,7 +32,7 @@ sys.path.insert(0, str(ROOT / "pipeline"))
 
 from samudra.collocation import collocate  # noqa: E402
 from samudra.grid import Grid  # noqa: E402
-from samudra.sources.argo import ArgoErddapSource  # noqa: E402
+from samudra.sources.argo import ArgoErddapSource, IncoisArgoSource  # noqa: E402
 from samudra.sources.incois import IncoisErddapSource  # noqa: E402
 
 WEB_DATA = ROOT / "web" / "public" / "data"
@@ -127,27 +127,49 @@ def health() -> dict:
     }
 
 
+# The registry. Adding a provider means adding a class that satisfies the protocol in
+# `samudra/sources/base.py` and putting it in one of these lists. Nothing else in the system —
+# renderer, API, UI — has ever heard of ERDDAP.
+GRID_SOURCES = [IncoisErddapSource()]
+PROFILE_SOURCES = [ArgoErddapSource(), IncoisArgoSource()]
+
+
 @app.get("/api/sources")
 def sources() -> dict:
-    """The registered Source Adapters.
+    """The registered Source Adapters, and which one the demo actually reads.
 
-    This is the extensibility claim made checkable: adding a mooring, an ADCP or an HF-radar
-    feed means adding one class that satisfies the protocol in `samudra/sources/base.py` and
-    listing it here. Nothing downstream — renderer, API, UI — knows what an ERDDAP is.
+    This is the extensibility claim made checkable rather than asserted. Two Argo providers are
+    registered and they disagree about everything superficial: INCOIS names its columns in upper
+    case and serves the delayed-mode `*_ADJUSTED` fields empty, while Ifremer names them in lower
+    case and populates them. Both are absorbed by one parser driven by a column description.
     """
-    model = IncoisErddapSource()
-    observations = ArgoErddapSource()
     return {
         "gridSources": [
             {
-                "name": model.name,
-                "attribution": model.attribution,
-                "fields": [f.key for f in model.fields()],
+                "name": source.name,
+                "attribution": source.attribution,
+                "fields": [f.key for f in source.fields()],
                 "kind": "gridded-model",
+                "usedByDemo": True,
             }
+            for source in GRID_SOURCES
         ],
         "profileSources": [
-            {"name": observations.name, "attribution": observations.attribution, "kind": "in-situ"}
+            {
+                "name": source.name,
+                "attribution": source.attribution,
+                "kind": "in-situ",
+                "columnStyle": {
+                    "platform": source.columns.platform,
+                    "prefers": list(source.columns.temperature),
+                },
+                # INCOIS's Argo archive stops in April 2025 while their gridded analysis runs to
+                # July 2026. Collocating across that gap would compare two different oceans, so
+                # the demo reads the current GDAC mirror and keeps this one as proof of the seam.
+                "coverageEnds": getattr(source, "coverage_ends", None),
+                "usedByDemo": not hasattr(source, "coverage_ends"),
+            }
+            for source in PROFILE_SOURCES
         ],
     }
 

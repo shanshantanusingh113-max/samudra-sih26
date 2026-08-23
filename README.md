@@ -72,7 +72,7 @@ This is not a mock-up with invented numbers. It reads:
 | Instrument data overlay | Argo floats shown at true positions, with drift tracks | `web/src/scene/OceanScene.ts` |
 | Click a float to see a depth-vs-variable profile | The Collocation panel, with timestamps | `web/src/ui/ProfilePanel.tsx` |
 | Multi-format ingestion (NetCDF + text) | NetCDF via xarray; Argo CSV parser | `pipeline/samudra/sources/` |
-| Modular - add sources with minimal code change | One `Source Adapter` interface; nothing downstream knows what an ERDDAP is | `pipeline/samudra/sources/base.py` |
+| Modular - add sources with minimal code change | Three adapters behind one interface. Two Argo providers that name every column differently are absorbed by one parser | `pipeline/samudra/sources/` |
 | Customisable colourbar (palette, min/max, log/linear) | Full colourbar editor using cmocean palettes | `web/src/ui/Controls.tsx` |
 | Layer opacity control | Water opacity + feature emphasis sliders | same |
 | Vertical exaggeration slider | 200× to 3500× | same |
@@ -112,8 +112,9 @@ cd web && npm run dev            # then open http://localhost:5173
 
 If you skip step 2, the data is already committed, so the website still works.
 
-**Tests:** `cd pipeline && ../.venv/Scripts/python -m pytest` - 46 tests covering the depth
-warp, volume encoding, grid interpolation, collocation maths and the Argo parser.
+**Tests:** `cd pipeline && ../.venv/Scripts/python -m pytest` - 54 tests covering the depth
+warp, volume encoding, grid interpolation, collocation maths, the Argo parser, and the adapter
+seam that lets two providers with incompatible column layouts share one parser.
 
 ## 5. How it is put together
 

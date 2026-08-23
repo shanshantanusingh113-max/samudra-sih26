@@ -1,6 +1,18 @@
-"""Source Adapter for Argo Profiles, via the Coriolis GDAC ERDDAP mirror at Ifremer.
+"""Source Adapters for Argo Profiles.
 
-Two things this adapter is responsible for beyond fetching:
+Two providers serve the same international programme, and they do not agree on how.
+
+Ifremer's Coriolis GDAC mirror uses lower-case column names and populates the delayed-mode
+`*_adjusted` fields. INCOIS's own archive uses upper-case names and ships those adjusted
+columns entirely empty, filling the raw ones instead. An adapter that preferred adjusted
+blindly would read INCOIS as a table of nothing.
+
+So the column layout is data, not code: a `ProfileColumns` says what a provider calls each
+quantity and in what order to prefer its variants, and one parser serves both. That is the
+extensibility claim made concrete - a third provider is a new `ProfileColumns` and a small
+class, and nothing downstream of `Profile` changes.
+
+Two responsibilities beyond fetching:
 
 Pressure is not depth. Argo reports pressure in decibars. In the upper ocean the two are
 numerically close enough that people are casual about it, but they are not the same quantity,
@@ -19,15 +31,16 @@ from __future__ import annotations
 import csv
 import io
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Sequence
 
 import numpy as np
 import requests
 
+from ..tls import ca_bundle
 from .base import BoundingBox, Profile
 
-_SERVER = "https://erddap.ifremer.fr/erddap/tabledap/ArgoFloats.csv"
 _TIMEOUT = 180
 
 # Temperature uses Argo's global gross range check (QC Manual, test 4).
@@ -50,8 +63,44 @@ _PLAUSIBLE = {
 _MIN_POINTS = 5
 
 
+@dataclass(frozen=True)
+class ProfileColumns:
+    """What one provider calls each quantity, and which variant to trust first."""
+
+    platform: str
+    time: str
+    latitude: str
+    longitude: str
+    pressure: tuple[str, ...]
+    temperature: tuple[str, ...]
+    salinity: tuple[str, ...]
+
+
+# Ifremer/Coriolis: delayed-mode adjusted values are present and are the better science.
+GDAC_COLUMNS = ProfileColumns(
+    platform="platform_number",
+    time="time",
+    latitude="latitude",
+    longitude="longitude",
+    pressure=("pres_adjusted", "pres"),
+    temperature=("temp_adjusted", "temp"),
+    salinity=("psal_adjusted", "psal"),
+)
+
+# INCOIS: upper case, and the adjusted columns are served empty — raw carries everything.
+INCOIS_COLUMNS = ProfileColumns(
+    platform="PLATFORM_NUMBER",
+    time="time",
+    latitude="latitude",
+    longitude="longitude",
+    pressure=("PRES_ADJUSTED", "PRES"),
+    temperature=("TEMP_ADJUSTED", "TEMP"),
+    salinity=("PSAL_ADJUSTED", "PSAL"),
+)
+
+
 class ArgoErddapSource:
-    """Reads in-situ Profiles from the Argo Global Data Assembly Centre."""
+    """In-situ Profiles from the Argo Global Data Assembly Centre (Coriolis/Ifremer)."""
 
     name = "Argo GDAC (Coriolis/Ifremer ERDDAP)"
     attribution = (
@@ -59,25 +108,64 @@ class ArgoErddapSource:
         "Program and the national programmes that contribute to it (https://argo.ucsd.edu). "
         "The Argo Program is part of the Global Ocean Observing System."
     )
+    columns = GDAC_COLUMNS
+    endpoint = "https://erddap.ifremer.fr/erddap/tabledap/ArgoFloats.csv"
+    requested = (
+        "platform_number,time,latitude,longitude,pres_adjusted,temp_adjusted,psal_adjusted"
+    )
+
+    def certificates(self) -> str | bool:
+        return True
 
     def fetch_profiles(
         self, bbox: BoundingBox, start: datetime, end: datetime
     ) -> Sequence[Profile]:
         selector = (
-            "platform_number,time,latitude,longitude,"
-            "pres_adjusted,temp_adjusted,psal_adjusted"
+            f"{self.requested}"
             f"&time>={start.strftime('%Y-%m-%dT%H:%M:%SZ')}"
             f"&time<={end.strftime('%Y-%m-%dT%H:%M:%SZ')}"
             f"&latitude>={bbox.south}&latitude<={bbox.north}"
             f"&longitude>={bbox.west}&longitude<={bbox.east}"
         )
-        response = requests.get(f"{_SERVER}?{selector}", timeout=_TIMEOUT)
+        response = requests.get(
+            f"{self.endpoint}?{selector}", timeout=_TIMEOUT, verify=self.certificates()
+        )
         response.raise_for_status()
-        return parse_profiles(response.text)
+        return parse_profiles(response.text, self.columns)
 
 
-def parse_profiles(csv_text: str) -> list[Profile]:
-    """Turn ERDDAP's flat CSV into Profiles.
+class IncoisArgoSource(ArgoErddapSource):
+    """The same Profiles, from INCOIS's own archive.
+
+    Present to demonstrate that the adapter seam is real rather than asserted: this provider
+    names every column differently and inverts which variant carries the data, and absorbing
+    both differences costs a subclass with four attributes and no new parsing code.
+
+    It is deliberately NOT the demo's observation source. INCOIS's Argo archive ends
+    2025-04-23 while their gridded analysis runs to 2026-07-30, and collocating a July 2026
+    analysis against observations more than a year older would be comparing two different
+    oceans. The Ifremer GDAC mirror is current, so that is what the demo uses.
+    """
+
+    name = "INCOIS Argo archive"
+    attribution = (
+        "Indian National Centre for Ocean Information Services (INCOIS), Ministry of Earth "
+        "Sciences — INDIAN ARGO Floats Data. Historical archive; coverage ends 2025-04-23."
+    )
+    columns = INCOIS_COLUMNS
+    endpoint = "https://erddap.incois.gov.in/erddap/tabledap/Indian_ARGO_Floats.csv"
+    requested = (
+        "PLATFORM_NUMBER,time,latitude,longitude,PRES,TEMP,PSAL,"
+        "PRES_ADJUSTED,TEMP_ADJUSTED,PSAL_ADJUSTED"
+    )
+    coverage_ends = datetime(2025, 4, 23, tzinfo=timezone.utc)
+
+    def certificates(self) -> str | bool:
+        return ca_bundle()  # INCOIS omits an intermediate certificate; see tls.py
+
+
+def parse_profiles(csv_text: str, columns: ProfileColumns = GDAC_COLUMNS) -> list[Profile]:
+    """Turn one provider's flat CSV into Profiles.
 
     ERDDAP returns one row per measurement, with the cast identified only by the repetition of
     platform number and time - there is no profile id column. Grouping on that pair is what
@@ -89,21 +177,36 @@ def parse_profiles(csv_text: str) -> list[Profile]:
         return []
     next(reader, None)  # ERDDAP's units row
 
-    column = {name: index for index, name in enumerate(header)}
+    index = {name: position for position, name in enumerate(header)}
+    try:
+        platform_at = index[columns.platform]
+        time_at = index[columns.time]
+        latitude_at = index[columns.latitude]
+        longitude_at = index[columns.longitude]
+    except KeyError:
+        return []  # not a layout this adapter understands
+
+    # Only the variants this provider actually served, in the order we trust them.
+    pressure_at = [index[name] for name in columns.pressure if name in index]
+    temperature_at = [index[name] for name in columns.temperature if name in index]
+    salinity_at = [index[name] for name in columns.salinity if name in index]
+    if not pressure_at:
+        return []
+
     casts: dict[tuple[str, str], list[tuple[float, float, float]]] = defaultdict(list)
     positions: dict[tuple[str, str], tuple[float, float]] = {}
 
     for row in reader:
         try:
-            key = (row[column["platform_number"]], row[column["time"]])
-            latitude = float(row[column["latitude"]])
-            longitude = float(row[column["longitude"]])
+            key = (row[platform_at], row[time_at])
+            latitude = float(row[latitude_at])
+            longitude = float(row[longitude_at])
             measurement = (
-                _to_float(row[column["pres_adjusted"]]),
-                _to_float(row[column["temp_adjusted"]]),
-                _to_float(row[column["psal_adjusted"]]),
+                _first_present(row, pressure_at),
+                _first_present(row, temperature_at),
+                _first_present(row, salinity_at),
             )
-        except (KeyError, IndexError, ValueError):
+        except (IndexError, ValueError):
             continue  # a malformed row is not a reason to lose the whole download
 
         # Everything is parsed before anything is stored. Touching `casts[key]` first would
@@ -144,6 +247,15 @@ def parse_profiles(csv_text: str) -> list[Profile]:
 
     profiles.sort(key=lambda p: (p.platform_id, p.time))
     return profiles
+
+
+def _first_present(row: list[str], candidates: list[int]) -> float:
+    """The first variant that actually carries a number — adjusted if served, else raw."""
+    for position in candidates:
+        value = _to_float(row[position])
+        if np.isfinite(value):
+            return value
+    return float("nan")
 
 
 def pressure_to_depth(pressure_dbar, latitude: float):
