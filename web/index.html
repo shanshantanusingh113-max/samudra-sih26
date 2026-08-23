@@ -1,12 +1,459 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Samudra 3D — INCOIS Ocean Visualisation</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Samudra 3D - Ocean model and in-situ co-visualisation for INCOIS</title>
+<meta name="description" content="A browser-native 3D ocean visualisation platform that renders INCOIS model fields as a ray-marched water column and overlays the Argo float profiles measured in the same water. Smart India Hackathon 2026, PS 26067.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /*
+   * Deliberately single-theme. The subject is a dark instrument console and every image on the
+   * page is a dark screenshot; a light ground would fight all of them. Every colour is painted
+   * explicitly so nothing depends on the host's theme.
+   */
+  :root {
+    --abyss: #04070d;
+    --deep: #071420;
+    --shelf: #0c1f2e;
+    --panel: #102737;
+    --edge: rgba(120, 170, 195, 0.16);
+    --edge-hot: rgba(120, 190, 210, 0.4);
+
+    --ink: #e4eef6;
+    --body: #b3c8d8;
+    --dim: #8299ad;
+    --faint: #5d7488;
+
+    --cyan: #3fb8c4;
+    --amber: #f5b841;
+    --coral: #f2765f;
+    --green: #5fd68a;
+
+    --d: "Chivo", "Helvetica Neue", Arial, sans-serif;
+    --m: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+  body {
+    margin: 0;
+    background: var(--deep);
+    color: var(--body);
+    font-family: var(--d);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1140px; margin: 0 auto; padding: 0 28px; }
+
+  a { color: var(--cyan); text-underline-offset: 3px; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+
+  h1, h2, h3 { font-family: var(--d); color: var(--ink); margin: 0; text-wrap: balance; }
+
+  .eyebrow {
+    display: flex; align-items: center; gap: 12px;
+    font-family: var(--m); font-size: 10.5px; font-weight: 500;
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--cyan);
+    margin-bottom: 16px;
+  }
+  .eyebrow::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--edge-hot), transparent); }
+
+  /* ------------------------------------------------------------- nav */
+
+  nav {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(7, 20, 32, 0.86);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--edge);
+  }
+  nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 62px; }
+  .brand { font-family: var(--m); font-size: 15px; font-weight: 600; letter-spacing: 0.15em; color: var(--ink); text-decoration: none; }
+  .brand i { color: var(--cyan); font-style: normal; }
+  .nav-links { display: flex; align-items: center; gap: 26px; }
+  .nav-links a { font-size: 13.5px; color: var(--dim); text-decoration: none; }
+  .nav-links a:hover { color: var(--ink); }
+
+  .cta {
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 10px 18px; border-radius: 9px;
+    border: 1px solid rgba(63, 184, 196, 0.5);
+    background: linear-gradient(180deg, rgba(63, 184, 196, 0.24), rgba(63, 184, 196, 0.08));
+    color: #eafcff; font-size: 13.5px; font-weight: 500; text-decoration: none;
+    transition: transform 0.16s ease, border-color 0.16s ease;
+  }
+  .cta:hover { transform: translateY(-1px); border-color: var(--cyan); }
+  .cta.big { padding: 15px 28px; font-size: 15.5px; border-radius: 11px; }
+  .cta.ghost { background: rgba(16, 39, 55, 0.7); border-color: var(--edge); color: var(--body); }
+
+  /* ------------------------------------------------------------- hero */
+
+  header.hero { padding: 86px 0 64px; position: relative; overflow: hidden; }
+  header.hero::before {
+    content: ""; position: absolute; inset: -30% 20% auto -10%; height: 620px;
+    background: radial-gradient(closest-side, rgba(63, 184, 196, 0.12), transparent 72%);
+    pointer-events: none;
+  }
+  .hero-grid { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); gap: 52px; align-items: center; }
+
+  h1 { font-size: clamp(42px, 5.6vw, 68px); font-weight: 900; line-height: 0.98; letter-spacing: -0.035em; }
+  .lede { margin: 22px 0 0; font-size: 19px; line-height: 1.55; color: var(--ink); max-width: 46ch; }
+  .sub { margin: 14px 0 0; font-size: 15px; color: var(--dim); max-width: 48ch; }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+
+  .hero-meta { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 30px; font-family: var(--m); font-size: 11.5px; color: var(--faint); }
+  .hero-meta b { color: var(--body); font-weight: 400; }
+
+  figure { margin: 0; }
+  .shot { border: 1px solid var(--edge); border-radius: 12px; overflow: hidden; background: var(--abyss); }
+  .shot img { display: block; width: 100%; height: auto; }
+  .shot figcaption { padding: 11px 15px; border-top: 1px solid var(--edge); background: var(--shelf); font-family: var(--m); font-size: 10.5px; line-height: 1.55; color: var(--dim); }
+  .shot figcaption b { color: var(--cyan); font-weight: 500; }
+
+  /* ------------------------------------------------------------- sections */
+
+  section { padding: 76px 0; border-top: 1px solid var(--edge); }
+  h2 { font-size: clamp(26px, 3.2vw, 35px); font-weight: 700; line-height: 1.14; letter-spacing: -0.022em; }
+  .section-lede { margin: 14px 0 0; font-size: 16.5px; color: var(--body); max-width: 62ch; }
+
+  .split { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 26px; margin-top: 38px; }
+
+  .card { padding: 24px; border: 1px solid var(--edge); border-radius: 12px; background: var(--shelf); }
+  .card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+  .card p { margin: 0; font-size: 14.5px; line-height: 1.62; color: var(--body); }
+  .card .tag {
+    display: inline-block; margin-bottom: 12px; padding: 3px 9px; border-radius: 4px;
+    font-family: var(--m); font-size: 9.5px; letter-spacing: 0.13em; text-transform: uppercase;
+    color: var(--cyan); background: rgba(63, 184, 196, 0.12); border: 1px solid rgba(63, 184, 196, 0.26);
+  }
+  .card.problem .tag { color: var(--coral); background: rgba(242, 118, 95, 0.1); border-color: rgba(242, 118, 95, 0.28); }
+
+  /* steps */
+  .steps { margin-top: 40px; display: flex; flex-direction: column; }
+  .step { display: grid; grid-template-columns: 118px 1fr; gap: 26px; padding: 26px 0; border-top: 1px solid var(--edge); }
+  .step:last-child { border-bottom: 1px solid var(--edge); }
+  .step .n { font-family: var(--m); font-size: 11px; letter-spacing: 0.1em; color: var(--amber); padding-top: 4px; }
+  .step h3 { font-size: 19px; margin-bottom: 6px; }
+  .step p { margin: 0; max-width: 62ch; font-size: 15px; }
+
+  /* stats */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1px; margin-top: 38px; background: var(--edge); border: 1px solid var(--edge); border-radius: 12px; overflow: hidden; }
+  .stat { background: var(--shelf); padding: 22px 20px; }
+  .stat b { display: block; font-size: 32px; font-weight: 700; line-height: 1; letter-spacing: -0.03em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .stat.warm b { color: var(--amber); }
+  .stat.cool b { color: var(--cyan); }
+  .stat.hot b { color: var(--coral); }
+  .stat span { display: block; margin-top: 8px; font-family: var(--m); font-size: 10.5px; line-height: 1.5; color: var(--faint); }
+
+  .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 22px; margin-top: 38px; }
+
+  .pull { margin-top: 32px; padding: 22px 26px; border-left: 2px solid var(--amber); background: linear-gradient(90deg, rgba(245, 184, 65, 0.07), transparent 72%); }
+  .pull p { margin: 0; font-size: 18px; line-height: 1.52; color: var(--ink); max-width: 60ch; }
+  .pull cite { display: block; margin-top: 10px; font-family: var(--m); font-size: 10.5px; font-style: normal; letter-spacing: 0.07em; color: var(--dim); }
+
+  ul.plain { margin: 20px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 11px; }
+  ul.plain li { position: relative; padding-left: 22px; max-width: 64ch; font-size: 15px; }
+  ul.plain li::before { content: ""; position: absolute; left: 2px; top: 12px; width: 8px; height: 1px; background: var(--edge-hot); }
+
+  .stack { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 22px; margin-top: 34px; }
+  .stack h3 { font-family: var(--m); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--cyan); margin-bottom: 12px; }
+  .stack ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .stack li { font-family: var(--m); font-size: 12.5px; color: var(--body); }
+
+  /* final call to action */
+  .final { text-align: center; padding: 92px 0 100px; }
+  .final h2 { font-size: clamp(30px, 4vw, 44px); }
+  .final p { margin: 16px auto 0; max-width: 54ch; font-size: 16.5px; }
+  .final .hero-actions { justify-content: center; }
+
+  footer { border-top: 1px solid var(--edge); padding: 34px 0 60px; font-family: var(--m); font-size: 11px; line-height: 1.8; color: var(--faint); }
+  footer a { color: var(--dim); }
+
+  @media (max-width: 900px) {
+    .hero-grid { grid-template-columns: 1fr; gap: 34px; }
+    .step { grid-template-columns: 1fr; gap: 8px; }
+    .nav-links a:not(.cta) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top">SAMUDRA<i>&middot;3D</i></a>
+    <div class="nav-links">
+      <a href="#problem">The gap</a>
+      <a href="#how">How it works</a>
+      <a href="#evidence">Evidence</a>
+      <a href="#built">How it is built</a>
+      <a class="cta" href="./app.html">Launch the platform</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow">Smart India Hackathon 2026 &middot; PS 26067 &middot; MoES / INCOIS</div>
+      <h1>Fly into the Indian Ocean.</h1>
+      <p class="lede">
+        See what the ocean model predicted and what the instruments in the water actually
+        measured, in one picture.
+      </p>
+      <p class="sub">
+        A browser-native 3D visualisation of INCOIS ocean fields, with Argo float profiles
+        overlaid in the same water. Nothing to install.
+      </p>
+      <div class="hero-actions">
+        <a class="cta big" href="./app.html">Launch the platform &rarr;</a>
+        <a class="cta big ghost" href="#how">See how it works</a>
+      </div>
+      <div class="hero-meta">
+        <span>DATA <b>INCOIS public ERDDAP</b></span>
+        <span>ANALYSIS TO <b>30 Jul 2026</b></span>
+        <span>FLOATS <b>88</b></span>
+        <span>DEPTH <b>5-2000 m</b></span>
+      </div>
+    </div>
+
+    <figure class="shot">
+      <img src="./images/volume.jpg" width="1270" height="760"
+           alt="A three-dimensional block of Indian Ocean water rendered in warm-to-violet colours, showing temperature layering from the surface down to 2000 metres, with Argo float tracks across the sea surface above it.">
+      <figcaption>
+        <b>The water column.</b> Temperature from 5 m to 2000 m over the Arabian Sea and Bay of
+        Bengal. The orange band is the thermocline.
+      </figcaption>
+    </figure>
+  </div>
+</header>
+
+<section id="problem">
+  <div class="wrap">
+    <div class="eyebrow">The gap</div>
+    <h2>The data already exists. Nobody can look at it together.</h2>
+    <p class="section-lede">
+      INCOIS runs ocean models and INCOIS collects real measurements from robot floats drifting
+      in the same water. Both are valuable, and both already exist. A forecaster who wants to
+      know whether they agree has to open two different desktop programs and hold the answer in
+      their head.
+    </p>
+
+    <div class="split">
+      <div class="card problem">
+        <span class="tag">Today</span>
+        <h3>Two windows, flat maps</h3>
+        <p>
+          Model output in one program, float measurements in another, and almost every tool draws
+          one depth at a time. The ocean is four kilometres deep and the structures that matter
+          are vertical.
+        </p>
+      </div>
+      <div class="card problem">
+        <span class="tag">Today</span>
+        <h3>Agreement judged by eye</h3>
+        <p>
+          Whether the model matches reality is worked out mentally and never recorded. There is
+          no number, so there is nothing to check later or hand to anyone else.
+        </p>
+      </div>
+      <div class="card problem">
+        <span class="tag">Today</span>
+        <h3>Every new sensor is a rewrite</h3>
+        <p>
+          Adding a mooring, an ADCP or an HF-radar feed means re-engineering the tool, so new
+          observing capability sits unused.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="eyebrow">How it works</div>
+    <h2>Three moves, one continuous scene</h2>
+
+    <div class="steps">
+      <div class="step">
+        <div class="n">01 &middot; SURFACE</div>
+        <div>
+          <h3>Start on the globe</h3>
+          <p>
+            India's exclusive economic zone, coloured with INCOIS's own gridded analysis. Every
+            marker is an Argo float that reported in the last 60 days.
+          </p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">02 &middot; DESCENT</div>
+        <div>
+          <h3>Dive into the water</h3>
+          <p>
+            The globe unrolls into a map and the ocean opens into a solid, see-through block.
+            Every coastline vertex slides from its position on a sphere to its position on a flat
+            map: one continuous deformation of one piece of geometry, not a cut between screens.
+          </p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">03 &middot; 2000 m</div>
+        <div>
+          <h3>Click a float</h3>
+          <p>
+            What the instrument measured on the way down, drawn against what the model said at
+            that exact place and time, with the disagreement shaded between them and reported as
+            a number.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="gallery">
+      <figure class="shot">
+        <img src="./images/globe.jpg" width="1400" height="787" loading="lazy"
+             alt="A dark globe showing the Indian Ocean with a warm-coloured temperature field over India's exclusive economic zone and small float markers across it.">
+        <figcaption><b>Globe view.</b> The colour on the sea is the same field you are about to fly into.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="./images/isosurface.jpg" width="1270" height="760" loading="lazy"
+             alt="A shaded three-dimensional surface inside a wireframe box, showing the undulating topography of the 20 degree Celsius isotherm.">
+        <figcaption><b>Isosurface.</b> The 20 &deg;C isotherm, the standard thermocline proxy, visibly doming.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section id="evidence">
+  <div class="wrap">
+    <div class="eyebrow">The contribution</div>
+    <h2>Model against observation, in the same view</h2>
+    <p class="section-lede">
+      This is the thing the problem statement says no existing tool does. It is also not a
+      contrived comparison: INCOIS's analysis is derived from Argo profiles, so asking whether it
+      reproduced the observations that fed it is a real operational question.
+    </p>
+
+    <figure class="shot" style="margin-top:34px">
+      <img src="./images/collocation.jpg" width="1400" height="787" loading="lazy"
+           alt="The three-dimensional ocean block with one float highlighted by a vertical green line, and a side panel showing a depth profile chart comparing observed Argo temperature against the INCOIS analysis, with statistics beneath.">
+      <figcaption>
+        <b>Argo 2902306</b>, 21.07&deg;N 60.08&deg;E, off Oman. Green is measured, dashed blue is
+        the analysis, and the shaded gap is the residual.
+      </figcaption>
+    </figure>
+
+    <div class="stats">
+      <div class="stat"><b>119</b><span>DEPTH LEVELS MATCHED</span></div>
+      <div class="stat hot"><b>&minus;2.16</b><span>MEAN RESIDUAL &deg;C</span></div>
+      <div class="stat warm"><b>2.34</b><span>RMS &deg;C</span></div>
+      <div class="stat cool"><b>0.46</b><span>MEDIAN RMS ACROSS 84 FLOATS</span></div>
+    </div>
+
+    <div class="pull">
+      <p>
+        That &minus;2.16 &deg;C is not a bug. The float sits off Oman in July, in the Arabian Sea
+        upwelling season: cold water is being driven up from below and a 1&deg; gridded analysis
+        smooths it away. A forecaster would want to know that before issuing an advisory.
+      </p>
+      <cite>The tool finding a real discrepancy is the tool working</cite>
+    </div>
+  </div>
+</section>
+
+<section id="built">
+  <div class="wrap">
+    <div class="eyebrow">How it is built</div>
+    <h2>Open standards in, WebGL out</h2>
+
+    <div class="split">
+      <div class="card">
+        <span class="tag">Rendering</span>
+        <h3>Featureless water is transparent</h3>
+        <p>
+          Ocean temperature falls smoothly with depth, so a plain render is an opaque warm lid
+          over an invisible abyss. Opacity is weighted by how fast the field is changing, so the
+          thermocline and fronts become the solid things in the picture.
+        </p>
+      </div>
+      <div class="card">
+        <span class="tag">Correctness</span>
+        <h3>Land cannot fake upwelling</h3>
+        <p>
+          GPUs interpolate before a shader sees a voxel, so a "no data" marker gets averaged with
+          the sea beside it and paints a cold fringe along every coast. A separate coverage
+          channel means land can never contribute a temperature.
+        </p>
+      </div>
+      <div class="card">
+        <span class="tag">Extensibility</span>
+        <h3>A new instrument is one class</h3>
+        <p>
+          Two Argo providers that name every column differently are absorbed by one parser driven
+          by a column description. The renderer, the API and the UI have never heard of ERDDAP.
+        </p>
+      </div>
+    </div>
+
+    <div class="stack">
+      <div>
+        <h3>Data and science</h3>
+        <ul>
+          <li>Python 3.10</li><li>xarray + netCDF4</li><li>NumPy / SciPy</li><li>cmocean</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Backend</h3>
+        <ul><li>FastAPI</li><li>Uvicorn</li><li>ERDDAP / OPeNDAP</li><li>CF-1.6 conventions</li></ul>
+      </div>
+      <div>
+        <h3>Frontend</h3>
+        <ul><li>TypeScript</li><li>React 19 + Vite</li><li>Three.js / WebGL2</li><li>GLSL ES 3.00</li></ul>
+      </div>
+      <div>
+        <h3>Quality</h3>
+        <ul><li>54 automated tests</li><li>9 decision records</li><li>0 network calls at demo time</li></ul>
+      </div>
+    </div>
+
+    <ul class="plain">
+      <li><strong>Runs on INCOIS's own server.</strong> Their 10-day gridded Argo analysis, 24 depth levels, current to 30 July 2026.</li>
+      <li><strong>Deployable anywhere.</strong> A static site plus a lightweight API, with no client-side dependency, no plugin and no access token.</li>
+      <li><strong>Honest by construction.</strong> The stretched depth axis is labelled on screen rather than left to be assumed proportional.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="final">
+  <div class="wrap">
+    <h2>Open it and fly into the water.</h2>
+    <p>
+      No install, no account, no plugin. It runs entirely in your browser on real INCOIS data.
+    </p>
+    <div class="hero-actions">
+      <a class="cta big" href="./app.html">Launch the platform &rarr;</a>
+      <a class="cta big ghost" href="https://github.com/RAK2315/samudra-sih26">View the source</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    Argo data are collected and made freely available by the International Argo Program and the
+    national programmes that contribute to it. The Argo Program is part of the Global Ocean
+    Observing System.<br>
+    Gridded analysis products are produced by the Indian National Centre for Ocean Information
+    Services (INCOIS), Ministry of Earth Sciences, Government of India.<br>
+    Colour scales are cmocean (Thyng et al., 2016). Coastlines are Natural Earth.<br>
+    <a href="https://github.com/RAK2315/samudra-sih26">github.com/RAK2315/samudra-sih26</a>
+  </div>
+</footer>
+
+</body>
 </html>
