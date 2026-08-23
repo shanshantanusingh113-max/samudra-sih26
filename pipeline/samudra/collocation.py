@@ -8,7 +8,7 @@ Two deliberate choices, both about not flattering the model:
 - The comparison happens on the *observation's* depths, not the model's Levels. The float
   measured where it measured; resampling its data to suit the model would smooth away exactly
   the fine vertical structure that makes the comparison interesting.
-- Observations the model cannot reach — below its deepest Level, or over a Mask — are kept
+- Observations the model cannot reach - below its deepest Level, or over a Mask - are kept
   and shown as unmatched rather than dropped. A Collocation that silently discarded every
   point the model got wrong would be worse than no Collocation.
 """

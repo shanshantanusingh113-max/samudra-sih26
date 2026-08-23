@@ -9,7 +9,14 @@ export function Timeline() {
 
   return (
     <div className="timeline">
-      <button className="play" onClick={() => set("playing", !playing)} aria-label="Play">
+      <button
+        className="play"
+        onClick={() => {
+          set("touched", "timestep");
+          set("playing", !playing);
+        }}
+        aria-label="Play"
+      >
         {playing ? "❚❚" : "▶"}
       </button>
 
@@ -20,7 +27,11 @@ export function Timeline() {
           max={steps.length - 1}
           step={1}
           value={timestepIndex}
-          onChange={(e) => set("timestepIndex", Number(e.target.value))}
+          onFocus={() => set("touched", "timestep")}
+          onChange={(e) => {
+            set("touched", "timestep");
+            set("timestepIndex", Number(e.target.value));
+          }}
         />
         <div className="timeline-ticks">
           {steps.map((stamp, index) => (
@@ -37,7 +48,7 @@ export function Timeline() {
 
       <div className="timeline-stamp">
         <span className="timeline-date">
-          {current ? new Date(current).toISOString().slice(0, 10) : "—"}
+          {current ? new Date(current).toISOString().slice(0, 10) : "-"}
         </span>
         <span className="timeline-note">10-day analysis</span>
       </div>

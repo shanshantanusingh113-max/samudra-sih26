@@ -4,7 +4,7 @@
  * World axes: +x is east, +z is *south*, +y is up. So depth runs down from y = 0 at the surface.
  *
  * The vertical axis is linear in the Depth Warp's coordinate, not in metres. That is not an
- * oversight — it is what lets 48 evenly spaced texture slabs resolve a thermocline that lives
+ * oversight - it is what lets 48 evenly spaced texture slabs resolve a thermocline that lives
  * in the top 200 m of a 2000 m column, and a stretched depth axis is ordinary practice in
  * oceanography. Because it is not linear in metres, the UI draws a depth ruler with real
  * figures at their warped positions rather than leaving the viewer to assume proportionality.
@@ -17,7 +17,7 @@ export const METRES_PER_DEGREE = 111_320;
 
 /**
  * One world unit is one degree of longitude, and the origin is the intersection of the
- * equator and the prime meridian — *not* the centre of the study region. Everything shares
+ * equator and the prime meridian - *not* the centre of the study region. Everything shares
  * one frame so the world map, the coastlines, the Float markers and the Volume box all land
  * in the same place without anybody applying a correction.
  */

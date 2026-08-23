@@ -14,7 +14,14 @@ function Colourbar() {
     <div className="control-group">
       <div className="control-head">
         <label>Colourbar</label>
-        <select value={paletteName} onChange={(e) => set("paletteName", e.target.value)}>
+        <select
+          value={paletteName}
+          onFocus={() => set("touched", "palette")}
+          onChange={(e) => {
+            set("touched", "palette");
+            set("paletteName", e.target.value);
+          }}
+        >
           {Object.keys(manifest.palettes).map((name) => (
             <option key={name} value={name}>
               {name}
@@ -31,7 +38,8 @@ function Colourbar() {
       </div>
 
       <Slider
-        label="Range min"
+        guide="window"
+              label="Range min"
         value={windowMin}
         min={0}
         max={Math.max(windowMax - 0.02, 0.02)}
@@ -40,7 +48,8 @@ function Colourbar() {
         onChange={(v) => set("windowMin", v)}
       />
       <Slider
-        label="Range max"
+        guide="window"
+              label="Range max"
         value={windowMax}
         min={Math.min(windowMin + 0.02, 0.98)}
         max={1}
@@ -53,7 +62,10 @@ function Colourbar() {
         <input
           type="checkbox"
           checked={logScale}
-          onChange={(e) => set("logScale", e.target.checked)}
+          onChange={(e) => {
+            set("touched", "logScale");
+            set("logScale", e.target.checked);
+          }}
         />
         <span>Logarithmic scale</span>
       </label>
@@ -72,6 +84,7 @@ function Slider({
   step,
   format,
   onChange,
+  guide,
 }: {
   label: string;
   value: number;
@@ -80,9 +93,12 @@ function Slider({
   step: number;
   format: (v: number) => string;
   onChange: (v: number) => void;
+  /** Which entry in the guide explains this control. */
+  guide?: string;
 }) {
+  const explain = () => guide && useStore.getState().set("touched", guide);
   return (
-    <div className="slider">
+    <div className="slider" onPointerDown={explain} onFocus={explain}>
       <div className="slider-head">
         <span>{label}</span>
         <span className="slider-value">{format(value)}</span>
@@ -122,6 +138,7 @@ export function Controls() {
               key={f.key}
               className={f.key === store.fieldKey ? "on" : ""}
               onClick={() => {
+                set("touched", "field");
                 set("fieldKey", f.key);
                 set("paletteName", f.palette);
                 set("windowMin", 0);
@@ -142,10 +159,11 @@ export function Controls() {
             <div className="control-head">
               <label>Depth slice</label>
               <span className="readout">
-                {fromDepth.toFixed(0)}–{toDepth.toFixed(0)} m
+                {fromDepth.toFixed(0)}-{toDepth.toFixed(0)} m
               </span>
             </div>
             <Slider
+              guide="depthSlice"
               label="From surface"
               value={store.depthFrom}
               min={0}
@@ -155,6 +173,7 @@ export function Controls() {
               onChange={(v) => set("depthFrom", v)}
             />
             <Slider
+              guide="depthSlice"
               label="To depth"
               value={store.depthTo}
               min={Math.min(store.depthFrom + 0.02, 0.98)}
@@ -170,6 +189,7 @@ export function Controls() {
               <label>Rendering</label>
             </div>
             <Slider
+              guide="opacity"
               label="Water opacity"
               value={store.opacity}
               min={0.005}
@@ -179,6 +199,7 @@ export function Controls() {
               onChange={(v) => set("opacity", v)}
             />
             <Slider
+              guide="emphasis"
               label="Feature emphasis"
               value={store.emphasis}
               min={0}
@@ -188,6 +209,7 @@ export function Controls() {
               onChange={(v) => set("emphasis", v)}
             />
             <Slider
+              guide="exaggeration"
               label="Vertical exaggeration"
               value={store.exaggeration}
               min={200}
@@ -197,6 +219,7 @@ export function Controls() {
               onChange={(v) => set("exaggeration", v)}
             />
             <Slider
+              guide="quality"
               label="Ray steps"
               value={store.quality}
               min={48}
@@ -209,7 +232,10 @@ export function Controls() {
               <input
                 type="checkbox"
                 checked={store.volumeEnabled}
-                onChange={(e) => set("volumeEnabled", e.target.checked)}
+                onChange={(e) => {
+                  set("touched", "volumeEnabled");
+                  set("volumeEnabled", e.target.checked);
+                }}
               />
               <span>Show volume</span>
             </label>
@@ -226,13 +252,17 @@ export function Controls() {
               <input
                 type="checkbox"
                 checked={store.isoEnabled}
-                onChange={(e) => set("isoEnabled", e.target.checked)}
+                onChange={(e) => {
+                  set("touched", "isosurface");
+                  set("isoEnabled", e.target.checked);
+                }}
               />
               <span>Draw isosurface</span>
             </label>
             {store.isoEnabled && (
               <Slider
-                label="Value"
+                guide="isosurface"
+              label="Value"
                 value={store.isoValue}
                 min={0.02}
                 max={0.98}
@@ -258,7 +288,8 @@ export function Controls() {
             <span className="readout">{axisToDepth(volume, store.surfaceLevel).toFixed(0)} m</span>
           </div>
           <Slider
-            label="Depth painted on the map"
+            guide="surfaceLevel"
+              label="Depth painted on the map"
             value={store.surfaceLevel}
             min={0}
             max={1}
@@ -277,7 +308,10 @@ export function Controls() {
           <input
             type="checkbox"
             checked={store.showFloats}
-            onChange={(e) => set("showFloats", e.target.checked)}
+            onChange={(e) => {
+              set("touched", "floats");
+              set("showFloats", e.target.checked);
+            }}
           />
           <span>Argo floats ({store.floats.length})</span>
         </label>
@@ -285,7 +319,10 @@ export function Controls() {
           <input
             type="checkbox"
             checked={store.showTracks}
-            onChange={(e) => set("showTracks", e.target.checked)}
+            onChange={(e) => {
+              set("touched", "tracks");
+              set("showTracks", e.target.checked);
+            }}
           />
           <span>Drift tracks</span>
         </label>

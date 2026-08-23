@@ -4,7 +4,7 @@ Browser-native 3D ocean visualisation for INCOIS. Smart India Hackathon 2026, PS
 
 **Read [`CONTEXT.md`](CONTEXT.md) first.** It defines the domain vocabulary and the scope cut
 line, and the terms in it (Grid, Volume, Profile, Collocation, Depth Warp, Source Adapter) are
-used precisely throughout the code. Then skim [`docs/adr/`](docs/adr/) — eight decision records,
+used precisely throughout the code. Then skim [`docs/adr/`](docs/adr/) - eight decision records,
 several of which document traps that already cost hours.
 
 ## Layout
@@ -60,14 +60,14 @@ which is meaningless for world-spanning geometry. Anything new and transparent n
 `renderOrder` from the `ORDER` table in `OceanScene.ts`.
 
 **The demo path makes zero network calls.** Everything the browser needs is baked into
-`web/public/data`. Keep it that way — a dead venue network must not be able to kill a demo.
+`web/public/data`. Keep it that way - a dead venue network must not be able to kill a demo.
 
 ## Testing
 
 TDD applies to the science: depth warp, volume encoding, grid interpolation, collocation, and
 the Argo parser. Not to glue, UI or shaders. 48 tests currently.
 
-When a test and the code disagree, work out which is wrong before changing either — twice now
+When a test and the code disagree, work out which is wrong before changing either - twice now
 the *test's* expectation was the wrong one (gravity-corrected depth, and a fixture too small for
 the minimum-points filter).
 
@@ -75,7 +75,7 @@ the minimum-points filter).
 
 Simple, boring code; the obvious solution over the clever one. No abstraction until something is
 needed twice. No config systems, no plugin layers. Comments explain *why*, especially where the
-obvious approach was rejected for a real reason — most non-obvious code here carries that
+obvious approach was rejected for a real reason - most non-obvious code here carries that
 explanation, and it should stay that way.
 
 ## Known upstream quirks
@@ -86,4 +86,4 @@ explanation, and it should stay that way.
 - **`tds.hycom.org` and `coastwatch.pfeg.noaa.gov` are unreachable from this network.** Do not
   retry them; see `plan/00-data-sources-verified.md`.
 - **Real Argo floats fail.** One in this region reports ~20 PSU, which passes Argo's global QC.
-  Our salinity floor is regional and deliberately stricter — ADR 0008.
+  Our salinity floor is regional and deliberately stricter - ADR 0008.

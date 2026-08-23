@@ -37,6 +37,9 @@ interface State {
   exaggeration: number;
   quality: number;
 
+  /** Which control the user last touched, so the guide can explain it. Null = describe the view. */
+  touched: string | null;
+
   stage: Stage;
   morph: number;
   selectedFloatId: string | null;
@@ -79,6 +82,8 @@ export const useStore = create<State>((setState, getState) => ({
 
   exaggeration: 1800,
   quality: 128,
+
+  touched: null,
 
   stage: "globe",
   morph: 0,

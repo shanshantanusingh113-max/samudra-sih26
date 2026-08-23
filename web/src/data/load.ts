@@ -27,7 +27,7 @@ export const loadCollocations = () => getJson<Record<string, Collocation>>("coll
  * Linear filtering is deliberate on every channel. On the value channel it is what smooths a
  * 1-degree grid into something that reads as water; on the coverage channel it is what turns a
  * stair-stepped coastline into a clean edge. It is only safe because the bake back-fills masked
- * cells with a real neighbouring value — see the note in `pipeline/samudra/volume.py`.
+ * cells with a real neighbouring value - see the note in `pipeline/samudra/volume.py`.
  */
 export async function loadVolumeTexture(
   path: string,

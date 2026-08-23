@@ -2,8 +2,8 @@
 
 Paste the fenced block below into your AI tool. Attach alongside it:
 
-1. **`SLIDES.md`** (this folder) — the exact content for every slide
-2. **The images from `images/`** — the screenshots to paste, and boards `06`–`10` as
+1. **`SLIDES.md`** (this folder) - the exact content for every slide
+2. **The images from `images/`** - the screenshots to paste, and boards `06`-`10` as
    *design references* for slides the AI should draw natively
 
 If the tool cannot take attachments, paste `SLIDES.md` inline after the prompt.
@@ -13,7 +13,7 @@ If the tool cannot take attachments, paste `SLIDES.md` inline after the prompt.
 ```
 You are producing a 6-slide idea-submission deck for Smart India Hackathon 2026,
 Problem Statement 26067 (Ministry of Earth Sciences / INCOIS). The project is
-Samudra 3D — a browser-based 3D ocean visualisation platform.
+Samudra 3D - a browser-based 3D ocean visualisation platform.
 
 I am giving you SLIDES.md, which holds the exact content and layout for every
 slide, plus a folder of images. Follow SLIDES.md precisely. Do not invent facts,
@@ -43,7 +43,7 @@ boxes and real connectors:
 Only paste images that are screenshots of the running software. Those are what
 make the deck credible and cannot be recreated as text.
 
-=== THE ARCHITECTURE DIAGRAM (slide 3) — DRAW IT PROPERLY ===
+=== THE ARCHITECTURE DIAGRAM (slide 3) - DRAW IT PROPERLY ===
 This must be an actual architecture diagram made of shapes and arrows, laid out
 left to right as a flow. Not a bullet list describing an architecture.
 
@@ -70,10 +70,10 @@ Structure, following 07-architecture.png exactly:
 
 === TECH STACK ICONS (slide 3) ===
 In the "Technologies to be Used" list, put a small monochrome icon beside each
-technology where space allows — Python, FastAPI, React, TypeScript, Three.js /
+technology where space allows - Python, FastAPI, React, TypeScript, Three.js /
 WebGL, NetCDF, pytest. Tint every icon the same cyan #3FB8C4 so they read as one
 set, and keep them small (about the height of a capital letter). If they crowd
-the column, drop the icons entirely — a clean list beats a cramped one.
+the column, drop the icons entirely - a clean list beats a cramped one.
 
 === VISUAL STYLE ===
 Dark slides. Ground #071420 (deep blue-black, never pure black).
@@ -90,7 +90,7 @@ ALL CAPS for box labels in cyan. Calibri or Arial for bullets, 13-15 pt.
 Consolas for dataset IDs, URLs and figures.
 
 Layout for every content slide:
-- Everything inside bordered boxes — two side by side, or a 2x2 grid.
+- Everything inside bordered boxes - two side by side, or a 2x2 grid.
 - Every box gets a small cyan ALL-CAPS label above it.
 - Every bullet reads "**Bold lead-in**: short explanation." Never a bare
   sentence. Max ~6 bullets per box.
@@ -99,25 +99,25 @@ Layout for every content slide:
 === SCREENSHOTS TO PASTE ===
   02-volume-clean.png       Slide 1, hero
   03-globe-full.png         Slide 2
-  12-watermass.png          Slide 2 or 5 — visually the strongest image we have
+  12-watermass.png          Slide 2 or 5 - visually the strongest image we have
   11-isosurface.png         Slide 2 or 4
-  01-volume-full.png        Slide 3 — proves it is a real application
-  13-salinity.png           Slide 3 — shows multi-variable support
-  04-collocation-panel.png  Slide 5 — the evidence crop
+  01-volume-full.png        Slide 3 - proves it is a real application
+  13-salinity.png           Slide 3 - shows multi-variable support
+  04-collocation-panel.png  Slide 5 - the evidence crop
   05-collocation-full.png   spare
 
 === TWO THINGS TO GET RIGHT ===
 1. Slide 3 carries a "Product Status" strip. Reproduce it prominently and set
    "working prototype" in the green. Most submissions at this stage are
    concepts; this one runs on live data at
-   https://rak2315.github.io/samudra-sih26/ — put that URL on slide 1 or 3.
+   https://rak2315.github.io/samudra-sih26/ - put that URL on slide 1 or 3.
 2. Slide 1 has two blanks: Team ID and Team Name. Leave them as visible
    placeholders. Do not invent values.
 
 === TONE ===
 Plain language a non-technical judge can follow, with the technical proof
 carried by the diagrams. Specific over clever. Every claim in SLIDES.md is
-verifiable against the build — keep them exactly as written rather than making
+verifiable against the build - keep them exactly as written rather than making
 them sound grander.
 
 Now produce the 6 slides.
@@ -135,7 +135,7 @@ art-direction section at the top before placing anything.
 - [ ] Exactly 6 slides
 - [ ] Team ID and Team Name filled in
 - [ ] All five mandated section headings present and unchanged
-- [ ] **No text baked into any image** — boards 06–10 rebuilt as native shapes
+- [ ] **No text baked into any image** - boards 06-10 rebuilt as native shapes
 - [ ] Architecture drawn as a real flow diagram, not a bullet list
 - [ ] Every bullet has a bold lead-in
 - [ ] "Product Status: working prototype" is on slide 3 and legible

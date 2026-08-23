@@ -2,7 +2,7 @@
  * The ray-marching Volume shader.
  *
  * Rendered on the *back* faces of the bounding box so the volume survives the camera moving
- * inside it — a front-face pass would be culled the moment you fly into the water, which is
+ * inside it - a front-face pass would be culled the moment you fly into the water, which is
  * exactly what the Drill-down does.
  *
  * The march happens in world space against an axis-aligned box rather than in the unit cube.
@@ -68,7 +68,7 @@ vec3 toTexture(vec3 p) {
   // The box corners are grid *node centres*, not texel edges: INCOIS publishes values AT
   // 55.5E, 56.5E and so on, and a texel's centre sits at (i + 0.5) / N. Mapping the corners
   // straight to 0 and 1 stretches the field by N/(N-1) about the region centre and displaces
-  // it by up to half a grid cell — about 55 km here. In a tool whose whole purpose is
+  // it by up to half a grid cell - about 55 km here. In a tool whose whole purpose is
   // comparing a model value against an observation *at a position*, that is not cosmetic.
   vec3 size = vec3(textureSize(uVolume, 0));
   return (fraction * (size - 1.0) + 0.5) / size;

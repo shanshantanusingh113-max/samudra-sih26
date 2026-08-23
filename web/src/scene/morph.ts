@@ -6,7 +6,7 @@ import { EARTH_RADIUS } from "./earthShader";
  *
  * This mirrors `morphedPosition` in `earthShader.ts`, and the duplication is deliberate rather
  * than lazy. Because the geometry is positioned entirely in the vertex shader, the CPU-side
- * vertex buffers still hold undeformed coordinates — so Three's raycaster would happily pick
+ * vertex buffers still hold undeformed coordinates - so Three's raycaster would happily pick
  * against a globe that is no longer where it appears to be, and Float markers would select from
  * the wrong place with no error to show for it. Anything that needs to know where a point
  * *actually is* on screen has to redo the same arithmetic here.

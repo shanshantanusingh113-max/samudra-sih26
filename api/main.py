@@ -1,6 +1,6 @@
 """The Samudra 3D REST API.
 
-The browser demo runs entirely on baked static files, deliberately — see the note at the top of
+The browser demo runs entirely on baked static files, deliberately - see the note at the top of
 `pipeline/samudra/bake.py`. So what is this for?
 
 It is the deployable half. The problem statement asks for "a lightweight REST/OPeNDAP API
@@ -90,7 +90,7 @@ def floats() -> dict[str, dict]:
 
 @lru_cache(maxsize=1)
 def profiles() -> dict[str, list[dict]]:
-    """Every Profile, grouped by Float. Keys encode id|time|lat|lon — see bake.py."""
+    """Every Profile, grouped by Float. Keys encode id|time|lat|lon - see bake.py."""
     path = GRID_DATA / "profiles.npz"
     if not path.exists():
         return {}
@@ -128,8 +128,8 @@ def health() -> dict:
 
 
 # The registry. Adding a provider means adding a class that satisfies the protocol in
-# `samudra/sources/base.py` and putting it in one of these lists. Nothing else in the system —
-# renderer, API, UI — has ever heard of ERDDAP.
+# `samudra/sources/base.py` and putting it in one of these lists. Nothing else in the system -
+# renderer, API, UI - has ever heard of ERDDAP.
 GRID_SOURCES = [IncoisErddapSource()]
 PROFILE_SOURCES = [ArgoErddapSource(), IncoisArgoSource()]
 
@@ -231,7 +231,7 @@ def column(
     latitude: float = Query(...),
     longitude: float = Query(...),
 ) -> dict:
-    """The model's water column at any position — bilinear between the four surrounding nodes."""
+    """The model's water column at any position - bilinear between the four surrounding nodes."""
     grid = native_grid(field, index)
     try:
         values = grid.column_at(latitude, longitude)
@@ -312,7 +312,7 @@ def live_timesteps(limit: int = Query(12, ge=1, le=100)) -> dict:
     """Ask INCOIS directly what analysis steps exist right now.
 
     Proof that the ingestion path is live and not a fixture. It is deliberately not on the demo's
-    critical path — if Hyderabad is unreachable this returns an error and nothing else breaks.
+    critical path - if Hyderabad is unreachable this returns an error and nothing else breaks.
     """
     try:
         available = list(IncoisErddapSource().timesteps())

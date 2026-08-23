@@ -57,7 +57,7 @@ class IncoisErddapSource:
     name = "INCOIS ERDDAP"
     attribution = (
         "Indian National Centre for Ocean Information Services (INCOIS), Ministry of Earth "
-        "Sciences — ARGO 10-day gridded analysis (Variational Analysis Methodology)"
+        "Sciences - ARGO 10-day gridded analysis (Variational Analysis Methodology)"
     )
 
     def fields(self) -> Sequence[FieldSpec]:

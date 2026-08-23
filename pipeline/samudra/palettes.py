@@ -16,12 +16,12 @@ import numpy as np
 
 # Palette per quantity, following cmocean's own guidance.
 AVAILABLE = {
-    "thermal": "Temperature — cold and dark to warm and bright",
-    "haline": "Salinity — fresh to saline",
+    "thermal": "Temperature - cold and dark to warm and bright",
+    "haline": "Salinity - fresh to saline",
     "dense": "Density",
     "speed": "Current speed",
-    "balance": "Diverging — anomalies and Residuals about zero",
-    "delta": "Diverging — differences",
+    "balance": "Diverging - anomalies and Residuals about zero",
+    "delta": "Diverging - differences",
     "algae": "Chlorophyll",
     "oxy": "Dissolved oxygen",
     "deep": "Bathymetry / depth",

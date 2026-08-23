@@ -1,7 +1,7 @@
 """The Depth Warp.
 
-INCOIS publishes 24 unevenly spaced Levels — 5 m apart near the surface, 200 m apart in the
-abyss — because that is where the physics is. A GPU 3D texture, however, samples on an evenly
+INCOIS publishes 24 unevenly spaced Levels - 5 m apart near the surface, 200 m apart in the
+abyss - because that is where the physics is. A GPU 3D texture, however, samples on an evenly
 spaced lattice. Something has to reconcile the two, and doing it naively (linear in metres)
 would spend 85% of the texture on the featureless deep ocean and crush the thermocline, the
 one structure a forecaster actually looks at, into three voxels.

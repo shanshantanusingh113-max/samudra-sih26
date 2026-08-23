@@ -22,7 +22,7 @@ export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) 
   const volume = manifest?.volume;
 
   // Scrubbing the timeline moves the header's analysis date, but a baked Collocation is pinned
-  // to the analysis step nearest its own cast. Name the step this chart is actually against —
+  // to the analysis step nearest its own cast. Name the step this chart is actually against -
   // and note that this is the *analysis* date from the manifest, not `collocation.time`, which
   // is when the float surfaced.
   const analysisDate = collocation
@@ -117,7 +117,7 @@ function Chart({
     return d;
   };
 
-  // Shade between the two curves wherever both exist — the Residual, made visible.
+  // Shade between the two curves wherever both exist - the Residual, made visible.
   const ribbon = (() => {
     const forward: string[] = [];
     const back: string[] = [];
@@ -185,13 +185,13 @@ function Stats({ series, units }: { series: CollocationSeries; units: string }) 
       </div>
       <div>
         <span className={`stat-value ${bias !== null && bias < 0 ? "cool" : "warm"}`}>
-          {bias === null ? "—" : `${bias > 0 ? "+" : ""}${bias.toFixed(2)}`}
+          {bias === null ? "-" : `${bias > 0 ? "+" : ""}${bias.toFixed(2)}`}
         </span>
         <span className="stat-label">mean residual {units}</span>
       </div>
       <div>
         <span className="stat-value">
-          {series.rmsResidual === null ? "—" : series.rmsResidual.toFixed(2)}
+          {series.rmsResidual === null ? "-" : series.rmsResidual.toFixed(2)}
         </span>
         <span className="stat-label">RMS {units}</span>
       </div>

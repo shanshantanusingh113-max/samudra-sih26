@@ -11,6 +11,7 @@ import { useStore } from "./store";
 import { Chrome, LoadingScreen } from "./ui/Chrome";
 import { Controls } from "./ui/Controls";
 import { DepthRuler } from "./ui/DepthRuler";
+import { GuidePanel } from "./ui/GuidePanel";
 import { ProfilePanel } from "./ui/ProfilePanel";
 import { Timeline } from "./ui/Timeline";
 
@@ -104,11 +105,11 @@ export default function App() {
         }
       })
       // Deliberately not fatal. The Volume already on the GPU is still perfectly good, so one
-      // failed fetch while scrubbing the timeline must not tear down a running session — only
+      // failed fetch while scrubbing the timeline must not tear down a running session - only
       // the initial manifest load justifies the fatal screen.
       .catch(() =>
         useStore.setState({
-          notice: `Could not load ${fieldKey} for this step — showing the previous one.`,
+          notice: `Could not load ${fieldKey} for this step - showing the previous one.`,
         }),
       );
 
@@ -229,6 +230,7 @@ export default function App() {
           <Chrome onDive={dive} />
           <DepthRuler scene={sceneRef.current} />
           <Controls />
+          <GuidePanel />
           <ProfilePanel onFocus={(lon, lat) => sceneRef.current?.focusOn(lon, lat)} />
           <Timeline />
         </>

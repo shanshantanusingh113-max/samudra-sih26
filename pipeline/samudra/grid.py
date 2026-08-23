@@ -1,8 +1,8 @@
 """The Grid: model data in the shape the provider published it.
 
 This is the scientific source of truth. The Volume is derived from it for rendering and is
-lossy by design; anything that makes a claim about the ocean — a Collocation, a Residual, the
-number on a tooltip — reads the Grid, not the Volume.
+lossy by design; anything that makes a claim about the ocean - a Collocation, a Residual, the
+number on a tooltip - reads the Grid, not the Volume.
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ class Grid:
         """The model's water column at an arbitrary position: one value per Level.
 
         Bilinear between the four surrounding nodes. A Masked node makes the result Masked at
-        that Level rather than falling back to the nodes that do have data — near a coastline
+        that Level rather than falling back to the nodes that do have data - near a coastline
         the nodes that have data are the open ocean, and blending them in would quietly
         manufacture a sea temperature for a point that is on land.
         """

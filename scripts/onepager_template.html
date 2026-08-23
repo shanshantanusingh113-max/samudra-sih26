@@ -362,11 +362,11 @@
 </style>
 
 <nav class="rail" aria-label="Depth scale">
-  <span class="zero">0 m — SURFACE</span>
+  <span class="zero">0 m - SURFACE</span>
   <span>100 m</span>
-  <span>300 m — THERMOCLINE</span>
+  <span>300 m - THERMOCLINE</span>
   <span>1000 m</span>
-  <span>2000 m — FLOOR</span>
+  <span>2000 m - FLOOR</span>
 </nav>
 
 <div class="page">
@@ -389,7 +389,7 @@
       <img src="{{IMG_VOLUME}}" alt="A 3D block of Indian Ocean water rendered in warm-to-violet colours, showing temperature layering from the surface down to 2000 metres, with Argo float tracks on the sea surface above it.">
       <figcaption>
         <b>The Volume View.</b> Temperature through the full water column, 5 m to 2000 m, over the
-        Arabian Sea and Bay of Bengal. The orange band is the thermocline — the boundary that
+        Arabian Sea and Bay of Bengal. The orange band is the thermocline - the boundary that
         governs how much energy a cyclone can draw from the ocean.
       </figcaption>
     </figure>
@@ -406,7 +406,7 @@
         their head.
       </p>
       <p>
-        And almost every tool draws <strong>flat maps</strong> — one depth at a time. The ocean is
+        And almost every tool draws <strong>flat maps</strong> - one depth at a time. The ocean is
         four kilometres deep. The structures that matter are vertical.
       </p>
     </div>
@@ -437,7 +437,7 @@
           <h3>Dive into the water</h3>
           <p>The globe unrolls into a map and the ocean opens into a solid, see-through block.
           Every coastline vertex slides from its position on a sphere to its position on a flat
-          map — one continuous deformation of one piece of geometry, not a cut between screens.</p>
+          map - one continuous deformation of one piece of geometry, not a cut between screens.</p>
         </div>
       </div>
       <div class="step">
@@ -457,7 +457,7 @@
       </figure>
       <figure class="fig">
         <img src="{{IMG_ISO}}" alt="A shaded three-dimensional surface inside a wireframe box, showing the undulating topography of the 20 degree Celsius isotherm across the Indian Ocean.">
-        <figcaption><b>Isosurface.</b> The 20 °C isotherm, the standard thermocline proxy — visibly doming, with an eddy at left.</figcaption>
+        <figcaption><b>Isosurface.</b> The 20 °C isotherm, the standard thermocline proxy - visibly doming, with an eddy at left.</figcaption>
       </figure>
     </div>
   </section>
@@ -513,9 +513,9 @@
         </thead>
         <tbody>
           <tr>
-            <td><b>incois_argo_10d_VAM</b><br><span class="mono">24 levels · 5–2000 m · 1°</span></td>
+            <td><b>incois_argo_10d_VAM</b><br><span class="mono">24 levels · 5-2000 m · 1°</span></td>
             <td>INCOIS, MoES</td>
-            <td>The 3D model field — temperature and salinity, current to 30 July 2026</td>
+            <td>The 3D model field - temperature and salinity, current to 30 July 2026</td>
           </tr>
           <tr>
             <td><b>incois_valueadded_products</b></td>
@@ -525,7 +525,7 @@
           <tr>
             <td><b>ArgoFloats</b><br><span class="mono">500 profiles · 88 floats</span></td>
             <td>Coriolis GDAC / Ifremer</td>
-            <td>The in-situ observations — pressure, temperature, salinity per cast</td>
+            <td>The in-situ observations - pressure, temperature, salinity per cast</td>
           </tr>
           <tr>
             <td><b>Natural Earth 1:50m</b></td>
@@ -547,7 +547,7 @@
         <h3>Featureless water is transparent</h3>
         <p>Ocean temperature falls monotonically with depth, so a plain ray march is an opaque
         warm lid over an invisible abyss. We precompute how fast the field is <em>changing</em>
-        and weight opacity by it, so the thermocline and fronts become the solid things —
+        and weight opacity by it, so the thermocline and fronts become the solid things -
         which are what anyone is looking for anyway.</p>
       </div>
       <div class="card">
@@ -555,14 +555,14 @@
         <h3>Land must not fake upwelling</h3>
         <p>GPUs interpolate <em>before</em> the shader sees a voxel, so a "no data" sentinel gets
         averaged with the ocean beside it and paints a cold fringe along every coast. That reads
-        as upwelling — a real phenomenon someone would act on. Masked cells carry a neighbour's
+        as upwelling - a real phenomenon someone would act on. Masked cells carry a neighbour's
         value; a separate coverage channel carries the truth.</p>
       </div>
       <div class="card">
         <span class="tag">Debugging</span>
         <h3>Centroid sorting lies</h3>
         <p>The volume rendered as a thin sliver. Transform, uniforms, projection and data all
-        measured correct — 69–78% coverage at every depth. Three.js sorts transparency by
+        measured correct - 69-78% coverage at every depth. Three.js sorts transparency by
         centroid, and the world sea surface has its centroid at the origin, nowhere near what you
         see. It was drawn <em>after</em> the volume and painted over it. Draw order is now stated,
         not inferred.</p>
@@ -570,12 +570,12 @@
     </div>
 
     <ul class="plain" style="margin-top:26px">
-      <li><strong>Three.js for both views, no Cesium.</strong> Cesium needs an ion token — an
-        external dependency that can fail live — and compositing a ray march into its pipeline was
+      <li><strong>Three.js for both views, no Cesium.</strong> Cesium needs an ion token - an
+        external dependency that can fail live - and compositing a ray march into its pipeline was
         the riskiest integration available. One scene makes the dive genuinely continuous.</li>
       <li><strong>The demo is baked; the API is the deployable half.</strong> Nothing on the demo
         path touches the network, so a dead venue connection cannot kill it. The REST API answers
-        the queries no bundle could precompute — any float, any cast, any analysis step.</li>
+        the queries no bundle could precompute - any float, any cast, any analysis step.</li>
       <li><strong>The depth axis is warped, and says so.</strong> Linear-in-metres would give the
         thermocline three voxels. The profile chart uses the same warp, so the 3D view and the
         chart agree.</li>
@@ -587,13 +587,13 @@
     <h2>What we deliberately did not build</h2>
     <p style="margin-top:14px">Stated so nobody wonders whether we forgot.</p>
     <ul class="plain cut">
-      <li><strong>INCOIS's internal archive</strong> — needs credentials we do not have. The
+      <li><strong>INCOIS's internal archive</strong> - needs credentials we do not have. The
         Source Adapter is precisely where it attaches.</li>
-      <li><strong>An OGC WMS/WCS server</strong> — we consume open standards and CF conventions;
+      <li><strong>An OGC WMS/WCS server</strong> - we consume open standards and CF conventions;
         re-serving them is a checkbox no judge will click.</li>
-      <li><strong>Accounts, sessions, mobile, WebGPU, ML products</strong> — none of them make the
+      <li><strong>Accounts, sessions, mobile, WebGPU, ML products</strong> - none of them make the
         comparison better.</li>
-      <li><strong>Volumetric current streamlines</strong> — a project in itself, not a feature.</li>
+      <li><strong>Volumetric current streamlines</strong> - a project in itself, not a feature.</li>
     </ul>
 
     <div class="stats" style="margin-top:32px">

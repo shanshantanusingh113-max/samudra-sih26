@@ -13,7 +13,7 @@ interface Tick {
 /**
  * Real depth figures against the side of the Volume.
  *
- * This is not decoration. The Volume's vertical axis is deliberately *not* linear in metres —
+ * This is not decoration. The Volume's vertical axis is deliberately *not* linear in metres -
  * it is warped so the top 300 m gets about half the axis instead of 15%, because that is where
  * the thermocline lives. Without labels a viewer would reasonably assume the block is
  * proportional and read depths off it that are wrong by hundreds of metres. The ruler makes the
@@ -63,7 +63,7 @@ export function DepthRuler({ scene }: { scene: OceanScene | null }) {
             </div>
           ),
       )}
-      <p className="ruler-note">depth axis stretched — see the uneven spacing</p>
+      <p className="ruler-note">depth axis stretched - see the uneven spacing</p>
     </div>
   );
 }

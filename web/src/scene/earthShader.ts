@@ -2,7 +2,7 @@
  * The globe-to-map morph.
  *
  * Every vertex carries its own longitude and latitude and computes *both* of its possible
- * positions — one on a sphere, one on a flat equirectangular map — then mixes between them on
+ * positions - one on a sphere, one on a flat equirectangular map - then mixes between them on
  * a single uniform. So the Drill-down is one continuous deformation of one piece of geometry,
  * not a cross-fade between two scenes that happen to look similar.
  *
@@ -11,7 +11,7 @@
  * pops, and the coastlines stay the same length throughout.
  *
  * The sea surface samples the very same Volume texture the ray-marcher uses, at whichever
- * Level is selected. That is deliberate — the field a viewer sees painted on the ocean from
+ * Level is selected. That is deliberate - the field a viewer sees painted on the ocean from
  * orbit is numerically the same data they are about to fly into, so the Drill-down never has
  * to argue that the two views agree.
  */
@@ -122,7 +122,7 @@ void main() {
   vec3 fieldColour = base;
 
   if (inset > 0.0) {
-    // Node centres, not texel edges — see the matching note in volumeShader.ts.
+    // Node centres, not texel edges - see the matching note in volumeShader.ts.
     vec3 fraction = vec3(
       (vLonLat.x - uRegion.x) / (uRegion.y - uRegion.x),
       (vLonLat.y - uRegion.z) / (uRegion.w - uRegion.z),

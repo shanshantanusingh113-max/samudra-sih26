@@ -2,7 +2,7 @@
 
 A browser-based platform that renders INCOIS ocean-model fields as an interactive 3D volume
 and overlays the in-situ instrument profiles that were measured in the same water, so a
-forecaster can compare what the model says against what the ocean actually measured — in one view.
+forecaster can compare what the model says against what the ocean actually measured - in one view.
 
 Built for Smart India Hackathon 2026, Problem Statement **26067** (MoES / INCOIS).
 
@@ -13,7 +13,7 @@ Built for Smart India Hackathon 2026, Problem Statement **26067** (MoES / INCOIS
 ### Gridded model data
 
 **Field**:
-One named physical quantity available on the model grid — temperature, salinity, a current
+One named physical quantity available on the model grid - temperature, salinity, a current
 component. A Field is the unit a user selects in the UI.
 _Avoid_: parameter, measurement, channel
 
@@ -24,7 +24,7 @@ _Avoid_: dataset, cube, matrix
 
 **Level**:
 One of the 24 discrete depths INCOIS publishes (5 m, 10 m, 20 m … 2000 m). Levels are
-**unevenly spaced** — they cluster near the surface where the interesting structure is.
+**unevenly spaced** - they cluster near the surface where the interesting structure is.
 _Avoid_: layer, slice, z-index
 
 **Timestep**:
@@ -34,7 +34,7 @@ _Avoid_: frame, snapshot, epoch
 **Volume**:
 A single Field at a single Timestep, resampled onto an **evenly spaced** 3D lattice and
 normalised to bytes so a GPU can sample it. A Volume is what gets ray-marched. It is a
-*derived rendering artifact* — never the source of scientific truth.
+*derived rendering artifact* - never the source of scientific truth.
 _Avoid_: cube, texture, brick, block
 
 **Depth Warp**:
@@ -44,7 +44,7 @@ upper ocean more of the axis than the abyss gets.
 _Avoid_: depth scale, z-transform, stretch
 
 **Mask**:
-Cells with no ocean value — land, or sea floor above the Level. A Mask cell must render fully
+Cells with no ocean value - land, or sea floor above the Level. A Mask cell must render fully
 transparent; it is *absence of ocean*, never a data value of zero.
 _Avoid_: NaN, fill value, nodata, null
 
@@ -75,7 +75,7 @@ _Avoid_: matchup, comparison, overlay, validation
 
 **Residual**:
 Observed minus modelled, at a given depth within a Collocation. Where the model and the ocean
-disagree. Signed — the sign carries meaning.
+disagree. Signed - the sign carries meaning.
 _Avoid_: error, delta, bias, difference
 
 ### Presentation
@@ -106,7 +106,7 @@ The demo's spine, and the reason the two views share one camera model.
 _Avoid_: zoom, navigate, transition
 
 **Isosurface**:
-The surface joining every point in a Volume holding one chosen value — the 20 °C isotherm,
+The surface joining every point in a Volume holding one chosen value - the 20 °C isotherm,
 for instance. Rendered as a skin inside the water.
 _Avoid_: contour, shell, threshold surface
 
@@ -125,7 +125,7 @@ _Avoid_: parser, driver, connector, plugin, loader
 
 ---
 
-## Scope — the cut line
+## Scope - the cut line
 
 Everything above the line is being built. Everything below it is deliberately, knowingly not.
 
@@ -138,7 +138,7 @@ Everything above the line is being built. Everything below it is deliberately, k
 - **Collocation**: click a Float, see its Profile against the model's, with Residuals.
 - **Transfer Function** editor: cmocean Palettes, adjustable range, linear/log, opacity.
 - **Vertical Exaggeration** control.
-- Two **Source Adapters** — INCOIS ERDDAP (Grids) and Argo GDAC ERDDAP (Profiles) — behind
+- Two **Source Adapters** - INCOIS ERDDAP (Grids) and Argo GDAC ERDDAP (Profiles) - behind
   one interface, plus written proof a third can be added in one file.
 - A REST API over the pipeline, and offline-safe pre-baked data so the demo cannot be
   killed by a network failure.
@@ -156,6 +156,6 @@ Named here so nobody wonders whether we forgot.
 - **Currents as animated 3D streamlines.** Geostrophic currents appear as 2D vectors on the
   Globe View only. Volumetric flow visualisation is a project in itself.
 - **Real-time streaming ingest.** Data is fetched and baked ahead of time, not subscribed to.
-- **Mobile layout.** Desktop browser only — the operational reality for a forecaster.
+- **Mobile layout.** Desktop browser only - the operational reality for a forecaster.
 - **WebGPU.** WebGL2 is universal today; WebGPU is noted as a migration path, not taken.
 - **Machine-learning derived products.** Named as an extension point, not implemented.

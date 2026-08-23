@@ -46,7 +46,7 @@ _TIMEOUT = 180
 # Temperature uses Argo's global gross range check (QC Manual, test 4).
 #
 # Salinity does NOT. Argo's global floor is 2 PSU, which is meant to pass brackish marginal
-# seas, and the failed float in this region reports ~20 PSU — comfortably inside it. So this
+# seas, and the failed float in this region reports ~20 PSU - comfortably inside it. So this
 # floor is a deliberately regional one, stricter than the Argo standard, and it is a judgement
 # call rather than a published threshold.
 #
@@ -87,7 +87,7 @@ GDAC_COLUMNS = ProfileColumns(
     salinity=("psal_adjusted", "psal"),
 )
 
-# INCOIS: upper case, and the adjusted columns are served empty — raw carries everything.
+# INCOIS: upper case, and the adjusted columns are served empty - raw carries everything.
 INCOIS_COLUMNS = ProfileColumns(
     platform="PLATFORM_NUMBER",
     time="time",
@@ -150,7 +150,7 @@ class IncoisArgoSource(ArgoErddapSource):
     name = "INCOIS Argo archive"
     attribution = (
         "Indian National Centre for Ocean Information Services (INCOIS), Ministry of Earth "
-        "Sciences — INDIAN ARGO Floats Data. Historical archive; coverage ends 2025-04-23."
+        "Sciences - INDIAN ARGO Floats Data. Historical archive; coverage ends 2025-04-23."
     )
     columns = INCOIS_COLUMNS
     endpoint = "https://erddap.incois.gov.in/erddap/tabledap/Indian_ARGO_Floats.csv"
@@ -211,7 +211,7 @@ def parse_profiles(csv_text: str, columns: ProfileColumns = GDAC_COLUMNS) -> lis
 
         # Everything is parsed before anything is stored. Touching `casts[key]` first would
         # have a defaultdict create the entry, and a row that then failed to parse would leave
-        # an empty cast behind — which `zip(*rows)` below cannot unpack, taking down the entire
+        # an empty cast behind - which `zip(*rows)` below cannot unpack, taking down the entire
         # download over one truncated line.
         positions[key] = (latitude, longitude)
         casts[key].append(measurement)
@@ -250,7 +250,7 @@ def parse_profiles(csv_text: str, columns: ProfileColumns = GDAC_COLUMNS) -> lis
 
 
 def _first_present(row: list[str], candidates: list[int]) -> float:
-    """The first variant that actually carries a number — adjusted if served, else raw."""
+    """The first variant that actually carries a number - adjusted if served, else raw."""
     for position in candidates:
         value = _to_float(row[position])
         if np.isfinite(value):

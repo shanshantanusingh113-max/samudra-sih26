@@ -61,7 +61,7 @@ export interface ViewState {
  * heuristic for compact meshes and useless for ours: the sea surface spans the entire globe, so
  * its centroid sits at the origin while the part you are actually looking at is thousands of
  * units away. The sort therefore placed the opaque world surface *after* the Volume and painted
- * flat ocean straight over the water column — the volume rendered perfectly and was covered up.
+ * flat ocean straight over the water column - the volume rendered perfectly and was covered up.
  * Ordering the passes by hand is the fix; it is also simply what we mean.
  */
 const ORDER = { surface: 0, lines: 5, volume: 10, markers: 20 } as const;
@@ -150,7 +150,7 @@ export class OceanScene {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     // Transparent, so the CSS backdrop shows through. The deep ocean is almost black in every
     // perceptually-uniform palette, and on a black canvas the bottom two-thirds of the water
-    // column simply disappears — the geometry renders, you just cannot see it.
+    // column simply disappears - the geometry renders, you just cannot see it.
     this.renderer.setClearColor(0x000000, 0);
 
     this.camera = new PerspectiveCamera(45, 1, 0.05, 4000);
@@ -442,7 +442,7 @@ export class OceanScene {
    *
    * The scene owns these once handed over. Timestep playback swaps a ~300 KB 3-D texture every
    * 900 ms; without freeing the previous one, a few minutes of the animation running quietly
-   * exhausts GPU memory and loses the WebGL context — on exactly the integrated graphics this
+   * exhausts GPU memory and loses the WebGL context - on exactly the integrated graphics this
    * project targets.
    */
   setVolumeTexture(texture: Data3DTexture): void {
@@ -476,7 +476,7 @@ export class OceanScene {
     // The sea surface must stop writing depth once we are in the Volume View.
     //
     // The camera sits above y = 0 and the water column hangs below it, so every ray heading for
-    // the deep part of the box crosses the sea-surface plane long before it arrives — at around
+    // the deep part of the box crosses the sea-surface plane long before it arrives - at around
     // 40 degrees south, far outside the cutout, where the surface is still opaque. It was
     // silently depth-culling the bottom 700 pixels of a box that renders perfectly well.
     //
@@ -514,7 +514,7 @@ export class OceanScene {
 
     if (this.boxFrame) {
       // Rebuilt only when the box actually changes shape. update() runs on every React render,
-      // and the dive writes morph 60 times a second — disposing and re-uploading a GPU buffer
+      // and the dive writes morph 60 times a second - disposing and re-uploading a GPU buffer
       // each of those frames is pure waste, and the bounds do not move during a dive anyway.
       const key = `${min.join()}|${max.join()}`;
       if (key !== this.lastBoxKey) {
@@ -640,7 +640,7 @@ export class OceanScene {
     morphedPosition(REGION_VIEW.lon, REGION_VIEW.lat + 26, 0, GLOBE_DISTANCE - EARTH_RADIUS, globe);
 
     // Far enough back to hold the whole block, and low enough that the flank stays the main
-    // face — a ray crossing the side at 1500 m never meets the warm surface, so the thermocline
+    // face - a ray crossing the side at 1500 m never meets the warm surface, so the thermocline
     // reads directly as bands of colour rather than being hidden under a warm lid.
     const region = new Vector3(
       REGION_VIEW.lon,

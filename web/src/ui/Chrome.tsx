@@ -23,7 +23,7 @@ export function Chrome({ onDive }: { onDive: (into: boolean) => void }) {
         <div className="brand">
           <span className="brand-mark">SAMUDRA<span className="brand-dim">·3D</span></span>
           <span className="brand-sub">
-            Ocean model &amp; in-situ co-visualisation — INCOIS · SIH&nbsp;26067
+            Ocean model &amp; in-situ co-visualisation - INCOIS · SIH&nbsp;26067
           </span>
         </div>
 
@@ -31,12 +31,12 @@ export function Chrome({ onDive }: { onDive: (into: boolean) => void }) {
           <div className="stamp">
             <span className="stamp-label">Analysis</span>
             <span className="stamp-value">
-              {stamp ? new Date(stamp).toISOString().slice(0, 10) : "—"}
+              {stamp ? new Date(stamp).toISOString().slice(0, 10) : "-"}
             </span>
           </div>
           <div className="stamp">
             <span className="stamp-label">Field</span>
-            <span className="stamp-value">{spec?.label ?? "—"}</span>
+            <span className="stamp-value">{spec?.label ?? "-"}</span>
           </div>
           <button
             className={`dive ${inVolume ? "dive-up" : ""}`}
@@ -54,7 +54,7 @@ export function Chrome({ onDive }: { onDive: (into: boolean) => void }) {
           <p className="cue-body">
             {manifest.floatCount} Argo floats reporting over the Arabian Sea, the Bay of Bengal
             and the equatorial Indian Ocean. The colour on the sea is INCOIS&apos;s own gridded
-            analysis — the same field you are about to fly into.
+            analysis - the same field you are about to fly into.
           </p>
         </div>
       )}
