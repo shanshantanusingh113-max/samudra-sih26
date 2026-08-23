@@ -14,6 +14,9 @@ export default defineConfig({
         // someone who actually chose to open it.
         landing: "index.html",
         app: "app.html",
+        // Provenance is also plain HTML, plus a small inline script that reads the baked
+        // manifest so its figures cannot drift out of step with what the platform serves.
+        provenance: "provenance.html",
       },
     },
   },

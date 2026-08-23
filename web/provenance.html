@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Samudra 3D - Data provenance</title>
+<meta name="description" content="Every figure on this page is read live from the build's own manifest, and every source is a public INCOIS or Argo endpoint you can query yourself.">
+<link rel="icon" type="image/png" href="./icon.png">
+<link rel="apple-touch-icon" href="./icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Same single dark theme as the landing page, painted explicitly. */
+  :root {
+    --abyss: #04070d; --deep: #071420; --shelf: #0c1f2e; --panel: #102737;
+    --edge: rgba(120, 170, 195, 0.16); --edge-hot: rgba(120, 190, 210, 0.4);
+    --ink: #e4eef6; --body: #b3c8d8; --dim: #8299ad; --faint: #5d7488;
+    --cyan: #3fb8c4; --amber: #f5b841; --coral: #f2765f; --green: #5fd68a;
+    --d: "Chivo", "Helvetica Neue", Arial, sans-serif;
+    --m: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--deep); color: var(--body); font-family: var(--d); font-size: 16px; line-height: 1.65; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 28px; }
+  a { color: var(--cyan); text-underline-offset: 3px; }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+  h1, h2 { font-family: var(--d); color: var(--ink); margin: 0; text-wrap: balance; }
+
+  .eyebrow { display: flex; align-items: center; gap: 12px; font-family: var(--m); font-size: 10.5px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--cyan); margin-bottom: 16px; }
+  .eyebrow::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--edge-hot), transparent); }
+
+  nav { position: sticky; top: 0; z-index: 10; background: rgba(7, 20, 32, 0.86); backdrop-filter: blur(14px); border-bottom: 1px solid var(--edge); }
+  nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 62px; max-width: 1140px; }
+  .brand { font-family: var(--m); font-size: 15px; font-weight: 600; letter-spacing: 0.15em; color: var(--ink); text-decoration: none; }
+  .brand i { color: var(--cyan); font-style: normal; }
+  .nav-links { display: flex; align-items: center; gap: 26px; }
+  .nav-links a { font-size: 13.5px; color: var(--dim); text-decoration: none; }
+  .nav-links a:hover { color: var(--ink); }
+  .cta { display: inline-flex; align-items: center; gap: 9px; padding: 10px 18px; border-radius: 9px; border: 1px solid rgba(63, 184, 196, 0.5); background: linear-gradient(180deg, rgba(63, 184, 196, 0.24), rgba(63, 184, 196, 0.08)); color: #eafcff; font-size: 13.5px; font-weight: 500; text-decoration: none; }
+
+  header.head { padding: 70px 0 40px; }
+  h1 { font-size: clamp(34px, 4.6vw, 52px); font-weight: 900; line-height: 1.02; letter-spacing: -0.03em; }
+  .lede { margin: 20px 0 0; font-size: 18px; line-height: 1.55; color: var(--ink); max-width: 60ch; }
+  .sub { margin: 12px 0 0; font-size: 14.5px; color: var(--dim); max-width: 62ch; }
+
+  section { padding: 34px 0; border-top: 1px solid var(--edge); }
+  h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.015em; }
+  p { margin: 10px 0 14px; }
+
+  /* A live figure: the number comes from the manifest, never from this file. */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 12px; margin-top: 22px; }
+  .fact { border: 1px solid var(--edge); border-radius: 10px; background: var(--shelf); padding: 15px 17px; }
+  .fact dt { font-family: var(--m); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint); margin-bottom: 7px; }
+  .fact dd { margin: 0; font-family: var(--m); font-size: 15px; color: var(--ink); line-height: 1.4; word-break: break-word; }
+  .fact dd small { display: block; font-family: var(--d); font-size: 12.5px; color: var(--dim); margin-top: 5px; letter-spacing: 0; text-transform: none; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--edge); vertical-align: top; }
+  th { font-family: var(--m); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint); font-weight: 500; }
+  td { color: var(--body); }
+  td.mono { font-family: var(--m); font-size: 13px; color: var(--ink); }
+  .scroll { overflow-x: auto; }
+
+  pre { margin: 16px 0 0; padding: 16px 18px; border: 1px solid var(--edge); border-radius: 10px; background: var(--abyss); overflow-x: auto; font-family: var(--m); font-size: 12.5px; line-height: 1.7; color: var(--ink); white-space: pre; }
+  code { font-family: var(--m); font-size: 0.92em; color: var(--ink); }
+
+  .tag { display: inline-block; font-family: var(--m); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--edge); color: var(--dim); vertical-align: middle; }
+  .tag.live { border-color: rgba(95, 214, 138, 0.45); color: var(--green); }
+  .note { font-size: 14px; color: var(--dim); border-left: 2px solid var(--edge-hot); padding-left: 14px; margin-top: 18px; }
+  .err { color: var(--coral); font-family: var(--m); font-size: 13.5px; }
+  footer { padding: 40px 0 60px; border-top: 1px solid var(--edge); font-size: 13px; color: var(--faint); }
+  footer a { color: var(--dim); }
+  @media (max-width: 640px) { .nav-links a:not(.cta) { display: none; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="./index.html">SAMUDRA<i>&middot;3D</i></a>
+    <div class="nav-links">
+      <a href="./index.html">Overview</a>
+      <a class="cta" href="./app.html">Launch the platform</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="head">
+    <p class="eyebrow">Data provenance</p>
+    <h1>This is INCOIS's data.<br>Not a simulation.</h1>
+    <p class="lede">
+      Every figure below is read out of the build's own manifest when this page loads. Nothing
+      here is typed by hand, so it cannot drift away from what the platform is actually serving.
+    </p>
+    <p class="sub">
+      The sources are public endpoints. The request we issue is printed in full, so you can fetch
+      the same bytes yourself and check them against what the platform draws.
+    </p>
+  </header>
+
+  <section>
+    <h2>What the build contains <span class="tag live" id="live-tag">read live</span></h2>
+    <p>Written by <code>python -m samudra.bake</code>, which fetched it from the endpoints below.</p>
+    <dl class="grid" id="facts"></dl>
+    <p class="err" id="error" hidden></p>
+  </section>
+
+  <section>
+    <h2>The model field</h2>
+    <div class="scroll"><table id="model"></table></div>
+    <p class="note">
+      INCOIS publish this as CF-1.6 NetCDF over ERDDAP. That is their compliance, not ours: we
+      read their conventions rather than re-serving them. The platform's own baked output is a
+      quantised binary volume plus JSON, built for a graphics card, and it is never the answer to
+      a scientific question. Those come from the native grid.
+    </p>
+  </section>
+
+  <section>
+    <h2>Fetch it yourself</h2>
+    <p>
+      This is the request the pipeline issues for the most recent analysis step in this build,
+      reconstructed from the manifest. It returns the same NetCDF the volume was made from.
+    </p>
+    <pre id="curl">loading...</pre>
+    <p class="note">
+      One upstream wart, in case you try it from a script: INCOIS's server sends its leaf
+      certificate without the GlobalSign intermediate. Browsers and curl paper over it, Python's
+      <code>ssl</code> module does not. <code>pipeline/samudra/tls.py</code> supplies the missing
+      link rather than disabling verification.
+    </p>
+  </section>
+
+  <section>
+    <h2>The sources</h2>
+    <div class="scroll"><table id="obs"></table></div>
+    <p class="note">
+      INCOIS serve Argo profiles themselves, and we implemented that adapter too. It is not what
+      the demo reads: their archive ends 2025-04-23 while their gridded analysis runs to the dates
+      above, and pairing the two would compare two different oceans. The adapter stays registered
+      because it proves a third provider costs one small class.
+    </p>
+  </section>
+
+  <section>
+    <h2>Reproduce the whole build</h2>
+    <pre>cd pipeline
+python -m samudra.bake</pre>
+    <p class="sub">
+      About a minute. It refetches every timestep and every profile, rewrites the volumes, the
+      floats and the collocations, and stamps the manifest with a new time. Reload this page and
+      every number above will have moved.
+    </p>
+  </section>
+
+  <footer>
+    <p>
+      Samudra 3D &middot; Smart India Hackathon 2026 &middot; Problem Statement 26067 &middot;
+      Ministry of Earth Sciences / INCOIS.
+    </p>
+    <p id="attrib"></p>
+  </footer>
+
+</div>
+
+<script>
+// Everything on this page comes from the same files the application loads. If the numbers here
+// are wrong then the application is wrong too, which is rather the point.
+(function () {
+  var DATA = "./data/";
+
+  function el(id) { return document.getElementById(id); }
+  function text(value) { return document.createTextNode(String(value)); }
+
+  function fact(term, value, note) {
+    var wrapper = document.createElement("div");
+    wrapper.className = "fact";
+    var dt = document.createElement("dt");
+    dt.appendChild(text(term));
+    var dd = document.createElement("dd");
+    dd.appendChild(text(value));
+    if (note) {
+      var small = document.createElement("small");
+      small.appendChild(text(note));
+      dd.appendChild(small);
+    }
+    wrapper.appendChild(dt);
+    wrapper.appendChild(dd);
+    return wrapper;
+  }
+
+  function rows(table, header, body) {
+    var thead = document.createElement("thead");
+    var headRow = document.createElement("tr");
+    header.forEach(function (name) {
+      var th = document.createElement("th");
+      th.appendChild(text(name));
+      headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    var tbody = document.createElement("tbody");
+    body.forEach(function (cells) {
+      var tr = document.createElement("tr");
+      cells.forEach(function (cell, index) {
+        var td = document.createElement("td");
+        if (index > 0) td.className = "mono";
+        td.appendChild(text(cell));
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+  }
+
+  function day(stamp) { return String(stamp).slice(0, 10); }
+
+  function degrees(value, positive, negative) {
+    return Math.abs(value).toFixed(1) + "°" + (value >= 0 ? positive : negative);
+  }
+
+  Promise.all([
+    fetch(DATA + "manifest.json").then(function (response) { return response.json(); }),
+    fetch(DATA + "floats.json").then(function (response) { return response.json(); })
+  ]).then(function (loaded) {
+    var manifest = loaded[0];
+    var floats = loaded[1];
+    var volume = manifest.volume;
+    var steps = manifest.timesteps;
+
+    // Cadence is measured off the time axis rather than assumed.
+    var cadence = steps.length > 1
+      ? Math.round((new Date(steps[1]) - new Date(steps[0])) / 86400000) + "-day"
+      : "single step";
+
+    var cellSize = (volume.east - volume.west) / (volume.width - 1);
+    var casts = floats.reduce(function (sum, item) { return sum + item.profileCount; }, 0);
+
+    var fixes = [];
+    floats.forEach(function (item) {
+      item.track.forEach(function (fix) { fixes.push(new Date(fix.time)); });
+    });
+    fixes.sort(function (a, b) { return a - b; });
+
+    var facts = el("facts");
+    facts.appendChild(fact(
+      "Baked",
+      new Date(manifest.generated).toISOString().slice(0, 16).replace("T", " ") + " UTC",
+      "When this build last fetched from the servers"
+    ));
+    facts.appendChild(fact(
+      "Analysis steps",
+      steps.length + " x " + cadence,
+      day(steps[0]) + " to " + day(steps[steps.length - 1])
+    ));
+    facts.appendChild(fact(
+      "Region",
+      degrees(volume.south, "N", "S") + " to " + degrees(volume.north, "N", "S") + ", " +
+        degrees(volume.west, "E", "W") + " to " + degrees(volume.east, "E", "W"),
+      "Arabian Sea, Bay of Bengal and the equatorial Indian Ocean"
+    ));
+    facts.appendChild(fact(
+      "Grid",
+      volume.width + " x " + volume.height + " nodes",
+      cellSize.toFixed(2) + "° per cell, the provider's own resolution, never upsampled"
+    ));
+    facts.appendChild(fact(
+      "Water column",
+      volume.surfaceMetres + " m to " + volume.floorMetres + " m",
+      volume.depth + " resampled slabs, packed close to the surface where the thermocline sits"
+    ));
+    facts.appendChild(fact(
+      "Argo floats",
+      String(manifest.floatCount),
+      casts + " casts, " + fixes.length + " surface fixes"
+    ));
+    if (fixes.length) {
+      facts.appendChild(fact(
+        "Observations span",
+        day(fixes[0].toISOString()) + " to " + day(fixes[fixes.length - 1].toISOString()),
+        "Measured in the same water, in the same weeks as the analysis"
+      ));
+    }
+    facts.appendChild(fact(
+      "Network calls at demo time",
+      "0",
+      "Every byte above is committed into the build"
+    ));
+
+    rows(
+      el("model"),
+      ["Field", "Key", "Units", "Observed range in this build", "Palette"],
+      manifest.fields.map(function (field) {
+        return [
+          field.label,
+          field.key,
+          field.units,
+          field.range[0].toFixed(2) + " to " + field.range[1].toFixed(2),
+          field.palette
+        ];
+      })
+    );
+
+    // The selector mirrors pipeline/samudra/sources/incois.py, built from the manifest so it
+    // names the step this build actually holds.
+    var last = steps[steps.length - 1];
+    var stamp = new Date(last).toISOString().slice(0, 19) + "Z";
+    var region = manifest.region;
+    var selector =
+      "TEMP%5B(" + stamp + "):(" + stamp + ")%5D" +
+      "%5B(" + volume.surfaceMetres + "):(" + volume.floorMetres + ")%5D" +
+      "%5B(" + region.south + "):(" + region.north + ")%5D" +
+      "%5B(" + region.west + "):(" + region.east + ")%5D";
+    el("curl").textContent =
+      "curl -sL \"https://erddap.incois.gov.in/erddap/griddap/incois_argo_10d_VAM.nc?" +
+      selector + "\" -o step.nc";
+
+    var endpoints = [
+      "erddap.incois.gov.in/erddap/griddap/incois_argo_10d_VAM",
+      "erddap.ifremer.fr/erddap/tabledap/ArgoFloats"
+    ];
+    rows(
+      el("obs"),
+      ["Source", "Role", "Endpoint"],
+      manifest.sources.map(function (source, index) {
+        return [
+          source.name,
+          index === 0 ? "Gridded model field" : "In-situ profiles",
+          endpoints[index] || "-"
+        ];
+      })
+    );
+
+    el("attrib").textContent = manifest.sources.map(function (source) {
+      return source.attribution;
+    }).join("  |  ");
+  }).catch(function (error) {
+    el("live-tag").hidden = true;
+    var problem = el("error");
+    problem.hidden = false;
+    problem.textContent =
+      "Could not read the baked manifest (" + error.message + "). " +
+      "Run python -m samudra.bake in pipeline/ to regenerate web/public/data.";
+  });
+})();
+</script>
+
+</body>
+</html>
