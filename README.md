@@ -136,6 +136,17 @@ The design decisions, including the ones that were hard-won, are written up in
 [`docs/adr/`](docs/adr/). The shared vocabulary and the deliberate scope limits are in
 [`CONTEXT.md`](CONTEXT.md).
 
+**Other documents**
+
+| File | What it is |
+| --- | --- |
+| [`docs/Samudra3D-Dossier.pdf`](docs/Samudra3D-Dossier.pdf) | The full project dossier - problem, solution, every feature, feasibility, impact, and an anticipated-questions section written for non-specialist judges |
+| [`script.md`](script.md) | The demo script: what to say, and what to do, minute by minute |
+| [`ppt/SLIDES.md`](ppt/SLIDES.md) | Slide-by-slide content and art direction for the SIH submission deck |
+| [`ppt/PROMPT.md`](ppt/PROMPT.md) | A ready-to-paste prompt for generating that deck with an AI |
+| [`design/STITCH.md`](design/STITCH.md) | Per-screen prompts for Google Stitch |
+| [`plan/01-cut-features.md`](plan/01-cut-features.md) | What was deliberately not built, and what is worth adding back |
+
 ## 6. What we deliberately did **not** build
 
 Being explicit so nobody assumes we forgot. The full list with reasons is in `CONTEXT.md`.

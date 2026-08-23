@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Samudra 3D - Project Dossier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700;900&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+  /* Print document: light ground, because this is read and printed, not projected. */
+  :root {
+    --ink: #10202c;
+    --body: #2b3b47;
+    --muted: #5f7383;
+    --faint: #8fa2b0;
+    --rule: #d7dfe6;
+    --rule-soft: #e9eef2;
+    --paper: #ffffff;
+    --tint: #f4f8fa;
+    --teal: #0e6e7a;
+    --amber: #b26a06;
+    --coral: #c0392b;
+    --green: #1e7f4f;
+    --d: "Chivo", Arial, sans-serif;
+    --s: "Source Serif 4", Georgia, serif;
+    --m: "IBM Plex Mono", Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--body);
+    font-family: var(--s);
+    font-size: 10.5pt;
+    line-height: 1.62;
+  }
+
+  .page { padding: 0 0 26pt; }
+  .break { page-break-before: always; }
+
+  h1, h2, h3, h4 { font-family: var(--d); color: var(--ink); margin: 0; }
+  h1 { font-size: 30pt; font-weight: 900; line-height: 1.02; letter-spacing: -0.03em; }
+  h2 { font-size: 17pt; font-weight: 900; letter-spacing: -0.02em; margin: 22pt 0 7pt; padding-bottom: 5pt; border-bottom: 1.5pt solid var(--ink); }
+  h3 { font-size: 12.5pt; font-weight: 700; margin: 15pt 0 4pt; }
+  h4 { font-size: 10.5pt; font-weight: 700; margin: 11pt 0 3pt; color: var(--teal); }
+  p { margin: 0 0 8pt; }
+  ul, ol { margin: 0 0 9pt; padding-left: 17pt; }
+  li { margin-bottom: 4pt; }
+  strong { color: var(--ink); font-weight: 600; }
+  code, .mono { font-family: var(--m); font-size: 9pt; color: var(--teal); }
+
+  .eyebrow { font-family: var(--m); font-size: 8pt; letter-spacing: 0.16em; text-transform: uppercase; color: var(--teal); margin-bottom: 6pt; }
+
+  /* cover */
+  .cover { padding: 54pt 0 0; }
+  .cover h1 { font-size: 44pt; }
+  .cover .tag { margin: 12pt 0 0; font-family: var(--d); font-size: 14pt; color: var(--muted); max-width: 30em; line-height: 1.35; }
+  .cover-meta { margin-top: 26pt; border-top: 1.5pt solid var(--ink); border-bottom: 1pt solid var(--rule); padding: 12pt 0; display: grid; grid-template-columns: auto 1fr; gap: 5pt 20pt; font-family: var(--m); font-size: 9pt; }
+  .cover-meta dt { color: var(--faint); text-transform: uppercase; letter-spacing: 0.1em; font-size: 8pt; }
+  .cover-meta dd { margin: 0; color: var(--ink); }
+
+  table { width: 100%; border-collapse: collapse; margin: 9pt 0 12pt; font-size: 9.5pt; }
+  th { text-align: left; font-family: var(--m); font-size: 8pt; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); border-bottom: 1pt solid var(--ink); padding: 5pt 9pt 5pt 0; }
+  td { padding: 6pt 9pt 6pt 0; border-bottom: 0.5pt solid var(--rule-soft); vertical-align: top; }
+  td:first-child { color: var(--ink); font-weight: 600; width: 30%; }
+  table.qa td:first-child { width: 38%; }
+
+  .box { border: 0.75pt solid var(--rule); border-radius: 4pt; background: var(--tint); padding: 11pt 13pt; margin: 10pt 0; }
+  .box p:last-child { margin-bottom: 0; }
+  .box .label { font-family: var(--m); font-size: 8pt; letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal); display: block; margin-bottom: 5pt; }
+  .box.warn { background: #fdf6ee; border-color: #ecd9bd; }
+  .box.warn .label { color: var(--amber); }
+  .box.good { background: #f1f8f3; border-color: #cfe4d7; }
+  .box.good .label { color: var(--green); }
+
+  figure { margin: 12pt 0; page-break-inside: avoid; }
+  figure img { width: 100%; border: 0.75pt solid var(--rule); border-radius: 3pt; display: block; }
+  figcaption { margin-top: 5pt; font-family: var(--m); font-size: 8pt; line-height: 1.5; color: var(--muted); }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16pt; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10pt; margin: 12pt 0; }
+  .stat { border-top: 1.5pt solid var(--ink); padding-top: 7pt; }
+  .stat b { display: block; font-family: var(--d); font-size: 19pt; font-weight: 900; color: var(--ink); line-height: 1; }
+  .stat span { display: block; margin-top: 3pt; font-family: var(--m); font-size: 7.5pt; letter-spacing: 0.05em; color: var(--muted); }
+
+  .toc { columns: 2; column-gap: 26pt; font-size: 10pt; }
+  .toc a { color: var(--body); text-decoration: none; display: block; padding: 2.5pt 0; border-bottom: 0.5pt solid var(--rule-soft); }
+  .toc a b { color: var(--teal); font-family: var(--m); font-size: 8.5pt; margin-right: 7pt; }
+
+  @page { size: A4; margin: 17mm 16mm 15mm; }
+</style>
+</head>
+<body>
+
+<!-- ============================== COVER ============================== -->
+<section class="page cover">
+  <div class="eyebrow">Smart India Hackathon 2026 &middot; Problem Statement 26067</div>
+  <h1>Samudra 3D</h1>
+  <p class="tag">
+    A browser-based platform that shows an ocean model and the instruments floating in that same
+    ocean, in one picture, in three dimensions.
+  </p>
+
+  <dl class="cover-meta">
+    <dt>Problem Statement</dt><dd>26067 - Web-based interactive 3D visualization platform integrating numerical ocean model outputs and in-situ observations</dd>
+    <dt>Organisation</dt><dd>Ministry of Earth Sciences (MoES)</dd>
+    <dt>Department</dt><dd>Indian National Centre for Ocean Information Services (INCOIS)</dd>
+    <dt>Category</dt><dd>Software</dd>
+    <dt>Theme</dt><dd>Smart Automation</dd>
+    <dt>Live prototype</dt><dd>rak2315.github.io/samudra-sih26</dd>
+    <dt>Source</dt><dd>github.com/RAK2315/samudra-sih26</dd>
+    <dt>Status</dt><dd>Working prototype on live INCOIS data, 54 automated tests passing</dd>
+  </dl>
+
+  <h2 style="margin-top:26pt">Contents</h2>
+  <div class="toc">
+    <a href="#s1"><b>1</b> In one page</a>
+    <a href="#s2"><b>2</b> The problem</a>
+    <a href="#s3"><b>3</b> What we built</a>
+    <a href="#s4"><b>4</b> Every feature, explained</a>
+    <a href="#s5"><b>5</b> The data</a>
+    <a href="#s6"><b>6</b> How it works inside</a>
+    <a href="#s7"><b>7</b> Why not the obvious alternatives</a>
+    <a href="#s8"><b>8</b> Feasibility and viability</a>
+    <a href="#s9"><b>9</b> Impact and benefits</a>
+    <a href="#s10"><b>10</b> Decisions and why</a>
+    <a href="#s11"><b>11</b> Questions you may be asked</a>
+    <a href="#s12"><b>12</b> Glossary</a>
+    <a href="#s13"><b>13</b> References</a>
+  </div>
+</section>
+
+<!-- ============================== 1 ============================== -->
+<section class="page break" id="s1">
+  <div class="eyebrow">Section 1</div>
+  <h2>In one page</h2>
+
+  <p>
+    <strong>What we made.</strong> A website. You open a link and you are looking at a globe of
+    India's ocean territory, coloured with real temperature data from INCOIS. You press one
+    button and the ocean opens into a solid, see-through block of water going down two
+    kilometres. You click on any of the robot instruments floating in it and a chart shows what
+    that instrument actually measured against what the model predicted, with the difference
+    shaded and measured.
+  </p>
+
+  <p>
+    <strong>Why.</strong> INCOIS already produces both of those things - the model and the
+    measurements - and today nobody can look at them together. A forecaster has to open two
+    different desktop programs and hold the comparison in their head. Almost every tool draws
+    flat maps, one depth at a time, and the ocean is four kilometres deep.
+  </p>
+
+  <p>
+    <strong>What was missing.</strong> The problem statement lists it plainly: no web-based 3D
+    view of ocean model data, no unified display of float profiles alongside model fields, no
+    interactive controls, no way to add new data sources without re-engineering. We checked, and
+    it is accurate. Nothing we could find does the co-visualisation in a browser.
+  </p>
+
+  <p>
+    <strong>What is different about ours.</strong> Three things. The dive from globe into water
+    is one continuous motion rather than a switch between two screens. Water that is not changing
+    is made transparent, so the thermocline - the structure that governs cyclone intensity -
+    becomes the thing you see instead of being buried under a warm lid. And the comparison
+    between model and instrument is a first-class feature with real statistics, not an overlay.
+  </p>
+
+  <div class="box good">
+    <span class="label">The state of it</span>
+    <p>
+      This is not a concept. It is a working prototype, deployed and publicly reachable, running
+      on live data from INCOIS's own public server, current to 30 July 2026. It carries 54
+      automated tests over the scientific logic and nine written architecture decision records.
+    </p>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><b>24</b><span>DEPTH LEVELS, 5-2000 m</span></div>
+    <div class="stat"><b>92</b><span>ARGO FLOATS OVERLAID</span></div>
+    <div class="stat"><b>1,107</b><span>MEASURED PROFILES</span></div>
+    <div class="stat"><b>0</b><span>NETWORK CALLS AT DEMO TIME</span></div>
+  </div>
+
+  <figure>
+    <img src="../ppt/images/02-volume-clean.png" alt="A 3D block of ocean water showing temperature layering from warm yellow at the surface through orange to violet at depth.">
+    <figcaption>
+      The water column over the Arabian Sea and Bay of Bengal, from 5 m to 2000 m. Warm at the
+      top, cold below, with the thermocline as the orange band between them.
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ============================== 2 ============================== -->
+<section class="page break" id="s2">
+  <div class="eyebrow">Section 2</div>
+  <h2>The problem</h2>
+
+  <h3>What INCOIS does today</h3>
+  <p>
+    INCOIS, in Hyderabad, is India's national centre for ocean information. It runs numerical
+    ocean models that estimate temperature, salinity and currents throughout the Indian Ocean,
+    and it participates in the international Argo programme, which maintains a fleet of drifting
+    robot instruments that measure the same properties directly.
+  </p>
+  <p>
+    Model output is an estimate calculated on a grid. Instrument data is a direct measurement at
+    one point. Neither is complete on its own: the model covers everywhere but may be wrong, and
+    the instrument is right but only where it happens to be.
+  </p>
+
+  <h3>The five gaps, and what each means in practice</h3>
+  <table>
+    <thead><tr><th>Gap in the problem statement</th><th>What that means for a person doing the job</th></tr></thead>
+    <tbody>
+      <tr><td>No web-based, platform-independent 3D rendering with depth-resolved volumetric views</td>
+          <td>You must install specialist desktop software, and even then you usually get one depth at a time. You cannot send a colleague a link.</td></tr>
+      <tr><td>No unified display of Argo and glider profiles alongside model fields</td>
+          <td>The model and the measurement live in separate windows. Whether they agree is worked out mentally and never written down.</td></tr>
+      <tr><td>No interactive controls for variable, depth, time and colour</td>
+          <td>Changing what you are looking at means regenerating a plot, so exploration is slow and people stop exploring.</td></tr>
+      <tr><td>Cannot ingest new data streams without significant re-engineering</td>
+          <td>New observing capability - a mooring, an ADCP, HF radar - sits unused because connecting it means rewriting the tool.</td></tr>
+      <tr><td>No tools for rapid, intuitive understanding of 3D ocean phenomena</td>
+          <td>Slower hazard assessment, slower search-and-rescue support, slower fishery advisories. All of these are INCOIS's operational mandate.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Why the vertical matters, concretely</h3>
+  <p>
+    A cyclone draws its energy from warm surface water. How much energy is available depends not
+    on the sea surface temperature alone but on <strong>how deep the warm layer goes</strong>. Two
+    places can have identical surface temperatures while one has warm water down to 120 metres
+    and the other only to 40. The first will intensify a storm and the second will not.
+  </p>
+  <p>
+    That boundary is called the thermocline. It is invisible on a surface map by definition, and
+    it is exactly what a depth-resolved 3D view shows at a glance.
+  </p>
+
+  <div class="box">
+    <span class="label">The honest version</span>
+    <p>
+      Specialists can already extract all of this. Desktop tools like Ferret, ODV and Panoply
+      will produce a vertical section if you know what to ask them. The problem is not that the
+      information is unobtainable; it is that obtaining it is slow, requires expertise, produces
+      a static picture, and cannot be shared as a link. In an operational setting where an
+      advisory is time-critical, that friction has a cost.
+    </p>
+  </div>
+</section>
+
+<!-- ============================== 3 ============================== -->
+<section class="page break" id="s3">
+  <div class="eyebrow">Section 3</div>
+  <h2>What we built</h2>
+
+  <p>
+    A website with two screens and one continuous motion between them. There is nothing to
+    install, no plugin, no account, and no access token.
+  </p>
+
+  <h3>Screen one: the globe</h3>
+  <p>
+    A dark globe with coastlines drawn as fine lines. India's exclusive economic zone and the
+    surrounding seas are filled with colour showing INCOIS's temperature analysis at a chosen
+    depth. Small white markers show every Argo float that reported recently, with faint orange
+    lines tracing where each one has drifted.
+  </p>
+
+  <h3>Screen two: the water column</h3>
+  <p>
+    Pressing "Dive into the water" causes the globe to unroll into a flat map while the camera
+    descends, and the ocean opens into a rectangular block of water. Colour inside that block
+    shows temperature at every depth simultaneously, from 5 metres down to 2000 metres. The block
+    can be rotated, sliced to any depth range, and animated through four months of analyses.
+  </p>
+
+  <h3>The comparison</h3>
+  <p>
+    Clicking a float opens a panel with a chart of depth against temperature. One line is what
+    the instrument measured on its way up. The other is what the model said at that exact
+    position and time. The area between them is shaded, three statistics quantify the
+    disagreement, and a plain-language verdict says whether the agreement is close or not.
+  </p>
+
+  <figure>
+    <img src="../ppt/images/05-collocation-full.png" alt="The 3D ocean block with one float highlighted, and a side panel showing the comparison chart and statistics.">
+    <figcaption>
+      The comparison. Green is the instrument, dashed blue is the model, the shaded area is the
+      difference. The panel names what is plotted, in what units, and says which way is down.
+    </figcaption>
+  </figure>
+
+  <h3>What makes it comprehensible</h3>
+  <p>
+    A right-hand panel explains whatever control you last touched: what it changes, what that
+    physically means, what to look for, and something to try. Each explanation is badged with the
+    distinction users most want, which is whether an adjustment changed the science or only the
+    picture. A key in the corner names every mark on screen. The depth axis is labelled with real
+    metres and states on screen that it is stretched.
+  </p>
+</section>
+
+<!-- ============================== 4 ============================== -->
+<section class="page break" id="s4">
+  <div class="eyebrow">Section 4</div>
+  <h2>Every feature, explained</h2>
+
+  <p>
+    Split into what the control does, and whether it changes the science or only the rendering.
+    This distinction is shown in the application itself.
+  </p>
+
+  <h3>Data selection</h3>
+  <table>
+    <thead><tr><th>Feature</th><th>What it does and why it matters</th></tr></thead>
+    <tbody>
+      <tr><td>Variable selector</td><td><em>Science.</em> Switches between temperature and salinity, both from the same INCOIS analysis on the same 24 depth levels. Temperature drives cyclone intensity; salinity traces where water came from, because river outflow and evaporation leave a lasting signature.</td></tr>
+      <tr><td>Time animation</td><td><em>Navigation.</em> Twelve analyses at ten-day intervals covering April to July 2026. Each frame is a separate analysis published by INCOIS, not an interpolation. The colour scale is held fixed across all frames deliberately, so an apparent change is a real change and not the scale rescaling itself.</td></tr>
+      <tr><td>Sea surface level</td><td><em>Navigation.</em> On the globe, chooses which depth is painted on the map, so a pattern can be followed downward without entering the 3D view.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Rendering the water</h3>
+  <table>
+    <thead><tr><th>Feature</th><th>What it does and why it matters</th></tr></thead>
+    <tbody>
+      <tr><td>Volumetric rendering</td><td><em>The core.</em> The whole water column is drawn at once by casting a ray through it for every pixel and accumulating colour. This is what makes it a volume rather than a stack of slices.</td></tr>
+      <tr><td>Water opacity</td><td><em>Rendering.</em> How much light each metre of water blocks. Low values see all the way down; high values and the view runs out of transparency in the first few metres.</td></tr>
+      <tr><td>Feature emphasis</td><td><em>Rendering, and the reason anything is visible.</em> Ocean temperature decreases smoothly with depth, so drawing every drop equally gives an opaque warm lid over an invisible abyss. Opacity is weighted by how fast the value is changing, so featureless water turns transparent and boundaries stay solid.</td></tr>
+      <tr><td>Depth slice</td><td><em>Navigation.</em> Hides water outside a depth range, cutting the block open.</td></tr>
+      <tr><td>Vertical exaggeration</td><td><em>Rendering.</em> The region is roughly 4000 times wider than it is deep. At true scale it would be an invisible film. Adjustable from 200x to 3500x; it changes shape only, never values.</td></tr>
+      <tr><td>Ray steps</td><td><em>Rendering only.</em> How many samples are taken along each ray. Purely quality against speed; the one control that changes nothing scientific at all.</td></tr>
+      <tr><td>Isosurface</td><td><em>Science.</em> Draws a solid skin through every point at one chosen value. The 20&nbsp;&deg;C isotherm is the standard marker for thermocline depth, and its depth tells a forecaster how much warm water a storm can draw on.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Colour</h3>
+  <table>
+    <thead><tr><th>Feature</th><th>What it does and why it matters</th></tr></thead>
+    <tbody>
+      <tr><td>Colourbar range</td><td><em>Science.</em> Values outside the range become fully transparent, so narrowing the range isolates a single body of water and reveals its shape in three dimensions. This is an analytical act, not a recolouring.</td></tr>
+      <tr><td>Palette</td><td><em>Rendering.</em> cmocean palettes, the standard in oceanography. They are perceptually uniform, meaning an equal step in value looks like an equal step in colour. Rainbow palettes are avoided because they create apparent boundaries that are not in the data.</td></tr>
+      <tr><td>Logarithmic scale</td><td><em>Rendering.</em> Spreads colour unevenly to bring out detail when variation is concentrated at one end of the range.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Instruments and comparison</h3>
+  <table>
+    <thead><tr><th>Feature</th><th>What it does and why it matters</th></tr></thead>
+    <tbody>
+      <tr><td>Float markers</td><td><em>Science.</em> Every Argo float shown where it actually was at the moment on screen. Markers fade as their report ages and disappear when the float was not reporting near that date, so the display never implies an observation that does not exist.</td></tr>
+      <tr><td>Drift tracks</td><td><em>Science.</em> The path each float took between surfacings, drawn progressively as time advances. Floats drift with the current at their parking depth, so the track is itself a measurement of deep flow.</td></tr>
+      <tr><td>Collocation</td><td><em>The contribution.</em> Pairs an observed profile with the model interpolated to that profile's exact position and time. Comparison happens at the observation's depths, not the model's, so fine vertical structure is not smoothed away.</td></tr>
+      <tr><td>Residual statistics</td><td><em>Science.</em> Depths compared, average gap (signed, so direction is meaningful) and typical gap. A plain-language verdict interprets them.</td></tr>
+      <tr><td>Guide panel</td><td><em>Comprehension.</em> Explains whatever control was last touched, and otherwise describes the current view in plain language.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================== 5 ============================== -->
+<section class="page break" id="s5">
+  <div class="eyebrow">Section 5</div>
+  <h2>The data</h2>
+
+  <div class="box good">
+    <span class="label">A finding worth stating plainly</span>
+    <p>
+      Our initial research concluded that INCOIS exposes no public API and that we would have to
+      substitute an American model such as HYCOM. That turned out to be wrong twice over. HYCOM
+      and NOAA CoastWatch were both unreachable from our network, while
+      <span class="mono">erddap.incois.gov.in</span> is a real, running, public ERDDAP server
+      carrying exactly what the platform needs. <strong>The demo therefore runs on INCOIS's own
+      operational product rather than a stand-in.</strong>
+    </p>
+  </div>
+
+  <h3>What we use</h3>
+  <table>
+    <thead><tr><th>Dataset</th><th>What it is, and what we do with it</th></tr></thead>
+    <tbody>
+      <tr><td>incois_argo_10d_VAM</td><td>INCOIS's 10-day gridded Argo analysis, produced by their Variational Analysis Methodology. Temperature and salinity on 24 depth levels from 5 m to 2000 m, on a 1&deg; grid covering 30-120&deg;E and 30&deg;S-30&deg;N, updated continuously and current to 30 July 2026. This is the model field the platform renders.</td></tr>
+      <tr><td>ArgoFloats (Coriolis / Ifremer)</td><td>The global Argo Data Assembly Centre mirror. Provides the in-situ profiles: pressure, temperature and salinity for each cast, with quality-control flags. Current, so it is what the demo compares against.</td></tr>
+      <tr><td>Indian_ARGO_Floats (INCOIS)</td><td>INCOIS's own Argo archive. Read by a second adapter to demonstrate extensibility. Deliberately not the demo's source: its coverage ends 23 April 2025, fifteen months behind the analysis, and comparing across that gap would be comparing two different oceans.</td></tr>
+      <tr><td>incois_valueadded_products</td><td>Mixed-layer depth, isotherm depths, heat content and geostrophic currents. Available and understood; not currently rendered because that series ends in 2019 and cannot share the timeline.</td></tr>
+      <tr><td>Natural Earth 1:50m</td><td>Public-domain coastline geometry for the globe and map.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Why this comparison is scientifically meaningful</h3>
+  <p>
+    INCOIS's gridded analysis is <em>derived from</em> Argo profiles. Comparing the analysis
+    against raw Argo casts therefore asks a genuine operational question - did the analysis
+    reproduce the observations that fed it, and where did it not? - rather than setting two
+    unrelated datasets against each other. INCOIS also publish their own error and
+    observation-count fields alongside the analysis, which is how we know the comparison is one
+    they themselves care about.
+  </p>
+
+  <h3>Data quality handling</h3>
+  <p>
+    Real instrument data contains failures. One float in this region currently reports a surface
+    salinity near 20 PSU, which is fresher than the Baltic Sea and impossible in the open Bay of
+    Bengal. Argo's own global quality check passes anything above 2 PSU, because it must
+    accommodate brackish marginal seas, so it does not catch this. We apply a stricter regional
+    floor of 25 PSU and label it in the code as a judgement rather than a published standard.
+  </p>
+  <p>
+    The floor is 25 rather than something tighter because the northern Bay of Bengal genuinely is
+    very fresh: discharge from the Ganges and Brahmaputra drives monsoon surface salinity down
+    towards 28 PSU. Clamping at, say, 33 would delete one of the most scientifically interesting
+    features in India's own waters as though it were instrument error. Filtering is applied per
+    channel, so a cast with a failed salinity sensor still contributes its good temperature.
+  </p>
+</section>
+
+<!-- ============================== 6 ============================== -->
+<section class="page break" id="s6">
+  <div class="eyebrow">Section 6</div>
+  <h2>How it works inside</h2>
+
+  <figure>
+    <img src="../ppt/images/07-architecture.png" alt="Architecture diagram showing data sources feeding source adapters, then grid and volume, then browser and API.">
+    <figcaption>Data flows left to right. The Source Adapter layer is the only code that knows what an ERDDAP is.</figcaption>
+  </figure>
+
+  <h3>The five stages</h3>
+  <ol>
+    <li><strong>Ingest.</strong> Adapters fetch from each provider. Gridded model data arrives as CF-1.6 compliant NetCDF over ERDDAP and is read with xarray; float data arrives as flat CSV and is reassembled into casts.</li>
+    <li><strong>Reconcile.</strong> INCOIS publishes 24 unevenly spaced depth levels, clustered near the surface because that is where the physics is. A GPU texture samples evenly. A "depth warp" maps between them, deliberately giving the top 300 m about half the axis instead of the 15% that even spacing would give it.</li>
+    <li><strong>Encode.</strong> Each field at each time becomes four bytes per voxel: the value, a coverage flag, a gradient magnitude, and a spare. A whole timestep is 159 KB.</li>
+    <li><strong>Render.</strong> A fragment shader casts a ray through the volume for every pixel, sampling along it and accumulating colour front to back, with an adjustable transfer function and optional isosurface detection.</li>
+    <li><strong>Compare.</strong> A float's profile is paired against the model interpolated to its exact position, producing signed residuals and summary statistics.</li>
+  </ol>
+
+  <h3>Three details that are not obvious</h3>
+
+  <h4>Why there is a coverage channel</h4>
+  <p>
+    A GPU interpolates between neighbouring voxels <em>before</em> the shader sees them. If land
+    were marked with a reserved "no data" value, that value would be averaged with the sea beside
+    it, painting a cold fringe along every coastline. That does not look like a bug - it looks
+    like upwelling, which is a real phenomenon a forecaster would act on. Fabricating one would
+    be far worse than rendering a blocky coast. So masked cells carry a neighbouring real value,
+    which is harmless to interpolate, and a separate coverage channel carries the truth about
+    where the ocean is.
+  </p>
+
+  <h4>Why featureless water is transparent</h4>
+  <p>
+    We precompute how fast the field changes at each point and weight opacity by it. Uniform
+    water fades out and boundaries stay solid. This is precomputed rather than calculated live
+    because doing it in the shader would cost six extra texture reads at every one of about 128
+    steps per pixel, which integrated graphics cannot absorb.
+  </p>
+
+  <h4>Why the model is never asked from the picture</h4>
+  <p>
+    The rendered volume is quantised to bytes, depth-warped and back-filled across land, all for
+    the GPU's benefit. Every scientific answer - a collocation, a statistic, an API response - is
+    computed from the original grid instead. The rendering is a picture of the data and is never
+    treated as the data.
+  </p>
+
+  <h3>Extensibility, demonstrated rather than claimed</h3>
+  <p>
+    The claim that a new instrument costs one class is easy to make and hard to believe, so we
+    tested it. We added a second Argo provider, INCOIS's own archive, which disagrees with the
+    first about everything superficial: it names every column in upper case and ships the
+    delayed-mode adjusted fields completely empty, where the other names them in lower case and
+    populates them. An adapter that trusted "adjusted" blindly would read it as a table of
+    nothing.
+  </p>
+  <p>
+    Absorbing that forced one real design change: the column layout became data rather than code.
+    Adding the second provider then cost a small subclass with four attributes and no new parsing
+    logic. <span class="mono">/api/sources</span> reports every registered adapter with its
+    column style and coverage limit, so the claim can be inspected rather than taken on trust.
+  </p>
+
+  <h3>Technology</h3>
+  <div class="cols">
+    <div>
+      <h4>Pipeline and API</h4>
+      <ul>
+        <li>Python 3.10</li>
+        <li>xarray, netCDF4 - CF-compliant NetCDF</li>
+        <li>NumPy, SciPy - resampling and gradients</li>
+        <li>cmocean - oceanographic colour scales</li>
+        <li>FastAPI, Uvicorn - the REST API</li>
+        <li>pytest - 54 tests on the science</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Browser</h4>
+      <ul>
+        <li>TypeScript, React 19, Vite</li>
+        <li>Three.js on WebGL2</li>
+        <li>GLSL ES 3.00 - the ray-marching shader</li>
+        <li>Deployed as static files on GitHub Pages</li>
+        <li>No plugin, token or account required</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== 7 ============================== -->
+<section class="page break" id="s7">
+  <div class="eyebrow">Section 7</div>
+  <h2>Why not the obvious alternatives</h2>
+
+  <p>
+    A fair question is why this needs building at all. Here is each alternative and why it does
+    not close the gap.
+  </p>
+
+  <table>
+    <thead><tr><th>Alternative</th><th>Why it does not solve the problem</th></tr></thead>
+    <tbody>
+      <tr><td>Ferret, ODV, Panoply and similar desktop tools</td>
+          <td>Powerful and widely used, and they can produce vertical sections. But they must be installed, they require expertise, they produce static images, and they cannot be shared as a link. Crucially, none of them puts an interactive 3D model volume and an instrument profile in the same view.</td></tr>
+      <tr><td>Google Earth or a standard web map</td>
+          <td>Excellent at surfaces and terrain, but the ocean interior is not a surface. There is no notion of a depth-resolved volume of a scalar field, and no way to compare a model against an instrument.</td></tr>
+      <tr><td>ERDDAP's own built-in graphs</td>
+          <td>ERDDAP will draw a map or a simple profile, and it is what we fetch from. It is a data server with plotting attached, not a visual analysis environment; it cannot show a volume, cannot overlay two sources, and offers no interaction beyond re-querying.</td></tr>
+      <tr><td>A dashboard of 2D charts</td>
+          <td>This is the common answer, and it fails for the same reason a contour map fails to convey a mountain range. Vertical structure and its horizontal variation together are inherently three-dimensional; splitting them across panels puts the integration back in the viewer's head, which is the original problem.</td></tr>
+      <tr><td>Existing 3D ocean visualisation research</td>
+          <td>Prior work exists and we cite it. Qin et al. (2019) built a web 3D ocean forecast viewer, and V-MANIP demonstrated Argo-plus-model overlay through OGC services. Neither is a deployed, browser-native tool that a forecaster can open on INCOIS data with no install, and the problem statement's own gap analysis agrees.</td></tr>
+      <tr><td>Just handing over the numbers</td>
+          <td>The data is already available; that is precisely why the gap is a visualisation gap. A 24-level profile at every grid point is not something a person can hold in mind under time pressure.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>What is genuinely novel here</h3>
+  <ul>
+    <li><strong>Model volume and instrument profile in one interactive scene.</strong> This is the specific thing the problem statement says does not exist, and our own searching agrees.</li>
+    <li><strong>Gradient-weighted opacity.</strong> Rendering the rate of change rather than the value is what makes a monotonic field legible at all. Without it, a 3D ocean temperature render is a yellow lid over darkness.</li>
+    <li><strong>A single continuous globe-to-volume deformation.</strong> Every coastline vertex interpolates between its position on a sphere and on a flat map, so context is never lost to a cut.</li>
+    <li><strong>Collocation as a first-class, quantified feature</strong> rather than a visual overlay, including a plain-language verdict so a non-specialist can read the result.</li>
+  </ul>
+</section>
+
+<!-- ============================== 8 ============================== -->
+<section class="page break" id="s8">
+  <div class="eyebrow">Section 8</div>
+  <h2>Feasibility and viability</h2>
+
+  <p>
+    Feasibility is demonstrated rather than argued: the system exists, runs, and is publicly
+    reachable. What follows are the risks that actually materialised during the build and what we
+    did about each.
+  </p>
+
+  <figure>
+    <img src="../ppt/images/09-feasibility-risk.png" alt="A table of risks, what happened, and how each was resolved.">
+    <figcaption>Every row is something that actually happened during development, not a projected risk.</figcaption>
+  </figure>
+
+  <h3>Risks and mitigations in detail</h3>
+  <table>
+    <thead><tr><th>Risk</th><th>What happened and how it was handled</th></tr></thead>
+    <tbody>
+      <tr><td>Data unavailable</td><td>We assumed INCOIS had no public endpoint. It does. We now use their own product. Two alternative public sources were also verified reachable as fallbacks.</td></tr>
+      <tr><td>Upstream server unreachable at demo time</td><td>HYCOM and NOAA CoastWatch both time out from our network, which proved the point. Every byte the demo needs is baked into the build, so it makes zero network calls and a dead venue connection cannot affect it.</td></tr>
+      <tr><td>Weak graphics hardware</td><td>Developed against Intel integrated graphics with 2 GB shared memory. Ray-step count is adjustable, volumes are byte-quantised, and GPU textures are released when replaced. An earlier version leaked about 300 KB per second during playback and would eventually have crashed a demo.</td></tr>
+      <tr><td>Faulty instrument data</td><td>A live float reports impossible salinity. Per-channel quality control drops the bad measurement while keeping the good temperature from the same cast.</td></tr>
+      <tr><td>Rendering that misleads</td><td>Interpolating a "no data" marker painted false upwelling along coastlines. Resolved with a separate coverage channel.</td></tr>
+      <tr><td>TLS failure against INCOIS</td><td>Their server omits an intermediate certificate. Browsers hide this; Python does not. We supply the missing certificate rather than disabling verification.</td></tr>
+      <tr><td>Scaling to the full archive</td><td>813 analysis steps exist and 12 are baked. Same pipeline, run longer; each volume is 159 KB, so the whole archive would be about 130 MB per variable.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Viability beyond the hackathon</h3>
+  <ul>
+    <li><strong>No recurring cost.</strong> Open standards, public endpoints, no licences, no GPU servers, no per-seat software. It currently runs on free static hosting.</li>
+    <li><strong>Deployable on INCOIS infrastructure.</strong> A static bundle plus an optional lightweight API. No client-side dependency, so no desktop rollout.</li>
+    <li><strong>Maintainable.</strong> The scientific logic is separated from rendering and covered by tests. Adding a variable is configuration; adding a source is one class.</li>
+    <li><strong>Standards-aligned.</strong> CF conventions, ERDDAP, OPeNDAP and WebGL2 are all long-lived, widely supported and not owned by any vendor.</li>
+  </ul>
+
+  <h3>Known limitations, stated plainly</h3>
+  <ul>
+    <li>The vertical axis is stretched and non-linear in metres. This is deliberate and labelled on screen, and the profile chart uses the same stretch so the two agree.</li>
+    <li>Currents are not yet rendered as 3D flow. The data exists but its published series ends in 2019 and cannot share the current timeline.</li>
+    <li>Horizontal resolution is 1&deg;, because that is what INCOIS publishes. We do not upsample, as that would invent structure the instruments never measured.</li>
+    <li>Gliders and moorings are supported by the design but not demonstrated, because no reachable public source for Indian Ocean gliders was found in the time available.</li>
+    <li>The internal INCOIS archive needs credentials we do not have.</li>
+  </ul>
+</section>
+
+<!-- ============================== 9 ============================== -->
+<section class="page break" id="s9">
+  <div class="eyebrow">Section 9</div>
+  <h2>Impact and benefits</h2>
+
+  <figure>
+    <img src="../ppt/images/10-impact.png" alt="Impact summary showing four audiences and before-and-after comparisons.">
+    <figcaption>Who benefits, and what changes for them.</figcaption>
+  </figure>
+
+  <h3>Operational impact</h3>
+  <p>
+    <strong>Cyclone forecasting.</strong> Intensity depends on the depth of warm water, not the
+    surface temperature alone. The isosurface view shows thermocline depth across the whole
+    basin in a single glance, and the comparison shows where the analysis is likely to be wrong
+    about it.
+  </p>
+  <p>
+    <strong>Search and rescue.</strong> Drift depends on currents, which vary with depth. Being
+    able to see water structure inside the actual search box, in seconds, supports faster
+    decisions in situations where time is the binding constraint.
+  </p>
+  <p>
+    <strong>Fisheries advisories.</strong> Fish aggregate along thermal fronts and at particular
+    mixed-layer depths. Both are three-dimensional features that a surface map cannot show.
+  </p>
+  <p>
+    <strong>Model validation.</strong> Perhaps the most durable benefit. Every collocation is a
+    recorded, quantified check of the analysis against reality. Systematic patterns in those
+    residuals - by region, by season, by depth - are exactly what improves a model over time.
+  </p>
+
+  <h3>Educational and public value</h3>
+  <p>
+    The problem statement explicitly asks for a science communication tool. Because this runs in
+    any browser with no install, a school class can fly into the Bay of Bengal on a laptop. The
+    monsoon appearing in the animation, the freshwater plume from the Ganges visible as a
+    salinity change, and the thermocline domes that feed cyclones are all things a non-specialist
+    can see directly rather than be told about.
+  </p>
+
+  <h3>Institutional value</h3>
+  <ul>
+    <li><strong>It uses data INCOIS already produces.</strong> No new observing infrastructure, no new data collection, no new cost. It increases the return on investments already made.</li>
+    <li><strong>It lowers the cost of new sensors.</strong> New observing capability becomes usable through one adapter rather than a tool rewrite, so new instruments reach forecasters faster.</li>
+    <li><strong>It is shareable.</strong> A link can be sent to a colleague, a ministry or the public, which a desktop plot cannot be.</li>
+  </ul>
+
+  <div class="box">
+    <span class="label">A worked example from the running system</span>
+    <p>
+      Argo float 2902306, in the Arabian Sea off Oman, July 2026. The platform reports 119 depths
+      compared, with the model reading on average 2.16&nbsp;&deg;C warmer than the instrument
+      measured. That is not a defect in the tool: it is the Arabian Sea upwelling season, when
+      cold water is driven up from below and a 1&deg; gridded analysis smooths it away. A
+      forecaster would want to know that before issuing an advisory for that region, and today
+      there is no quick way to find it out.
+    </p>
+  </div>
+</section>
+
+<!-- ============================== 10 ============================== -->
+<section class="page break" id="s10">
+  <div class="eyebrow">Section 10</div>
+  <h2>Decisions and why</h2>
+
+  <p>
+    Nine architecture decision records are kept in the repository. The ones most likely to be
+    asked about are summarised here.
+  </p>
+
+  <table>
+    <thead><tr><th>Decision</th><th>Reasoning</th></tr></thead>
+    <tbody>
+      <tr><td>Three.js for both views, not Cesium</td>
+          <td>Cesium wants an access token for usable imagery, which is an external dependency that can fail during a demo; it ships around 10 MB; and compositing a custom ray-marched volume into its pipeline was the riskiest integration available. With one Three.js scene the dive becomes a genuine continuous deformation of one piece of geometry rather than a cross-fade between two libraries. The problem statement explicitly permits either.</td></tr>
+      <tr><td>INCOIS's public ERDDAP as the model source</td>
+          <td>It exists, it is current, and using the customer's own product removes the "this is not really our data" objection entirely.</td></tr>
+      <tr><td>Bake the demo data; keep the API as the deployable half</td>
+          <td>The demo runs on a venue network we do not control, with servers in Hyderabad and Brest. Baking removes that risk completely. The API still exists because a collocation is a query, not a fixture, and pre-computing every combination is neither possible nor sensible.</td></tr>
+      <tr><td>A warped, non-linear depth axis</td>
+          <td>Linear in metres would spend 85% of the texture on the featureless deep ocean and crush the thermocline into three voxels. Stretched depth axes are ordinary practice in oceanography; the chart uses the same stretch so the two views agree, and the axis is labelled on screen.</td></tr>
+      <tr><td>Four bytes per voxel, including coverage and gradient</td>
+          <td>Coverage prevents land from fabricating a temperature. Gradient makes a monotonic field legible. Both are precomputed because the shader budget on integrated graphics will not absorb them live.</td></tr>
+      <tr><td>Explicit draw order for transparent objects</td>
+          <td>Three.js sorts transparency by object centroid, which is meaningless for geometry spanning the globe. This cost several hours: the volume rendered perfectly and was then painted over by the sea surface. Order is now stated rather than inferred.</td></tr>
+      <tr><td>A display lift on the colour palettes</td>
+          <td>Perceptually uniform ocean palettes run to near-black at the cold end, which is invisible on a dark background. The lift is applied to the palette itself, so the colourbar shown in the panel and the water drawn in the scene are the same numbers. Applying it only in the shader would have made the legend a lie.</td></tr>
+      <tr><td>A regional salinity floor stricter than the Argo standard</td>
+          <td>The global check passes a failed sensor in this region. Our floor is regional, is a judgement call rather than a published threshold, and is labelled as such in the code.</td></tr>
+      <tr><td>Two Argo providers registered; the demo reads the current one</td>
+          <td>INCOIS's own Argo archive ends fifteen months before their analysis. Using it would compare two different oceans. It is implemented anyway, because it makes the extensibility claim checkable.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box warn">
+    <span class="label">On using AI assistance</span>
+    <p>
+      This project was built with AI assistance, and we would say so if asked. What matters is
+      what was verified rather than assumed: every data endpoint was tested with real requests
+      before being relied on, the scientific logic carries 54 automated tests, rendering defects
+      were diagnosed by measuring pixel extents and GPU state rather than by eye, and every
+      number quoted in this document comes from the running system. Two findings in these pages -
+      that INCOIS runs a public ERDDAP, and that a float in this region reports impossible
+      salinity - contradicted our starting assumptions and were only caught because we checked.
+    </p>
+  </div>
+</section>
+
+<!-- ============================== 11 ============================== -->
+<section class="page break" id="s11">
+  <div class="eyebrow">Section 11</div>
+  <h2>Questions you may be asked</h2>
+
+  <h3>About what is on screen</h3>
+  <table class="qa">
+    <tbody>
+      <tr><td>Is the ocean actually yellow?</td><td>No. Colour represents temperature, the way a weather map is not really red. The scale is shown in the panel: yellow is about 30&nbsp;&deg;C at the surface, violet is about 3&nbsp;&deg;C in the deep.</td></tr>
+      <tr><td>Why is it a box? The ocean is not a box.</td><td>The box is the region we are looking at - a rectangle of latitude and longitude, cut from the surface down to 2000 m. The sides are where our chosen window ends, not a physical wall.</td></tr>
+      <tr><td>Why does it look so tall? Is the ocean that deep?</td><td>No, it is exaggerated about 1800 times. The region is roughly 4000 times wider than it is deep, so at true scale it would be an invisible film. The stretch factor is shown on screen and adjustable.</td></tr>
+      <tr><td>What are the white dots and red lines?</td><td>Argo floats and their drift tracks. A key in the bottom-left corner names them.</td></tr>
+      <tr><td>Why does the bottom look black or empty?</td><td>Deep water is cold, and cold is the dark end of the colour scale. It is being drawn; it is simply dark. Narrowing the colour range makes it visible.</td></tr>
+      <tr><td>Why are the coastlines jagged?</td><td>The model is published on a 1&deg; grid, so its coastline is that coarse. We deliberately do not smooth it, because smoothing would invent detail the data does not contain. The fine blue coastline drawn over the top is separate reference geometry.</td></tr>
+      <tr><td>Is this a game engine?</td><td>No. It uses WebGL, the browser's standard graphics interface. The rendering technique, ray marching through a 3D texture, is the same one used for medical CT and MRI visualisation.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>About the data</h3>
+  <table class="qa">
+    <tbody>
+      <tr><td>Did you generate or simulate this data?</td><td>No. Every value comes from INCOIS's public server or the international Argo programme. Nothing is synthetic, and nothing is AI-generated.</td></tr>
+      <tr><td>Is it live or real time?</td><td>The data is real and current to 30 July 2026, but the demo runs from a local copy on purpose so a network failure cannot affect it. The live connection is real and can be demonstrated through the API.</td></tr>
+      <tr><td>What is an Argo float?</td><td>A robot instrument about the size of a person. It sinks to 2000 m, drifts for ten days, then rises to the surface measuring temperature and salinity all the way up, transmits by satellite, and repeats. There are around 4000 worldwide.</td></tr>
+      <tr><td>Who owns this data?</td><td>The gridded analysis is INCOIS's, part of the Ministry of Earth Sciences. Argo data is made freely available by the international Argo programme. Both are openly published and we credit both.</td></tr>
+      <tr><td>Why only temperature and salinity?</td><td>Those are what this INCOIS product publishes with full depth resolution. Adding a variable is configuration, not new code, and other products carrying currents and chlorophyll are already identified.</td></tr>
+      <tr><td>Why stop at 2000 m? The ocean is deeper.</td><td>Because Argo floats profile to 2000 m, so that is the depth range the analysis covers. Below that there are very few measurements anywhere in the world.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>About the comparison</h3>
+  <table class="qa">
+    <tbody>
+      <tr><td>If they disagree, is the model wrong?</td><td>Not necessarily, and this is the right question to ask. A disagreement means one of three things: the model missed something real, the instrument is faulty, or they are not measuring quite the same thing - the model is a 1&deg; average while the float is a single point. The tool's job is to surface the disagreement so a human can decide which.</td></tr>
+      <tr><td>How do you know the float is not the wrong one?</td><td>We do not, from one comparison alone. That is why we apply quality control, show the number of depths compared, and report the pattern across all floats. An isolated large residual is suspicious; a consistent regional pattern, like the Oman upwelling case, is physical.</td></tr>
+      <tr><td>Is 0.5 a good number or a bad one?</td><td>Good. Across 84 floats the median typical gap is 0.46&nbsp;&deg;C, which is reasonable for an objective analysis. The application states this in words rather than leaving you to judge a bare number.</td></tr>
+      <tr><td>Why compare at the float's depths rather than the model's?</td><td>Because resampling the observation to suit the model would smooth away exactly the fine vertical structure that makes the comparison worth doing.</td></tr>
+      <tr><td>What if the float moved between the measurement and the analysis?</td><td>Each float is paired with the analysis step nearest in time to its cast, and the panel states both dates. If you scrub the timeline away from that step it warns you.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>About the product</h3>
+  <table class="qa">
+    <tbody>
+      <tr><td>Who would actually use this?</td><td>Operational forecasters at INCOIS first. Then search-and-rescue coordinators, fishery advisory teams, model developers validating their analyses, and educators.</td></tr>
+      <tr><td>Does it work on a phone?</td><td>It loads, but it is designed for a desktop, because that is where a forecaster works and because volume rendering is demanding. The landing page is fully responsive.</td></tr>
+      <tr><td>What happens if the internet goes down mid-demo?</td><td>Nothing. The demo makes zero network calls once loaded.</td></tr>
+      <tr><td>How would INCOIS deploy it?</td><td>It is a static site plus an optional API. It can be dropped on any web server inside INCOIS, with the internal archive attaching at the adapter layer.</td></tr>
+      <tr><td>Is it secure? Does it need login?</td><td>It is read-only and publishes nothing. There is no login because there is no user data and no writes. Internal deployment would sit behind INCOIS's existing access controls.</td></tr>
+      <tr><td>Can it predict cyclones?</td><td>No, and it does not claim to. It shows the ocean conditions that determine how much energy a cyclone can draw on. Forecasting is a separate discipline; this makes one of its inputs visible.</td></tr>
+      <tr><td>How much would this cost to run?</td><td>Effectively nothing. It currently runs on free static hosting, with no licences, no databases and no compute servers.</td></tr>
+      <tr><td>What is the hardest part technically?</td><td>Making a monotonic field legible. Ocean temperature just decreases with depth, so a naive 3D render is an opaque warm lid over darkness. Weighting opacity by rate of change is what solves it, and it took several attempts.</td></tr>
+      <tr><td>How long did it take?</td><td>Built for this hackathon, with 54 automated tests and nine written decision records.</td></tr>
+      <tr><td>What would you do next?</td><td>Render geostrophic currents as 3D flow, add a bias map showing model error at every float across the whole EEZ, and connect the internal INCOIS archive.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================== 12 ============================== -->
+<section class="page break" id="s12">
+  <div class="eyebrow">Section 12</div>
+  <h2>Glossary</h2>
+
+  <table>
+    <tbody>
+      <tr><td>Argo</td><td>An international programme operating around 4000 drifting robot instruments that profile the upper 2000 m of the ocean. Not an acronym.</td></tr>
+      <tr><td>Collocation</td><td>Pairing an observation with a model value at the same place and time. The core scientific act of this platform.</td></tr>
+      <tr><td>CF conventions</td><td>Climate and Forecast metadata conventions. The standard that makes a NetCDF file self-describing.</td></tr>
+      <tr><td>EEZ</td><td>Exclusive Economic Zone. The sea area over which a country has special rights, extending 200 nautical miles from its coast.</td></tr>
+      <tr><td>ERDDAP</td><td>A widely used open-source scientific data server. Provides data over plain web requests in many formats.</td></tr>
+      <tr><td>Isosurface</td><td>The surface joining every point that has one particular value, such as the 20&nbsp;&deg;C isotherm.</td></tr>
+      <tr><td>Mixed layer</td><td>The upper part of the ocean stirred by wind and waves into near-uniform temperature.</td></tr>
+      <tr><td>NetCDF</td><td>Network Common Data Form. The standard file format for multi-dimensional scientific data.</td></tr>
+      <tr><td>Profile</td><td>One vertical series of measurements taken by an instrument as it rises or sinks.</td></tr>
+      <tr><td>PSU</td><td>Practical Salinity Unit. Open ocean is typically 33-37; the northern Bay of Bengal can fall towards 28.</td></tr>
+      <tr><td>Ray marching</td><td>A rendering technique that steps along a line of sight through a 3D dataset accumulating colour. Used in medical imaging and here.</td></tr>
+      <tr><td>Residual</td><td>Observed value minus modelled value. The signed disagreement between an instrument and a model.</td></tr>
+      <tr><td>RMS</td><td>Root mean square. A way of averaging disagreements that ignores whether they are positive or negative.</td></tr>
+      <tr><td>Thermocline</td><td>The depth zone where temperature falls rapidly, separating warm surface water from cold deep water. Its depth governs how much energy a cyclone can extract.</td></tr>
+      <tr><td>Upwelling</td><td>Wind-driven rising of cold, nutrient-rich deep water. Strong along the Oman coast during the southwest monsoon.</td></tr>
+      <tr><td>VAM</td><td>Variational Analysis Methodology. The technique INCOIS uses to turn scattered float measurements into a complete gridded field.</td></tr>
+      <tr><td>Voxel</td><td>A volume pixel. One cell in a 3D grid.</td></tr>
+      <tr><td>WebGL</td><td>The browser's standard graphics interface, giving web pages access to the graphics card.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================== 13 ============================== -->
+<section class="page break" id="s13">
+  <div class="eyebrow">Section 13</div>
+  <h2>References</h2>
+
+  <h3>Data sources, all verified reachable</h3>
+  <ul>
+    <li><span class="mono">erddap.incois.gov.in/erddap/griddap/incois_argo_10d_VAM.html</span> - INCOIS 10-day gridded Argo analysis (VAM)</li>
+    <li><span class="mono">erddap.incois.gov.in/erddap/griddap/incois_argo_mnt_McCreary.html</span> - INCOIS monthly analysis with error fields</li>
+    <li><span class="mono">erddap.incois.gov.in/erddap/griddap/incois_valueadded_products_datasets.html</span> - mixed-layer depth, isotherm depths, heat content, geostrophic currents</li>
+    <li><span class="mono">erddap.incois.gov.in/erddap/tabledap/Indian_ARGO_Floats.html</span> - INCOIS Argo profile archive</li>
+    <li><span class="mono">erddap.ifremer.fr/erddap/tabledap/ArgoFloats.html</span> - Coriolis GDAC global Argo profiles</li>
+    <li><span class="mono">github.com/nvkelso/natural-earth-vector</span> - Natural Earth coastlines, public domain</li>
+  </ul>
+
+  <h3>Scientific references</h3>
+  <ul>
+    <li>Thyng, K. M. et al. (2016). True colors of oceanography: guidelines for effective and accurate colormap selection. <em>Oceanography</em> 29(3). The cmocean palettes used throughout.</li>
+    <li>Argo Data Management. <em>Argo Quality Control Manual for CTD and Trajectory Data.</em> The basis for our range checks.</li>
+    <li>Saunders, P. M. and Fofonoff, N. P. (1976), as adopted by UNESCO. Pressure-to-depth conversion, including the latitude-dependent gravity correction.</li>
+    <li>Wong, A. P. S. et al. (2020). Argo data 1999-2019: two million temperature-salinity profiles. <em>Frontiers in Marine Science.</em></li>
+  </ul>
+
+  <h3>Prior art reviewed</h3>
+  <ul>
+    <li>Qin, R. et al. (2019). Web-based 3D visualization of oceanic forecasting data, using Cesium.js and Plotly.js.</li>
+    <li>V-MANIP. Argo and model overlay through OGC services. Validates the co-visualisation approach.</li>
+    <li>Usher, W. WebGL volume rendering. The ray-marching reference our shader derives from.</li>
+  </ul>
+
+  <h3>Standards</h3>
+  <ul>
+    <li>CF-1.6, ACDD-1.3 and COARDS metadata conventions</li>
+    <li>ERDDAP griddap and tabledap RESTful access; OPeNDAP subsetting</li>
+    <li>WebGL2 and GLSL ES 3.00</li>
+  </ul>
+
+  <h3>This project</h3>
+  <ul>
+    <li>Live prototype: <span class="mono">rak2315.github.io/samudra-sih26</span></li>
+    <li>Source code: <span class="mono">github.com/RAK2315/samudra-sih26</span></li>
+    <li>Architecture decision records: <span class="mono">docs/adr/</span> - nine records</li>
+    <li>Domain vocabulary and scope boundaries: <span class="mono">CONTEXT.md</span></li>
+  </ul>
+
+  <div class="box">
+    <span class="label">Attribution</span>
+    <p>
+      Argo data are collected and made freely available by the International Argo Program and the
+      national programmes that contribute to it. The Argo Program is part of the Global Ocean
+      Observing System. Gridded analysis products are produced and published by the Indian
+      National Centre for Ocean Information Services (INCOIS), Ministry of Earth Sciences,
+      Government of India.
+    </p>
+  </div>
+</section>
+
+</body>
+</html>
