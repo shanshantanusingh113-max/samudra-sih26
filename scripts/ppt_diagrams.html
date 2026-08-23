@@ -1,0 +1,260 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --deep:#071420; --shelf:#0c1f2e; --panel:#102737;
+    --edge:rgba(120,170,195,.22); --edge-hot:rgba(120,190,210,.45);
+    --ink:#e4eef6; --dim:#9db5c8; --faint:#6d8598;
+    --cyan:#3fb8c4; --amber:#f5b841; --coral:#f2765f; --green:#5fd68a;
+    --d:"Chivo",sans-serif; --m:"IBM Plex Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#000;font-family:var(--d)}
+  .board{background:var(--deep);padding:44px;color:var(--ink)}
+  h3{margin:0 0 4px;font-size:26px;font-weight:900;letter-spacing:-.02em}
+  .sub{margin:0 0 30px;font-family:var(--m);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan)}
+
+  /* ---------- shared bits ---------- */
+  .chip{font-family:var(--m);font-size:11px;letter-spacing:.06em;color:var(--faint)}
+  .box{border:1px solid var(--edge);border-radius:10px;background:var(--shelf);padding:16px 18px}
+  .box b{display:block;font-size:15px;margin-bottom:5px}
+  .box span{font-size:13px;line-height:1.5;color:var(--dim)}
+
+  /* ---------- A: gap ---------- */
+  #gap{width:1500px}
+  .gap-row{display:grid;grid-template-columns:1fr 92px 1fr;align-items:stretch;gap:0}
+  .gap-side{padding:26px;border-radius:12px;border:1px solid var(--edge);display:flex;flex-direction:column}
+  .gap-side.bad{background:linear-gradient(160deg,#1d1114,#120c10)}
+  .gap-side.good{background:linear-gradient(160deg,#0b2430,#08181f);border-color:var(--edge-hot)}
+  .gap-label{font-family:var(--m);font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px}
+  .bad .gap-label{color:var(--coral)} .good .gap-label{color:var(--cyan)}
+  .gap-side h4{margin:0 0 14px;font-size:21px;font-weight:700}
+  .gap-side ul{margin:0 0 auto;padding-left:18px}
+  .gap-side li{font-size:14px;line-height:1.85;color:var(--dim)}
+  .arrow{text-align:center;font-size:34px;color:var(--cyan)}
+  .stack-viz{display:flex;flex-direction:column;gap:9px;margin-top:20px}
+  .layer{height:30px;border-radius:3px;opacity:.85}
+  .cube{margin-top:20px;height:126px;border-radius:6px;
+    background:linear-gradient(180deg,#f7d774,#f0a24a 26%,#c96b8a 52%,#7b5fa8 74%,#3d3f79);
+    border:1px solid var(--edge-hot)}
+
+  /* ---------- B: architecture ---------- */
+  #arch{width:1560px}
+  .arch{display:grid;grid-template-columns:250px 60px 280px 60px 250px 60px 300px;align-items:center}
+  .node{border:1px solid var(--edge);border-radius:10px;background:var(--shelf);padding:15px}
+  .node.src{border-color:rgba(245,184,65,.45)}
+  .node.core{border-color:var(--edge-hot);background:var(--panel)}
+  .node.out{border-color:rgba(63,184,196,.45)}
+  .node b{display:block;font-size:14px;margin-bottom:4px}
+  .node span{display:block;font-family:var(--m);font-size:10.5px;line-height:1.6;color:var(--faint)}
+  .flow{display:flex;align-items:center;justify-content:center;color:var(--cyan);font-size:22px}
+  .col{display:flex;flex-direction:column;gap:12px}
+  .seam{margin-top:22px;padding:13px 18px;border-left:2px solid var(--amber);
+    background:linear-gradient(90deg,rgba(245,184,65,.09),transparent 70%);font-size:13.5px;color:var(--dim)}
+  .seam b{color:var(--amber)}
+
+  /* ---------- C: methodology ---------- */
+  #method{width:1560px}
+  .steps{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  .step{border:1px solid var(--edge);border-radius:10px;background:var(--shelf);padding:18px;position:relative}
+  .step .n{font-family:var(--m);font-size:11px;color:var(--cyan);letter-spacing:.12em}
+  .step b{display:block;margin:9px 0 6px;font-size:15px}
+  .step span{font-size:12.5px;line-height:1.55;color:var(--dim)}
+  .step::after{content:"›";position:absolute;right:-12px;top:50%;transform:translateY(-50%);
+    color:var(--cyan);font-size:26px;z-index:2}
+  .step:last-child::after{display:none}
+  .proof{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:20px}
+  .proof div{border:1px solid var(--edge);border-radius:9px;background:var(--panel);padding:14px 16px}
+  .proof b{display:block;font-size:23px;font-family:var(--d);font-weight:700;color:var(--amber)}
+  .proof span{font-family:var(--m);font-size:10.5px;color:var(--faint);letter-spacing:.04em}
+
+  /* ---------- D: feasibility ---------- */
+  #risk{width:1520px}
+  table{width:100%;border-collapse:collapse}
+  th{font-family:var(--m);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
+     color:var(--faint);text-align:left;padding:0 16px 11px;border-bottom:1px solid var(--edge)}
+  td{padding:15px 16px;border-bottom:1px solid rgba(120,170,195,.11);font-size:13.5px;
+     line-height:1.55;color:var(--dim);vertical-align:top}
+  td:first-child{color:var(--ink);font-weight:700;width:27%}
+  td.fix{color:var(--green)}
+  .pill{display:inline-block;padding:3px 9px;border-radius:20px;font-family:var(--m);
+    font-size:10px;letter-spacing:.08em;border:1px solid}
+  .done{color:var(--green);border-color:rgba(95,214,138,.4);background:rgba(95,214,138,.1)}
+
+  /* ---------- E: impact ---------- */
+  #impact{width:1520px}
+  .who{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px}
+  .who div{border:1px solid var(--edge);border-radius:10px;background:var(--shelf);padding:18px}
+  .who .ic{font-size:24px;margin-bottom:9px}
+  .who b{display:block;font-size:15px;margin-bottom:5px}
+  .who span{font-size:12.5px;line-height:1.55;color:var(--dim)}
+  /* Before -> after rows, NOT bars. Bar lengths here would encode nothing real, and a reader
+     would quite reasonably interpret width as magnitude. */
+  .bars{display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--edge)}
+  .bar{display:grid;grid-template-columns:290px 1fr 34px 1fr;align-items:center;gap:14px;
+    padding:13px 4px;border-bottom:1px solid rgba(120,170,195,.11)}
+  .bar .lab{font-size:13.5px;color:var(--ink)}
+  .bar .was{font-family:var(--m);font-size:12px;color:var(--coral)}
+  .bar .arw{text-align:center;color:var(--faint);font-size:16px}
+  .bar .now{font-family:var(--m);font-size:12px;color:var(--green)}
+</style>
+</head>
+<body>
+
+<!-- ============ A. THE GAP ============ -->
+<div class="board" id="gap">
+  <h3>The gap this closes</h3>
+  <p class="sub">Problem Statement 26067 · INCOIS</p>
+  <div class="gap-row">
+    <div class="gap-side bad">
+      <div class="gap-label">Today</div>
+      <h4>Two windows, flat maps, guesswork</h4>
+      <ul>
+        <li>Model output in one desktop program</li>
+        <li>Float measurements in another</li>
+        <li>One depth at a time — the ocean is 4 km deep</li>
+        <li>Agreement judged in the forecaster's head</li>
+        <li>New instrument = rewrite the tool</li>
+      </ul>
+      <div class="stack-viz">
+        <div class="layer" style="background:#6b4b52"></div>
+        <div class="layer" style="background:#59444f"></div>
+        <div class="layer" style="background:#473d4a"></div>
+      </div>
+      <div class="chip" style="margin-top:9px">separate 2-D slices</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="gap-side good">
+      <div class="gap-label">Samudra 3D</div>
+      <h4>One browser, one water column, one answer</h4>
+      <ul>
+        <li>Whole depth range rendered at once, 5–2000 m</li>
+        <li>Floats suspended at their true positions</li>
+        <li>Click one: measured vs modelled, on one chart</li>
+        <li>Disagreement shaded and quantified</li>
+        <li>New instrument = one adapter class</li>
+      </ul>
+      <div class="cube"></div>
+      <div class="chip" style="margin-top:9px">one continuous volume</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ B. ARCHITECTURE ============ -->
+<div class="board" id="arch">
+  <h3>System architecture</h3>
+  <p class="sub">Open standards in · WebGL out · no client-side install</p>
+  <div class="arch">
+    <div class="col">
+      <div class="node src"><b>INCOIS ERDDAP</b><span>incois_argo_10d_VAM<br>NetCDF · CF-1.6 · 24 levels</span></div>
+      <div class="node src"><b>Argo GDAC</b><span>float profiles<br>CSV · QC flags</span></div>
+    </div>
+    <div class="flow">→</div>
+    <div class="node core"><b>Source Adapters</b><span>one class per provider<br>the only code that knows<br>what an ERDDAP is</span></div>
+    <div class="flow">→</div>
+    <div class="col">
+      <div class="node core"><b>Grid</b><span>scientific truth<br>native levels</span></div>
+      <div class="node"><b>Volume</b><span>GPU artifact<br>4 bytes / voxel</span></div>
+    </div>
+    <div class="flow">→</div>
+    <div class="col">
+      <div class="node out"><b>Browser · Three.js</b><span>ray-marched volume<br>globe ⇄ map morph</span></div>
+      <div class="node out"><b>FastAPI</b><span>/api/collocation<br>/api/column</span></div>
+    </div>
+  </div>
+  <div class="seam">
+    <b>The extensibility seam.</b> Adding a mooring, ADCP or HF-radar feed means writing one
+    adapter. The renderer, the API and the UI have never heard of ERDDAP.
+  </div>
+</div>
+
+<!-- ============ C. METHODOLOGY ============ -->
+<div class="board" id="method">
+  <h3>How it is built</h3>
+  <p class="sub">Ingest → reconcile → encode → render → compare</p>
+  <div class="steps">
+    <div class="step"><div class="n">01 INGEST</div><b>Read the archives</b>
+      <span>xarray reads CF-compliant NetCDF over ERDDAP; a parser reconstitutes Argo casts from flat CSV.</span></div>
+    <div class="step"><div class="n">02 RECONCILE</div><b>Depth Warp</b>
+      <span>24 uneven levels → an even GPU axis that gives the top 300 m half the resolution, not 15%.</span></div>
+    <div class="step"><div class="n">03 ENCODE</div><b>4 bytes a voxel</b>
+      <span>Value, coverage (where ocean truly is), gradient (where it is changing), spare.</span></div>
+    <div class="step"><div class="n">04 RENDER</div><b>Ray-march in WebGL2</b>
+      <span>Front-to-back compositing with an editable transfer function and isosurface hits.</span></div>
+    <div class="step"><div class="n">05 COMPARE</div><b>Collocate</b>
+      <span>Model interpolated to the float's own position, depth and time. Residuals, signed.</span></div>
+  </div>
+  <div class="proof">
+    <div><b>48</b><span>TESTS ON THE SCIENCE</span></div>
+    <div><b>8</b><span>DECISION RECORDS</span></div>
+    <div><b>159 KB</b><span>PER TIMESTEP VOLUME</span></div>
+    <div><b>0</b><span>NETWORK CALLS AT DEMO TIME</span></div>
+  </div>
+</div>
+
+<!-- ============ D. FEASIBILITY ============ -->
+<div class="board" id="risk">
+  <h3>Feasibility &amp; risk</h3>
+  <p class="sub">Every risk below was hit during the build — and resolved</p>
+  <table>
+    <thead><tr><th>Risk</th><th>What actually happened</th><th>Resolution</th><th>State</th></tr></thead>
+    <tbody>
+      <tr><td>No access to INCOIS data</td>
+        <td>Assumed unavailable; HYCOM was the fallback plan</td>
+        <td class="fix">INCOIS runs a public ERDDAP. We use their own product, current to 30 Jul 2026</td>
+        <td><span class="pill done">SOLVED</span></td></tr>
+      <tr><td>Upstream server unreachable</td>
+        <td>HYCOM and NOAA CoastWatch time out from our network</td>
+        <td class="fix">Data baked into the build; the demo makes zero network calls</td>
+        <td><span class="pill done">SOLVED</span></td></tr>
+      <tr><td>Weak GPU in the demo room</td>
+        <td>Target is Intel UHD, 2 GB shared VRAM</td>
+        <td class="fix">Adaptive ray steps, byte-quantised volumes, textures freed on swap</td>
+        <td><span class="pill done">SOLVED</span></td></tr>
+      <tr><td>Bad sensors in real data</td>
+        <td>A live float reports 20 PSU — impossible in open ocean</td>
+        <td class="fix">Per-channel QC; the cast keeps its good temperature</td>
+        <td><span class="pill done">SOLVED</span></td></tr>
+      <tr><td>Rendering that misleads</td>
+        <td>Interpolating a no-data value paints fake upwelling along coasts</td>
+        <td class="fix">Separate coverage channel; land can never fabricate a temperature</td>
+        <td><span class="pill done">SOLVED</span></td></tr>
+      <tr><td>Scaling to full archive</td>
+        <td>813 analysis steps exist; 12 are baked</td>
+        <td class="fix">Same pipeline, run longer. Volumes are 159 KB each</td>
+        <td><span class="pill done">DESIGNED</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============ E. IMPACT ============ -->
+<div class="board" id="impact">
+  <h3>Impact</h3>
+  <p class="sub">Operational, educational, and national</p>
+  <div class="who">
+    <div><div class="ic">🌀</div><b>Forecasters</b><span>See thermocline depth before issuing a cyclone advisory — the ocean heat that fuels intensification.</span></div>
+    <div><div class="ic">🛟</div><b>Search &amp; rescue</b><span>Currents and water structure in the actual search box, in one view, in seconds.</span></div>
+    <div><div class="ic">🎣</div><b>Fisheries</b><span>Thermal fronts and mixed-layer depth drive where fish aggregate.</span></div>
+    <div><div class="ic">🎓</div><b>Outreach</b><span>Opens in any browser. A school class can fly into the Bay of Bengal.</span></div>
+  </div>
+  <div class="bars">
+    <div class="bar"><div class="lab">Programs a forecaster must open</div>
+      <div class="was">two, side by side</div><div class="arw">→</div><div class="now">one browser tab</div></div>
+    <div class="bar"><div class="lab">Depths visible at once</div>
+      <div class="was">one slice</div><div class="arw">→</div><div class="now">all 24 levels, 5–2000 m</div></div>
+    <div class="bar"><div class="lab">Model-vs-observation check</div>
+      <div class="was">done mentally, unrecorded</div><div class="arw">→</div><div class="now">one click, quantified in °C</div></div>
+    <div class="bar"><div class="lab">Cost to add a new instrument</div>
+      <div class="was">re-engineer the tool</div><div class="arw">→</div><div class="now">one adapter class</div></div>
+    <div class="bar"><div class="lab">Software a user must install</div>
+      <div class="was">desktop packages</div><div class="arw">→</div><div class="now">none — any browser</div></div>
+  </div>
+</div>
+
+</body>
+</html>

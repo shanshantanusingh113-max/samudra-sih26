@@ -7,6 +7,7 @@ submission per hour of work, best first.
 
 | # | Feature | Why it was cut | Rough cost | What it would add |
 | --- | --- | --- | --- | --- |
+| 0 | **Source Argo profiles from INCOIS's own `Indian_ARGO_Floats` instead of Ifremer** | Missed on the first pass: only the 15 *gridded* datasets were enumerated, and this one is tabular. It carries PLATFORM_NUMBER, PRES/TEMP/PSAL, the adjusted fields and the QC flags — everything the current Argo adapter needs | 1-2 h | Makes the demo end-to-end INCOIS: model **and** observations from the customer's own server. Removes the last "that data is from somewhere else" caveat |
 | 1 | **Geostrophic current vectors on the globe** | `incois_valueadded_products_datasets` has GEO_U/GEO_V ready to go, but the series stops at 2019-03, so it cannot share the timeline with the temperature field without an awkward caveat on screen | 2–3 h | Directly answers "current vectors" in the problem statement; visually strong |
 | 2 | **Mixed-layer depth / D20 surface as a second isosurface** | Same dataset, same date problem | 1–2 h | Operationally the most-used INCOIS product; strong with an oceanographer judge |
 | 3 | **A third Source Adapter, actually implemented** | The interface is written and documented; only two adapters exist | 2 h | Turns the extensibility claim from "designed for" into "demonstrated". NOAA OSMC ERDDAP is reachable and would take one file |
