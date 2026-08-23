@@ -8,7 +8,10 @@ interface State {
   floats: OceanFloat[];
   collocations: Record<string, Collocation>;
   coastlines: number[][][];
+  /** Fatal: the app cannot start at all. */
   loadError: string | null;
+  /** Transient: something failed but what is on screen is still valid. */
+  notice: string | null;
 
   fieldKey: string;
   timestepIndex: number;
@@ -53,6 +56,7 @@ export const useStore = create<State>((setState, getState) => ({
   collocations: {},
   coastlines: [],
   loadError: null,
+  notice: null,
 
   fieldKey: "temperature",
   timestepIndex: 0,

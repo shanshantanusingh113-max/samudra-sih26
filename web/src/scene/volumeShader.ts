@@ -59,11 +59,19 @@ vec2 intersectBox(vec3 origin, vec3 direction) {
 /** World point -> texture coordinate. Latitude and depth both run opposite to the world axes. */
 vec3 toTexture(vec3 p) {
   vec3 span = uBoxMax - uBoxMin;
-  return vec3(
+  vec3 fraction = vec3(
     (p.x - uBoxMin.x) / span.x,          // longitude, west to east
     (uBoxMax.z - p.z) / span.z,          // latitude, south to north
     (uBoxMax.y - p.y) / span.y           // depth, surface downwards
   );
+
+  // The box corners are grid *node centres*, not texel edges: INCOIS publishes values AT
+  // 55.5E, 56.5E and so on, and a texel's centre sits at (i + 0.5) / N. Mapping the corners
+  // straight to 0 and 1 stretches the field by N/(N-1) about the region centre and displaces
+  // it by up to half a grid cell — about 55 km here. In a tool whose whole purpose is
+  // comparing a model value against an observation *at a position*, that is not cosmetic.
+  vec3 size = vec3(textureSize(uVolume, 0));
+  return (fraction * (size - 1.0) + 0.5) / size;
 }
 
 /** Value -> position along the Transfer Function, honouring the window and the scale. */

@@ -1,24 +1,16 @@
+import { depthToAxis } from "../scene/geography";
 import { useStore } from "../store";
-import type { CollocationSeries } from "../types";
+import type { CollocationSeries, VolumeSpec } from "../types";
 
 const WIDTH = 330;
 const HEIGHT = 360;
 const PAD = { top: 16, right: 14, bottom: 30, left: 46 };
 
-/**
- * The same stretched depth axis the Volume uses, so the chart and the 3D water agree about
- * where the thermocline is. A linear depth axis would squeeze every interesting feature into
- * the top eighth of the plot.
- */
-const warp = (metres: number) => {
-  const f = (d: number) => Math.log1p(d / 50);
-  return (f(Math.max(metres, 5)) - f(5)) / (f(2000) - f(5));
-};
-
 const DEPTH_TICKS = [0, 50, 100, 200, 500, 1000, 2000];
 
 export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) => void }) {
-  const { selectedFloatId, floats, collocations, fieldKey, field, set } = useStore();
+  const { selectedFloatId, floats, collocations, fieldKey, field, set, manifest, timestepIndex } =
+    useStore();
   const spec = field();
 
   if (!selectedFloatId || !spec) return null;
@@ -27,6 +19,17 @@ export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) 
   if (!chosen) return null;
 
   const series = collocation?.fields[fieldKey];
+  const volume = manifest?.volume;
+
+  // Scrubbing the timeline moves the header's analysis date, but a baked Collocation is pinned
+  // to the analysis step nearest its own cast. Name the step this chart is actually against —
+  // and note that this is the *analysis* date from the manifest, not `collocation.time`, which
+  // is when the float surfaced.
+  const analysisDate = collocation
+    ? manifest?.timesteps[collocation.timestepIndex]?.slice(0, 10)
+    : undefined;
+  const analysisDrifted =
+    collocation !== undefined && collocation.timestepIndex !== timestepIndex;
 
   return (
     <aside className="panel panel-right">
@@ -46,10 +49,14 @@ export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) 
         </button>
       </div>
 
-      {series ? (
+      {series && volume ? (
         <>
-          <Chart series={series} units={spec.units} label={spec.label} />
+          <Chart series={series} units={spec.units} label={spec.label} volume={volume} />
           <Stats series={series} units={spec.units} />
+          <p className={`analysis-note${analysisDrifted ? " drifted" : ""}`}>
+            cast {collocation?.time.slice(0, 10)} vs {analysisDate} analysis
+            {analysisDrifted ? " (not the step above)" : ""}
+          </p>
         </>
       ) : (
         <p className="empty">
@@ -68,11 +75,17 @@ function Chart({
   series,
   units,
   label,
+  volume,
 }: {
   series: CollocationSeries;
   units: string;
   label: string;
+  volume: VolumeSpec;
 }) {
+  // The Depth Warp, read back from the axis the pipeline shipped rather than re-derived here.
+  // A third copy of the formula would drift out of step the moment the pipeline changed, and
+  // nothing would catch it: the chart exists to corroborate the 3D view.
+  const warp = (metres: number) => depthToAxis(volume, metres);
   const finite = [...series.observed, ...series.modelled].filter(
     (v): v is number => v !== null && Number.isFinite(v),
   );

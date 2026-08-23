@@ -64,6 +64,10 @@ def manifest() -> dict:
 
 @lru_cache(maxsize=64)
 def native_grid(field: str, index: int) -> Grid:
+    # Check the manifest, not just the filesystem: a grid file can outlive the bake that made
+    # it, and answering from one would mean reporting a different date range as current.
+    if not 0 <= index < len(manifest()["timesteps"]):
+        raise HTTPException(404, f"no analysis timestep {index}")
     path = GRID_DATA / f"{field}_{index:03d}.npz"
     if not path.exists():
         raise HTTPException(404, f"no grid for {field} at timestep {index}")

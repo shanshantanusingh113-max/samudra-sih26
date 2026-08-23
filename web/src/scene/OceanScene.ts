@@ -29,7 +29,7 @@ import {
   surfaceFragmentShader,
   surfaceVertexShader,
 } from "./earthShader";
-import { boxBounds, latToZ, lonToX, makeFrame } from "./geography";
+import { boxBounds, depthToY, latToZ, lonToX, makeFrame } from "./geography";
 import { morphedPosition } from "./morph";
 import { volumeFragmentShader, volumeVertexShader } from "./volumeShader";
 
@@ -129,6 +129,10 @@ export class OceanScene {
   private trackLines?: LineSegments;
   private selectedColumn?: LineSegments;
 
+  private currentVolume?: Data3DTexture;
+  private currentPalette?: Texture;
+  private lastBoxKey = "";
+  private lastColumnKey = "";
   private state?: ViewState;
   private frameId = 0;
   private elapsed = 0;
@@ -157,6 +161,9 @@ export class OceanScene {
     this.controls.dampingFactor = 0.08;
     this.controls.minDistance = 2;
     this.controls.maxDistance = 900;
+
+    // Exposed so a demo operator, and the screenshot harness, can drive the scene directly.
+    (window as unknown as Record<string, unknown>).__scene = this;
   }
 
   build(manifest: Manifest, floats: OceanFloat[], coastlines: number[][][]): void {
@@ -430,12 +437,26 @@ export class OceanScene {
 
   // ---------------------------------------------------------------- updates
 
+  /**
+   * Adopt a Volume texture, releasing the one it replaces.
+   *
+   * The scene owns these once handed over. Timestep playback swaps a ~300 KB 3-D texture every
+   * 900 ms; without freeing the previous one, a few minutes of the animation running quietly
+   * exhausts GPU memory and loses the WebGL context — on exactly the integrated graphics this
+   * project targets.
+   */
   setVolumeTexture(texture: Data3DTexture): void {
+    if (this.currentVolume === texture) return;
+    this.currentVolume?.dispose();
+    this.currentVolume = texture;
     this.setUniform(this.volume, "uVolume", texture);
     this.setUniform(this.surface, "uVolume", texture);
   }
 
   setPalette(texture: Texture): void {
+    if (this.currentPalette === texture) return;
+    this.currentPalette?.dispose();
+    this.currentPalette = texture;
     this.setUniform(this.volume, "uPalette", texture);
     this.setUniform(this.surface, "uPalette", texture);
   }
@@ -492,8 +513,15 @@ export class OceanScene {
     }
 
     if (this.boxFrame) {
-      this.boxFrame.geometry.dispose();
-      this.boxFrame.geometry = boxWireframe(min, max);
+      // Rebuilt only when the box actually changes shape. update() runs on every React render,
+      // and the dive writes morph 60 times a second — disposing and re-uploading a GPU buffer
+      // each of those frames is pure waste, and the bounds do not move during a dive anyway.
+      const key = `${min.join()}|${max.join()}`;
+      if (key !== this.lastBoxKey) {
+        this.lastBoxKey = key;
+        this.boxFrame.geometry.dispose();
+        this.boxFrame.geometry = boxWireframe(min, max);
+      }
       this.boxFrame.visible = state.morph > 0.55;
       (this.boxFrame.material as LineBasicMaterial).opacity = 0.7 * smoothLimit(state.morph);
     }
@@ -520,6 +548,13 @@ export class OceanScene {
       this.selectedColumn.visible = false;
       return;
     }
+
+    const key = `${chosen.id}|${frame.boxHeight}`;
+    if (key === this.lastColumnKey) {
+      this.selectedColumn.visible = true;
+      return;
+    }
+    this.lastColumnKey = key;
 
     const x = lonToX(chosen.latest.lon);
     const z = latToZ(chosen.latest.lat);
@@ -565,6 +600,24 @@ export class OceanScene {
       }
     }
     return best;
+  }
+
+  /** Project any world point to canvas pixels, so React can hang crisp HTML off the 3D scene. */
+  projectPoint(x: number, y: number, z: number): { x: number; y: number; visible: boolean } {
+    const projected = new Vector3(x, y, z).project(this.camera);
+    const rect = this.canvas.getBoundingClientRect();
+    return {
+      x: ((projected.x + 1) / 2) * rect.width,
+      y: ((1 - projected.y) / 2) * rect.height,
+      visible: projected.z > -1 && projected.z < 1,
+    };
+  }
+
+  /** The box's near-left vertical edge, where the depth ruler is drawn. */
+  rulerAnchor(exaggeration: number, metres: number) {
+    const frame = makeFrame(this.manifest.volume, exaggeration);
+    const { min, max } = boxBounds(frame);
+    return this.projectPoint(min[0], depthToY(frame, metres), max[2]);
   }
 
   /** Where a Float sits on screen right now, so React can hang a label off it. */
@@ -638,6 +691,8 @@ export class OceanScene {
     this.disposed = true;
     cancelAnimationFrame(this.frameId);
     this.controls.dispose();
+    this.currentVolume?.dispose();
+    this.currentPalette?.dispose();
     this.scene.traverse((object) => {
       if (object instanceof Mesh || object instanceof LineSegments || object instanceof Points) {
         object.geometry.dispose();

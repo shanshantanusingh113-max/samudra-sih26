@@ -122,11 +122,14 @@ void main() {
   vec3 fieldColour = base;
 
   if (inset > 0.0) {
-    vec3 tc = vec3(
+    // Node centres, not texel edges — see the matching note in volumeShader.ts.
+    vec3 fraction = vec3(
       (vLonLat.x - uRegion.x) / (uRegion.y - uRegion.x),
       (vLonLat.y - uRegion.z) / (uRegion.w - uRegion.z),
       uDepthFraction
     );
+    vec3 size = vec3(textureSize(uVolume, 0));
+    vec3 tc = (fraction * (size - 1.0) + 0.5) / size;
     vec3 sampled = texture(uVolume, tc).rgb;
     float t = clamp((sampled.r - uWindowMin) / max(uWindowMax - uWindowMin, 1e-5), 0.0, 1.0);
     if (uLogScale > 0.5) t = log(1.0 + 9.0 * t) / log(10.0);

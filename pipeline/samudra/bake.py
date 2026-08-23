@@ -44,10 +44,18 @@ DEPTH_SAMPLES = 48
 
 
 def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | None = None) -> None:
+    if timesteps < 1:
+        raise ValueError(f"need at least one timestep, got {timesteps}")
+
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "volumes").mkdir(exist_ok=True)
     if grid_dir:
         grid_dir.mkdir(parents=True, exist_ok=True)
+        # Clear first. A shorter re-bake would otherwise leave grids from the previous run
+        # behind, and the API resolves them by filename - it would happily interpolate a stale
+        # grid from a different date range and report it as the current analysis.
+        for stale in grid_dir.glob("*.npz"):
+            stale.unlink()
 
     model = IncoisErddapSource()
     observations = ArgoErddapSource()

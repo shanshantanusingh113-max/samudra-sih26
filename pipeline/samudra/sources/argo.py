@@ -96,19 +96,22 @@ def parse_profiles(csv_text: str) -> list[Profile]:
     for row in reader:
         try:
             key = (row[column["platform_number"]], row[column["time"]])
-            positions[key] = (
-                float(row[column["latitude"]]),
-                float(row[column["longitude"]]),
-            )
-            casts[key].append(
-                (
-                    _to_float(row[column["pres_adjusted"]]),
-                    _to_float(row[column["temp_adjusted"]]),
-                    _to_float(row[column["psal_adjusted"]]),
-                )
+            latitude = float(row[column["latitude"]])
+            longitude = float(row[column["longitude"]])
+            measurement = (
+                _to_float(row[column["pres_adjusted"]]),
+                _to_float(row[column["temp_adjusted"]]),
+                _to_float(row[column["psal_adjusted"]]),
             )
         except (KeyError, IndexError, ValueError):
             continue  # a malformed row is not a reason to lose the whole download
+
+        # Everything is parsed before anything is stored. Touching `casts[key]` first would
+        # have a defaultdict create the entry, and a row that then failed to parse would leave
+        # an empty cast behind — which `zip(*rows)` below cannot unpack, taking down the entire
+        # download over one truncated line.
+        positions[key] = (latitude, longitude)
+        casts[key].append(measurement)
 
     profiles: list[Profile] = []
     for (platform_id, stamp), rows in casts.items():

@@ -76,6 +76,21 @@ def test_missing_values_are_tolerated():
     assert profiles[0].values["temperature"][5] == pytest.approx(15.20)
 
 
+def test_a_cast_whose_every_row_is_malformed_does_not_take_down_the_download():
+    """One truncated line used to leave an empty cast behind and abort the whole parse."""
+    lines = CSV.splitlines()
+    broken = [line.replace(",4.1000,80.5000,", ",4.1000,") for line in lines]
+    profiles = parse_profiles("\n".join(broken) + "\n")
+    assert len(profiles) == 1  # the good float survives
+    assert len(profiles[0]) == 8
+
+
+def test_a_row_that_fails_to_parse_leaves_no_empty_cast():
+    trailing = CSV + "9999999,2026-06-09T20:58:41Z,notalat,80.0,4.3,29.5,35.0\n"
+    profiles = parse_profiles(trailing)
+    assert {p.platform_id for p in profiles} == {"1902198"}
+
+
 def test_empty_input_yields_nothing():
     assert parse_profiles("") == []
     assert parse_profiles("platform_number,time\n,UTC\n") == []

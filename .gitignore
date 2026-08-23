@@ -10,3 +10,4 @@ web/probe*.mjs
 
 # Generated CA bundle — rebuilt on demand from certifi plus the committed intermediate.
 pipeline/certs/_bundle.pem
+web/tsconfig.tsbuildinfo

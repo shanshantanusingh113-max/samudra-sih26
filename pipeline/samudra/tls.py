@@ -16,6 +16,8 @@ repo so a fresh clone works offline, and it is a public CA certificate, not a se
 
 from __future__ import annotations
 
+import os
+import tempfile
 from functools import lru_cache
 from pathlib import Path
 

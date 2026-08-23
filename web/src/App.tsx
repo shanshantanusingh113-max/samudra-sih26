@@ -10,6 +10,7 @@ import { OceanScene } from "./scene/OceanScene";
 import { useStore } from "./store";
 import { Chrome, LoadingScreen } from "./ui/Chrome";
 import { Controls } from "./ui/Controls";
+import { DepthRuler } from "./ui/DepthRuler";
 import { ProfilePanel } from "./ui/ProfilePanel";
 import { Timeline } from "./ui/Timeline";
 
@@ -97,9 +98,19 @@ export default function App() {
     loadVolumeTexture(path, width, height, depth)
       .then((texture) => {
         if (cancelled) texture.dispose();
-        else scene.setVolumeTexture(texture);
+        else {
+          scene.setVolumeTexture(texture);
+          useStore.setState({ notice: null });
+        }
       })
-      .catch((error) => useStore.setState({ loadError: String(error) }));
+      // Deliberately not fatal. The Volume already on the GPU is still perfectly good, so one
+      // failed fetch while scrubbing the timeline must not tear down a running session — only
+      // the initial manifest load justifies the fatal screen.
+      .catch(() =>
+        useStore.setState({
+          notice: `Could not load ${fieldKey} for this step — showing the previous one.`,
+        }),
+      );
 
     return () => {
       cancelled = true;
@@ -111,9 +122,8 @@ export default function App() {
     const scene = sceneRef.current;
     const colours = store.manifest?.palettes[store.paletteName];
     if (!scene || !colours) return;
-    const texture = paletteTexture(colours);
-    scene.setPalette(texture);
-    return () => texture.dispose();
+    // The scene takes ownership and releases the palette it replaces.
+    scene.setPalette(paletteTexture(colours));
   }, [ready, store.manifest, store.paletteName]);
 
   // ---- push view state into the scene every render -------------------------
@@ -204,11 +214,20 @@ export default function App() {
       <div className="viewport">
         <canvas ref={canvasRef} onClick={onCanvasClick} onMouseMove={onCanvasMove} />
         {!store.manifest && <LoadingScreen />}
+        {store.notice && (
+          <div className="notice" role="status">
+            {store.notice}
+            <button onClick={() => useStore.setState({ notice: null })} aria-label="Dismiss">
+              ✕
+            </button>
+          </div>
+        )}
       </div>
 
       {store.manifest && (
         <>
           <Chrome onDive={dive} />
+          <DepthRuler scene={sceneRef.current} />
           <Controls />
           <ProfilePanel onFocus={(lon, lat) => sceneRef.current?.focusOn(lon, lat)} />
           <Timeline />
