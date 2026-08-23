@@ -5,6 +5,7 @@ picture, what the computer model predicted and what real instruments in the wate
 measured.**
 
 **Live: https://rak2315.github.io/samudra-sih26/**
+(landing page; the platform itself is at [`/app.html`](https://rak2315.github.io/samudra-sih26/app.html))
 
 Built for **Smart India Hackathon 2026**, Problem Statement **26067**
 (Ministry of Earth Sciences → INCOIS). Category: Software. Theme: Smart Automation.
