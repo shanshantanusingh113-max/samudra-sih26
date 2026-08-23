@@ -146,6 +146,8 @@ The design decisions, including the ones that were hard-won, are written up in
 | [`ppt/PROMPT.md`](ppt/PROMPT.md) | A ready-to-paste prompt for generating that deck with an AI |
 | [`design/STITCH.md`](design/STITCH.md) | Per-screen prompts for Google Stitch |
 | [`plan/01-cut-features.md`](plan/01-cut-features.md) | What was deliberately not built, and what is worth adding back |
+| [`CLAUDE.md`](CLAUDE.md) | Orientation for anyone picking this up: a map of every file, the commands, and the rules that matter |
+| [`REVIEW-PROMPT.md`](REVIEW-PROMPT.md) | A brief for reviewing the whole project against the problem statement |
 
 ## 6. What we deliberately did **not** build
 

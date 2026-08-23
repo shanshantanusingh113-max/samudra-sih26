@@ -63,7 +63,14 @@ _Avoid_: cast, dive, sounding, reading, sample
 
 **Track**:
 The ordered path of a Float's surface fixes over time. What is drawn on the globe as a line.
+Drawn progressively: only the part already travelled by the Timestep on screen.
 _Avoid_: trajectory, route, path
+
+**Fix**:
+One surfacing: a Float's position at one instant. A Float is drawn at the Fix nearest the
+Timestep on screen, and is not drawn at all when its nearest Fix is more than about twelve days
+away - showing it then would imply an observation that does not exist.
+_Avoid_: position, ping, report, sighting
 
 ### The comparison
 
