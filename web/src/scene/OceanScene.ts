@@ -30,12 +30,15 @@ import {
   surfaceVertexShader,
 } from "./earthShader";
 import { boxBounds, depthToY, latToZ, lonToX, makeFrame } from "./geography";
+import { freshness, positionAt, trackUpTo } from "../floatTime";
 import { morphedPosition } from "./morph";
 import { volumeFragmentShader, volumeVertexShader } from "./volumeShader";
 
 export interface ViewState {
   morph: number;
   timestepIndex: number;
+  /** The analysis instant on screen, in epoch milliseconds. Floats are placed against it. */
+  timeMs: number;
   windowMin: number;
   windowMax: number;
   opacity: number;
@@ -133,6 +136,7 @@ export class OceanScene {
   private currentPalette?: Texture;
   private lastBoxKey = "";
   private lastColumnKey = "";
+  private lastTrackTime = Number.NaN;
   private state?: ViewState;
   private frameId = 0;
   private elapsed = 0;
@@ -325,6 +329,8 @@ export class OceanScene {
     geometry.setAttribute("lonLat", new BufferAttribute(lonLat, 2));
     geometry.setAttribute("position", new BufferAttribute(new Float32Array(this.floats.length * 3), 3));
     geometry.setAttribute("selected", new BufferAttribute(new Float32Array(this.floats.length), 1));
+    // 0 means "not reporting near this moment", so the shader can drop it entirely.
+    geometry.setAttribute("fresh", new BufferAttribute(new Float32Array(this.floats.length), 1));
 
     const material = new ShaderMaterial({
       glslVersion: GLSL3,
@@ -341,13 +347,22 @@ export class OceanScene {
       vertexShader: /* glsl */ `
         in vec2 lonLat;
         in float selected;
+        in float fresh;
         uniform float uMorph;
         uniform float uSize;
         out float vSelected;
+        out float vFresh;
         const float PI = 3.141592653589793;
         const float EARTH_RADIUS = ${EARTH_RADIUS.toFixed(6)};
         void main() {
           vSelected = selected;
+          vFresh = fresh;
+          if (fresh <= 0.0) {
+            // Not reporting near this Timestep: park it behind the camera so it never draws.
+            gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+            gl_PointSize = 0.0;
+            return;
+          }
           float phi = radians(lonLat.x);
           float theta = radians(lonLat.y);
           float r = EARTH_RADIUS + 0.15;
@@ -365,6 +380,7 @@ export class OceanScene {
         uniform vec3 uSelectedColour;
         uniform float uPulse;
         in float vSelected;
+        in float vFresh;
         out vec4 fragColor;
         void main() {
           vec2 offset = gl_PointCoord - 0.5;
@@ -380,7 +396,7 @@ export class OceanScene {
 
           vec3 fill = mix(uColour, uSelectedColour, vSelected);
           vec3 colour = mix(uOutline, fill, core);
-          float alpha = body * (0.85 + 0.15 * core);
+          float alpha = body * (0.85 + 0.15 * core) * vFresh;
 
           // The selected Float breathes, so the eye can find it again after the camera moves.
           float pulse = vSelected * (1.0 - smoothstep(0.39, 0.5, distance)) * uPulse * 0.5;
@@ -395,20 +411,26 @@ export class OceanScene {
     this.scene.add(this.floatPoints);
   }
 
-  private buildTracks(): void {
+  /** Track segments travelled by `whenMs`. */
+  private buildTrackGeometry(whenMs: number): BufferGeometry {
     const lonLat: number[] = [];
     for (const item of this.floats) {
-      for (let i = 0; i < item.track.length - 1; i++) {
-        const a = item.track[i];
-        const b = item.track[i + 1];
+      const travelled = trackUpTo(item, whenMs);
+      for (let i = 0; i < travelled.length - 1; i++) {
+        const a = travelled[i];
+        const b = travelled[i + 1];
         if (!a || !b) continue;
         lonLat.push(a.lon, a.lat, b.lon, b.lat);
       }
     }
-
     const geometry = new BufferGeometry();
     geometry.setAttribute("lonLat", new BufferAttribute(new Float32Array(lonLat), 2));
-    geometry.setAttribute("position", new BufferAttribute(new Float32Array(lonLat.length / 2 * 3), 3));
+    geometry.setAttribute("position", new BufferAttribute(new Float32Array((lonLat.length / 2) * 3), 3));
+    return geometry;
+  }
+
+  private buildTracks(): void {
+    const geometry = this.buildTrackGeometry(Number.POSITIVE_INFINITY);
 
     const material = new ShaderMaterial({
       glslVersion: GLSL3,
@@ -529,13 +551,30 @@ export class OceanScene {
     if (this.floatPoints) {
       this.floatPoints.visible = state.showFloats;
       const selected = this.floatPoints.geometry.getAttribute("selected") as BufferAttribute;
+      const fresh = this.floatPoints.geometry.getAttribute("fresh") as BufferAttribute;
+      const lonLat = this.floatPoints.geometry.getAttribute("lonLat") as BufferAttribute;
+
       this.floats.forEach((item, index) => {
+        const fix = positionAt(item, state.timeMs);
         selected.setX(index, item.id === state.selectedFloatId ? 1 : 0);
+        fresh.setX(index, fix ? freshness(fix.ageDays) : 0);
+        if (fix) lonLat.setXY(index, fix.lon, fix.lat);
       });
       selected.needsUpdate = true;
+      fresh.needsUpdate = true;
+      lonLat.needsUpdate = true;
     }
 
-    if (this.trackLines) this.trackLines.visible = state.showTracks;
+    if (this.trackLines) {
+      this.trackLines.visible = state.showTracks;
+      // Only the drift that had already happened by this Timestep, so pressing play draws the
+      // tracks out rather than showing every float's whole future at once.
+      if (state.timeMs !== this.lastTrackTime) {
+        this.lastTrackTime = state.timeMs;
+        this.trackLines.geometry.dispose();
+        this.trackLines.geometry = this.buildTrackGeometry(state.timeMs);
+      }
+    }
 
     this.updateSelectedColumn(state, frame);
   }
@@ -549,15 +588,16 @@ export class OceanScene {
       return;
     }
 
-    const key = `${chosen.id}|${frame.boxHeight}`;
+    const key = `${chosen.id}|${frame.boxHeight}|${state.timeMs}`;
     if (key === this.lastColumnKey) {
       this.selectedColumn.visible = true;
       return;
     }
     this.lastColumnKey = key;
 
-    const x = lonToX(chosen.latest.lon);
-    const z = latToZ(chosen.latest.lat);
+    const fix = positionAt(chosen, state.timeMs);
+    const x = lonToX(fix?.lon ?? chosen.latest.lon);
+    const z = latToZ(fix?.lat ?? chosen.latest.lat);
     const bottom = -frame.boxHeight;
 
     const points: number[] = [x, 0.4, z, x, bottom, z];
@@ -587,7 +627,9 @@ export class OceanScene {
     const world = new Vector3();
 
     for (const item of this.floats) {
-      morphedPosition(item.latest.lon, item.latest.lat, this.state.morph, 0.15, world);
+      const fix = positionAt(item, this.state.timeMs);
+      if (!fix) continue;
+      morphedPosition(fix.lon, fix.lat, this.state.morph, 0.15, world);
       const projected = world.clone().project(this.camera);
       if (projected.z < -1 || projected.z > 1) continue;
 
@@ -622,7 +664,13 @@ export class OceanScene {
 
   /** Where a Float sits on screen right now, so React can hang a label off it. */
   projectFloat(item: OceanFloat): { x: number; y: number; visible: boolean } {
-    const world = morphedPosition(item.latest.lon, item.latest.lat, this.state?.morph ?? 0, 0.15);
+    const fix = this.state ? positionAt(item, this.state.timeMs) : null;
+    const world = morphedPosition(
+      fix?.lon ?? item.latest.lon,
+      fix?.lat ?? item.latest.lat,
+      this.state?.morph ?? 0,
+      0.15,
+    );
     const projected = world.project(this.camera);
     const rect = this.canvas.getBoundingClientRect();
     return {

@@ -269,7 +269,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Bake INCOIS + Argo data into static assets.")
     parser.add_argument("--output", type=Path, default=Path("../web/public/data"))
     parser.add_argument("--timesteps", type=int, default=12, help="most recent N (10-day) steps")
-    parser.add_argument("--profile-days", type=int, default=60)
+    # Matched to the Timestep span on purpose. Floats are drawn at where they actually were at
+    # the moment on screen, so a shorter profile window leaves the early frames with no
+    # instruments at all - which reads as "the tool is broken" rather than "no data".
+    parser.add_argument("--profile-days", type=int, default=130)
     parser.add_argument(
         "--grids",
         type=Path,

@@ -1,0 +1,203 @@
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=Chivo:wght@400;700;900&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;background-color:#0f1415;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-tertiary-container":"#771b0d","error":"#ffb4ab","inverse-on-surface":"#2c3132","error-container":"#93000a","on-background":"#dee3e4","surface-tint":"#64d7e3","on-secondary-fixed":"#271900","tertiary-fixed":"#ffdad3","on-secondary":"#422c00","inverse-surface":"#dee3e4","secondary-fixed":"#ffdea9","surface-container-high":"#252b2c","primary-container":"#3fb8c4","on-tertiary-fixed-variant":"#842515","surface-container-highest":"#303636","tertiary-container":"#ff866f","secondary":"#fabc45","tertiary-fixed-dim":"#ffb4a6","primary":"#64d7e3","on-surface-variant":"#bcc9ca","surface-container":"#1b2121","outline":"#869394","primary-fixed-dim":"#64d7e3","inverse-primary":"#006971","surface-variant":"#303636","secondary-container":"#bd8708","surface-dim":"#0f1415","on-tertiary-fixed":"#3f0300","surface-container-low":"#171d1d","primary-fixed":"#86f3ff","on-tertiary":"#640d02","on-primary-fixed":"#002023","on-primary-container":"#00454a","surface-container-lowest":"#0a0f10","on-secondary-container":"#392600","outline-variant":"#3d494a","on-error":"#690005","secondary-fixed-dim":"#fabc45","surface":"#0f1415","on-error-container":"#ffdad6","on-primary":"#00363b","surface-bright":"#353a3b","on-surface":"#dee3e4","background":"#0f1415","on-primary-fixed-variant":"#004f55","on-secondary-fixed-variant":"#5f4100","tertiary":"#ffb4a6"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"lg":"40px","xl":"64px","margin":"32px","xs":"8px","base":"4px","sm":"16px","gutter":"20px","md":"24px"},"fontFamily":{"ui-mono":["IBM Plex Mono"],"data-num":["Chivo"],"label-caps":["IBM Plex Mono"],"display-md":["Chivo"],"body-reg":["Chivo"],"display-lg":["Chivo"]},"fontSize":{"ui-mono":["12px",{"lineHeight":"14px","letterSpacing":"2%","fontWeight":"400"}],"data-num":["24px",{"lineHeight":"1.2","letterSpacing":"-1%","fontWeight":"700"}],"label-caps":["11px",{"lineHeight":"16px","letterSpacing":"12%","fontWeight":"500"}],"display-md":["32px",{"lineHeight":"1.2","letterSpacing":"-2%","fontWeight":"700"}],"body-reg":["16px",{"lineHeight":"1.65","letterSpacing":"0%","fontWeight":"400"}],"display-lg":["48px",{"lineHeight":"1.1","letterSpacing":"-3.5%","fontWeight":"900"}]}}}}</script></head><body class="bg-background font-body-reg text-on-background"><header class="fixed top-0 w-full z-50 bg-surface/70 backdrop-blur-md border-b border-outline-variant/30"><div class="h-[62px] w-full px-margin flex items-center justify-between"><div class="flex items-center gap-xl"><div class="font-ui-mono text-body-reg tracking-wider text-on-surface select-none">SAMUDRA<span class="text-primary">.3D</span></div><nav class="hidden lg:flex items-center gap-md" data-active-classes="text-primary"><a aria-current="page" class="font-label-caps transition-colors uppercase text-primary" data-path="the-gap" href="#">The Gap</a><a class="font-label-caps text-label-caps text-on-surface-variant hover:text-on-surface transition-colors uppercase" data-path="how-it-works" href="#">How it works</a><a class="font-label-caps text-label-caps text-on-surface-variant hover:text-on-surface transition-colors uppercase" data-path="evidence" href="#">Evidence</a><a class="font-label-caps text-label-caps text-on-surface-variant hover:text-on-surface transition-colors uppercase" data-path="how-it-is-built" href="#">How it is built</a></nav></div><div class="flex items-center gap-md"><button class="bg-primary hover:bg-primary/90 text-on-primary font-label-caps text-label-caps px-md py-xs rounded-none transition-all uppercase">Launch the platform</button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-[62px]"><div class="flex flex-col w-full min-h-[calc(100vh-62px)] relative overflow-hidden bg-surface-dim">
+<!-- 3D Canvas Background -->
+<div class="absolute inset-0 w-full h-full z-0 pointer-events-none">
+
+</div>
+<!-- Decorative Gradients / Scrims for readability -->
+<div class="absolute inset-0 w-full h-full bg-gradient-to-t from-surface-dim via-transparent to-surface-dim/40 pointer-events-none z-0"></div>
+<div class="absolute inset-0 w-full h-full bg-gradient-to-r from-surface-dim/90 via-transparent to-transparent pointer-events-none z-0"></div>
+<!-- Top Overlay Bar (Below Header Clearance) -->
+<div class="relative z-10 w-full flex justify-between items-start px-margin py-md pointer-events-none">
+<div class="flex flex-col gap-base pointer-events-auto">
+<div class="flex items-center gap-xs">
+<div class="w-1.5 h-1.5 bg-secondary animate-pulse rounded-full"></div>
+<span class="font-ui-mono text-ui-mono text-secondary uppercase tracking-widest">Global Sector: Indian Ocean</span>
+</div>
+<div class="flex items-end gap-sm">
+<span class="font-display-md text-display-md text-on-surface">EEZ Active Field</span>
+<span class="font-ui-mono text-ui-mono text-outline mb-1">DATA_STREAM: LIVE</span>
+</div>
+</div>
+<div class="flex items-center gap-md pointer-events-auto bg-surface/80 backdrop-blur-md rounded px-sm py-xs border border-outline-variant/30">
+<div class="flex flex-col items-end">
+<span class="font-label-caps text-label-caps text-on-surface-variant">ANALYSIS / INTERVAL</span>
+<span class="font-ui-mono text-ui-mono text-on-surface">2026-07-30 T 14:00Z</span>
+</div>
+<div class="w-px h-8 bg-outline-variant/50 mx-xs"></div>
+<button class="bg-primary hover:bg-primary/90 text-on-primary font-label-caps text-label-caps px-md py-sm rounded-sm transition-all uppercase flex items-center gap-xs group">
+<span class="material-symbols-outlined text-[18px] group-hover:-translate-y-0.5 transition-transform">water_drop</span>
+                Dive into the water
+            </button>
+</div>
+</div>
+<!-- Main Content Area -->
+<div class="relative z-10 flex-1 flex px-margin pb-xl gap-gutter pointer-events-none">
+<!-- Left Floating Panel - Controls HUD -->
+<aside class="w-[288px] flex-shrink-0 flex flex-col gap-gutter pointer-events-auto h-[calc(100vh-200px)] overflow-y-auto pr-xs scrollbar-hide">
+<!-- Panel: Variable -->
+<div class="bg-surface-container/60 backdrop-blur-md rounded border border-outline-variant/30 p-md flex flex-col gap-sm shadow-xl">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest border-b border-outline-variant/30 pb-xs">Variable Target</h3>
+<div class="flex flex-col gap-base mt-xs">
+<button class="w-full text-left px-sm py-xs bg-primary/10 border border-primary/30 rounded-sm flex items-center justify-between group transition-colors hover:bg-primary/20">
+<span class="font-body-reg text-body-reg text-primary group-hover:text-primary-fixed transition-colors">Sea Surface Temp</span>
+<span class="material-symbols-outlined text-primary text-[16px]">thermostat</span>
+</button>
+<button class="w-full text-left px-sm py-xs bg-surface border border-outline-variant/20 rounded-sm flex items-center justify-between group transition-colors hover:bg-surface-container-highest">
+<span class="font-body-reg text-body-reg text-on-surface-variant group-hover:text-on-surface transition-colors">Salinity Index</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[16px]">water</span>
+</button>
+<button class="w-full text-left px-sm py-xs bg-surface border border-outline-variant/20 rounded-sm flex items-center justify-between group transition-colors hover:bg-surface-container-highest">
+<span class="font-body-reg text-body-reg text-on-surface-variant group-hover:text-on-surface transition-colors">Current Velocity</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[16px]">air</span>
+</button>
+</div>
+</div>
+<!-- Panel: Colourbar -->
+<div class="bg-surface-container/60 backdrop-blur-md rounded border border-outline-variant/30 p-md flex flex-col gap-sm shadow-xl">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest border-b border-outline-variant/30 pb-xs">Thermal Gradient (℃)</h3>
+<div class="mt-xs flex flex-col gap-xs">
+<div class="w-full h-4 rounded-sm bg-gradient-to-r from-[#0C1F2E] via-[#3fb8c4] to-[#fabc45]"></div>
+<div class="flex justify-between items-center px-1">
+<span class="font-ui-mono text-ui-mono text-outline">-2.0</span>
+<span class="font-ui-mono text-ui-mono text-outline">15.0</span>
+<span class="font-ui-mono text-ui-mono text-outline">32.0</span>
+</div>
+</div>
+</div>
+<!-- Panel: Sea Surface Level Controls -->
+<div class="bg-surface-container/60 backdrop-blur-md rounded border border-outline-variant/30 p-md flex flex-col gap-sm shadow-xl">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest border-b border-outline-variant/30 pb-xs">Depth Stratification</h3>
+<div class="flex flex-col gap-sm mt-xs">
+<div class="flex justify-between items-center">
+<span class="font-ui-mono text-ui-mono text-on-surface">Z-Index: Surface</span>
+<span class="font-ui-mono text-ui-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded-sm">0m</span>
+</div>
+<input class="w-full h-1 bg-surface-container-highest rounded-full appearance-none cursor-pointer accent-primary" max="100" min="0" type="range" value="0"/>
+<div class="flex justify-between items-center opacity-50">
+<span class="font-ui-mono text-ui-mono text-outline">Benthic Bound</span>
+<span class="font-ui-mono text-ui-mono text-outline">-6000m</span>
+</div>
+</div>
+</div>
+<!-- Panel: Instruments -->
+<div class="bg-surface-container/60 backdrop-blur-md rounded border border-outline-variant/30 p-md flex flex-col gap-sm shadow-xl flex-1">
+<div class="flex items-center justify-between border-b border-outline-variant/30 pb-xs">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Active Instruments</h3>
+<span class="font-ui-mono text-ui-mono text-secondary bg-secondary/10 px-1.5 rounded-sm">88</span>
+</div>
+<div class="mt-xs flex flex-col gap-xs flex-1 overflow-y-auto pr-1 scrollbar-hide">
+<!-- Instrument Item -->
+<div class="flex items-center justify-between p-xs bg-surface border border-outline-variant/20 rounded-sm hover:border-primary/50 transition-colors cursor-pointer group">
+<div class="flex items-center gap-xs">
+<div class="w-1.5 h-1.5 bg-secondary rounded-sm"></div>
+<span class="font-ui-mono text-ui-mono text-on-surface group-hover:text-primary transition-colors">FLOAT_4A-X</span>
+</div>
+<span class="material-symbols-outlined text-outline text-[14px] group-hover:text-primary">my_location</span>
+</div>
+<div class="flex items-center justify-between p-xs bg-surface border border-outline-variant/20 rounded-sm hover:border-primary/50 transition-colors cursor-pointer group">
+<div class="flex items-center gap-xs">
+<div class="w-1.5 h-1.5 bg-secondary rounded-sm"></div>
+<span class="font-ui-mono text-ui-mono text-on-surface group-hover:text-primary transition-colors">GLIDER_7B-Z</span>
+</div>
+<span class="material-symbols-outlined text-outline text-[14px] group-hover:text-primary">my_location</span>
+</div>
+<div class="flex items-center justify-between p-xs bg-surface border border-outline-variant/20 rounded-sm hover:border-primary/50 transition-colors cursor-pointer group">
+<div class="flex items-center gap-xs">
+<div class="w-1.5 h-1.5 bg-secondary rounded-sm opacity-50"></div>
+<span class="font-ui-mono text-ui-mono text-outline group-hover:text-primary transition-colors">MOOR_2C-Y</span>
+</div>
+<span class="font-label-caps text-label-caps text-error">OFFLINE</span>
+</div>
+<div class="flex items-center justify-between p-xs bg-surface border border-outline-variant/20 rounded-sm hover:border-primary/50 transition-colors cursor-pointer group">
+<div class="flex items-center gap-xs">
+<div class="w-1.5 h-1.5 bg-secondary rounded-sm"></div>
+<span class="font-ui-mono text-ui-mono text-on-surface group-hover:text-primary transition-colors">FLOAT_9D-W</span>
+</div>
+<span class="material-symbols-outlined text-outline text-[14px] group-hover:text-primary">my_location</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Centered Info Card Top -->
+<div class="absolute top-md left-1/2 -translate-x-1/2 pointer-events-auto">
+<div class="bg-surface/80 backdrop-blur-md rounded-lg border border-outline-variant/30 px-lg py-sm flex flex-col items-center gap-xs shadow-2xl">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Target Zone Anomalies</span>
+<div class="flex items-baseline gap-xs">
+<span class="font-display-lg text-display-lg text-secondary">+1.4</span>
+<span class="font-ui-mono text-ui-mono text-outline">℃/avg</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Timeline Bar -->
+<div class="absolute bottom-margin left-margin right-margin h-16 bg-surface-container-high/90 backdrop-blur-md rounded border border-outline-variant/50 pointer-events-auto flex items-center px-sm gap-md shadow-2xl">
+<button class="w-10 h-10 rounded-full bg-primary flex items-center justify-center hover:bg-primary/90 transition-transform hover:scale-105 active:scale-95 flex-shrink-0">
+<span class="material-symbols-outlined text-on-primary" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</button>
+<div class="flex-1 h-full flex flex-col justify-center relative">
+<div class="w-full h-0.5 bg-outline-variant/50 absolute top-1/2 -translate-y-1/2"></div>
+<!-- Playhead -->
+<div class="absolute top-1/2 -translate-y-1/2 left-[75%] w-0.5 h-6 bg-primary shadow-[0_0_8px_rgba(100,215,227,0.8)] z-10 flex flex-col items-center">
+<div class="w-3 h-3 bg-surface border-2 border-primary rounded-full absolute -top-1"></div>
+</div>
+<!-- Ticks -->
+<div class="w-full flex justify-between items-center absolute top-1/2 -translate-y-1/2 z-0">
+<div class="w-px h-3 bg-outline-variant"></div>
+<div class="w-px h-2 bg-outline-variant/50"></div>
+<div class="w-px h-2 bg-outline-variant/50"></div>
+<div class="w-px h-3 bg-outline-variant"></div>
+<div class="w-px h-2 bg-outline-variant/50"></div>
+<div class="w-px h-2 bg-outline-variant/50"></div>
+<div class="w-px h-3 bg-outline-variant bg-primary/50"></div>
+<div class="w-px h-2 bg-outline-variant/50"></div>
+<div class="w-px h-2 bg-outline-variant/50"></div>
+<div class="w-px h-3 bg-outline-variant"></div>
+</div>
+<!-- Dates -->
+<div class="w-full flex justify-between items-center absolute top-full mt-1 px-1">
+<span class="font-ui-mono text-[10px] text-outline">Q1 '26</span>
+<span class="font-ui-mono text-[10px] text-outline">Q2 '26</span>
+<span class="font-ui-mono text-[10px] text-primary font-bold">Q3 '26</span>
+<span class="font-ui-mono text-[10px] text-outline">Q4 '26</span>
+</div>
+</div>
+<div class="flex flex-col items-end flex-shrink-0 border-l border-outline-variant/30 pl-md">
+<span class="font-label-caps text-label-caps text-on-surface-variant">PLAYBACK SPEED</span>
+<div class="flex items-center gap-xs mt-1">
+<button class="font-ui-mono text-ui-mono text-outline hover:text-primary transition-colors">1x</button>
+<button class="font-ui-mono text-ui-mono text-primary bg-primary/10 px-1 rounded-sm">2x</button>
+<button class="font-ui-mono text-ui-mono text-outline hover:text-primary transition-colors">5x</button>
+</div>
+</div>
+</div>
+</div>
+<style>
+    /* Custom range slider styling to enforce cyan thumb */
+    input[type=range]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        height: 16px;
+        width: 16px;
+        border-radius: 50%;
+        background: #64d7e3;
+        cursor: pointer;
+        border: 2px solid #0f1415;
+        box-shadow: 0 0 0 1px #64d7e3;
+    }
+    input[type=range]::-moz-range-thumb {
+        height: 16px;
+        width: 16px;
+        border-radius: 50%;
+        background: #64d7e3;
+        cursor: pointer;
+        border: 2px solid #0f1415;
+        box-shadow: 0 0 0 1px #64d7e3;
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+</style></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/20 py-xl mt-xl"><div class="px-margin grid grid-cols-1 md:grid-cols-4 gap-xl"><div class="col-span-2"><div class="font-ui-mono text-body-reg text-on-surface mb-sm">SAMUDRA.3D</div><p class="font-body-reg text-on-surface-variant max-w-sm">High-precision oceanic telemetry and 3D spatial visualization for deep-sea research and tactical deployment.</p></div><div class="flex flex-col gap-base"><span class="font-label-caps text-label-caps text-on-surface-variant mb-base">LEGAL</span><a class="font-ui-mono text-ui-mono text-on-surface-variant hover:text-primary transition-colors" href="#">Terms of Service</a><a class="font-ui-mono text-ui-mono text-on-surface-variant hover:text-primary transition-colors" href="#">Privacy Protocol</a></div><div class="flex flex-col gap-base"><span class="font-label-caps text-label-caps text-on-surface-variant mb-base">SYSTEM</span><div class="flex items-center gap-xs"><div class="w-2 h-2 bg-primary"></div><span class="font-ui-mono text-ui-mono text-on-surface">UPLINK ACTIVE</span></div><div class="font-ui-mono text-ui-mono text-outline">VER: 4.8.2-OMEGA</div></div></div></footer></body></html>

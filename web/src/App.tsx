@@ -12,6 +12,7 @@ import { Chrome, LoadingScreen } from "./ui/Chrome";
 import { Controls } from "./ui/Controls";
 import { DepthRuler } from "./ui/DepthRuler";
 import { GuidePanel } from "./ui/GuidePanel";
+import { MapKey } from "./ui/MapKey";
 import { ProfilePanel } from "./ui/ProfilePanel";
 import { Timeline } from "./ui/Timeline";
 
@@ -132,6 +133,7 @@ export default function App() {
     sceneRef.current?.update({
       morph: store.morph,
       timestepIndex: store.timestepIndex,
+      timeMs: new Date(store.manifest?.timesteps[store.timestepIndex] ?? 0).getTime(),
       windowMin: store.windowMin,
       windowMax: store.windowMax,
       opacity: store.opacity,
@@ -229,6 +231,7 @@ export default function App() {
         <>
           <Chrome onDive={dive} />
           <DepthRuler scene={sceneRef.current} />
+          <MapKey />
           <Controls />
           <GuidePanel />
           <ProfilePanel onFocus={(lon, lat) => sceneRef.current?.focusOn(lon, lat)} />

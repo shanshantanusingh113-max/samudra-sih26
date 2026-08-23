@@ -20,8 +20,13 @@
   --warm: #f9776b;
   --cool: #60a5fa;
 
-  --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
-  --sans: "Inter", -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+  /* Chivo and IBM Plex Mono are loaded in app.html. Chivo has real character at heavy weights
+     without being the Inter-or-Space-Grotesk default, and Plex Mono reads as instrumentation
+     rather than as code. Both match the landing page, so the product feels like one thing. */
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --sans: "Chivo", "Helvetica Neue", Arial, system-ui, sans-serif;
+
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 
   --radius: 10px;
 }
@@ -68,6 +73,69 @@ body {
 
 .viewport canvas:active {
   cursor: grabbing;
+}
+
+/* ---------------------------------------------------------------- motion */
+
+/*
+ * Motion here is functional, not decorative: panels arrive from the side they belong to so the
+ * eye knows where to look, numbers settle rather than snap so a change is noticed, and anything
+ * that would distract during a demo is left still.
+ */
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes draw-line {
+  from { stroke-dashoffset: 1200; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+.panel-left { animation: slide-in-left 0.42s var(--ease) both; }
+.panel-right { animation: slide-in-right 0.42s var(--ease) both; }
+.timeline { animation: fade-up 0.5s var(--ease) 0.1s both; }
+.mapkey { animation: fade-up 0.5s var(--ease) 0.18s both; }
+
+.control-group { animation: fade-up 0.4s var(--ease) both; }
+.control-group:nth-child(2) { animation-delay: 0.04s; }
+.control-group:nth-child(3) { animation-delay: 0.08s; }
+.control-group:nth-child(4) { animation-delay: 0.12s; }
+.control-group:nth-child(5) { animation-delay: 0.16s; }
+
+/* The measured line draws itself in, so the eye follows it down through the water. */
+.line-observed {
+  stroke-dasharray: 1200;
+  animation: draw-line 1.1s var(--ease) both;
+}
+
+.stat-value {
+  transition: color 0.3s var(--ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }
 
 /* ---------------------------------------------------------------- chrome */
@@ -303,17 +371,24 @@ select {
 }
 
 .segmented button {
+  position: relative;
   flex: 1;
-  padding: 7px 6px;
+  padding: 8px 6px;
   border-radius: 7px;
   border: 1px solid var(--panel-edge);
   background: rgba(12, 20, 34, 0.6);
   color: var(--ink-dim);
   font-family: var(--sans);
   font-size: 11.5px;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  transition: all 0.15s;
+  overflow: hidden;
+  transition: color 0.18s var(--ease), border-color 0.18s var(--ease),
+    background 0.18s var(--ease), transform 0.14s var(--ease);
 }
+
+.segmented button:hover { transform: translateY(-1px); }
+.segmented button:active { transform: translateY(0); }
 
 .segmented button:hover {
   color: var(--ink);
@@ -382,7 +457,12 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.18);
+  transform: scale(1.25);
+  box-shadow: 0 0 0 5px rgba(56, 189, 248, 0.16);
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(1.05);
 }
 
 input[type="range"]::-moz-range-thumb {
@@ -518,6 +598,67 @@ input[type="range"]::-moz-range-thumb {
   font-size: 10px;
   line-height: 1.55;
   color: var(--ink-faint);
+}
+
+/* ---------------------------------------------------------------- map key */
+
+.mapkey {
+  position: absolute;
+  left: 20px;
+  bottom: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 11px 14px;
+  border: 1px solid var(--panel-edge);
+  border-radius: var(--radius);
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  pointer-events: none;
+}
+
+.mapkey-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 1px;
+}
+
+.mapkey-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+
+.swatch {
+  flex: none;
+  width: 15px;
+  display: inline-block;
+}
+
+.swatch.float {
+  height: 9px;
+  width: 9px;
+  border-radius: 50%;
+  background: #fdfdfd;
+  border: 2px solid #07111d;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+.swatch.track {
+  height: 2px;
+  background: #f0a04b;
+  border-radius: 1px;
+}
+
+.swatch.coast {
+  height: 2px;
+  background: #7fd4f5;
+  border-radius: 1px;
 }
 
 /* ---------------------------------------------------------------- profile */
@@ -746,6 +887,100 @@ input[type="range"]::-moz-range-thumb {
 
 .analysis-note.drifted { color: var(--accent-warm); }
 
+
+/* key/value block, status pill, verdict */
+
+.profile-actions { display: flex; align-items: center; gap: 8px; }
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.pill.live {
+  color: var(--accent-good);
+  background: rgba(74, 222, 128, 0.11);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.pill.live::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent-good);
+  animation: breathe 2.4s ease-in-out infinite;
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 14px;
+  margin: 0 0 14px;
+  padding-bottom: 13px;
+  border-bottom: 1px solid rgba(126, 176, 214, 0.1);
+}
+
+.kv dt {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  align-self: center;
+}
+
+.kv dd {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ink);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-title {
+  margin: 0 0 8px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.grid.faint { stroke: rgba(126, 176, 214, 0.07); }
+
+.axis-arrow {
+  fill: var(--ink-faint);
+  font-size: 11px;
+  font-family: var(--mono);
+}
+
+.key-gap::before { background: rgba(249, 119, 107, 0.5); height: 7px; border-radius: 2px; }
+
+.verdict {
+  margin: 13px 0 0;
+  padding: 10px 12px;
+  border-left: 2px solid var(--ink-faint);
+  border-radius: 0 6px 6px 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--ink-dim);
+  animation: fade-up 0.4s var(--ease) 0.15s both;
+}
+
+.verdict b { color: var(--ink); }
+.verdict.good { border-left-color: var(--accent-good); background: rgba(74, 222, 128, 0.06); }
+.verdict.fair { border-left-color: var(--accent-warm); background: rgba(255, 209, 102, 0.06); }
+.verdict.poor { border-left-color: var(--warm); background: rgba(249, 119, 107, 0.07); }
+
 /* ---------------------------------------------------------------- timeline */
 
 .timeline {
@@ -779,8 +1014,11 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .play:hover {
-  background: rgba(56, 189, 248, 0.26);
+  background: rgba(56, 189, 248, 0.3);
+  transform: scale(1.06);
 }
+
+.play:active { transform: scale(0.97); }
 
 .timeline-track {
   flex: 1;

@@ -1,0 +1,188 @@
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=Chivo:wght@400;700;900&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;background-color:#0f1415;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-tertiary-container":"#771b0d","error":"#ffb4ab","inverse-on-surface":"#2c3132","error-container":"#93000a","on-background":"#dee3e4","surface-tint":"#64d7e3","on-secondary-fixed":"#271900","tertiary-fixed":"#ffdad3","on-secondary":"#422c00","inverse-surface":"#dee3e4","secondary-fixed":"#ffdea9","surface-container-high":"#252b2c","primary-container":"#3fb8c4","on-tertiary-fixed-variant":"#842515","surface-container-highest":"#303636","tertiary-container":"#ff866f","secondary":"#fabc45","tertiary-fixed-dim":"#ffb4a6","primary":"#64d7e3","on-surface-variant":"#bcc9ca","surface-container":"#1b2121","outline":"#869394","primary-fixed-dim":"#64d7e3","inverse-primary":"#006971","surface-variant":"#303636","secondary-container":"#bd8708","surface-dim":"#0f1415","on-tertiary-fixed":"#3f0300","surface-container-low":"#171d1d","primary-fixed":"#86f3ff","on-tertiary":"#640d02","on-primary-fixed":"#002023","on-primary-container":"#00454a","surface-container-lowest":"#0a0f10","on-secondary-container":"#392600","outline-variant":"#3d494a","on-error":"#690005","secondary-fixed-dim":"#fabc45","surface":"#0f1415","on-error-container":"#ffdad6","on-primary":"#00363b","surface-bright":"#353a3b","on-surface":"#dee3e4","background":"#0f1415","on-primary-fixed-variant":"#004f55","on-secondary-fixed-variant":"#5f4100","tertiary":"#ffb4a6"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"lg":"40px","xl":"64px","margin":"32px","xs":"8px","base":"4px","sm":"16px","gutter":"20px","md":"24px"},"fontFamily":{"ui-mono":["IBM Plex Mono"],"data-num":["Chivo"],"label-caps":["IBM Plex Mono"],"display-md":["Chivo"],"body-reg":["Chivo"],"display-lg":["Chivo"]},"fontSize":{"ui-mono":["12px",{"lineHeight":"14px","letterSpacing":"2%","fontWeight":"400"}],"data-num":["24px",{"lineHeight":"1.2","letterSpacing":"-1%","fontWeight":"700"}],"label-caps":["11px",{"lineHeight":"16px","letterSpacing":"12%","fontWeight":"500"}],"display-md":["32px",{"lineHeight":"1.2","letterSpacing":"-2%","fontWeight":"700"}],"body-reg":["16px",{"lineHeight":"1.65","letterSpacing":"0%","fontWeight":"400"}],"display-lg":["48px",{"lineHeight":"1.1","letterSpacing":"-3.5%","fontWeight":"900"}]}}}}</script></head><body class="bg-background font-body-reg text-on-background"><header class="fixed top-0 w-full z-50 bg-surface/70 backdrop-blur-md border-b border-outline-variant/30"><div class="h-[62px] w-full px-margin flex items-center justify-between"><div class="flex items-center gap-xl"><div class="font-ui-mono text-body-reg tracking-wider text-on-surface select-none">SAMUDRA<span class="text-primary">.3D</span></div><nav class="hidden lg:flex items-center gap-md" data-active-classes="text-primary"><a aria-current="page" class="font-label-caps transition-colors uppercase text-primary" data-path="the-gap" href="#">The Gap</a><a class="font-label-caps text-label-caps text-on-surface-variant hover:text-on-surface transition-colors uppercase" data-path="how-it-works" href="#">How it works</a><a class="font-label-caps text-label-caps text-on-surface-variant hover:text-on-surface transition-colors uppercase" data-path="evidence" href="#">Evidence</a><a class="font-label-caps text-label-caps text-on-surface-variant hover:text-on-surface transition-colors uppercase" data-path="how-it-is-built" href="#">How it is built</a></nav></div><div class="flex items-center gap-md"><button class="bg-primary hover:bg-primary/90 text-on-primary font-label-caps text-label-caps px-md py-xs rounded-none transition-all uppercase">Launch the platform</button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-[62px]"><div class="flex flex-col w-full">
+<!-- Inner container to establish dashboard height and coordinate space -->
+<div class="relative w-full h-[calc(100vh-62px)] bg-surface-dim overflow-hidden flex flex-col">
+<!-- 3D Ocean Volume Container (Z-0) -->
+<div class="absolute inset-0 z-0 bg-surface-container-lowest">
+
+<!-- Vignette overlay for HUD legibility -->
+<div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-surface-dim/20 to-surface-dim/90 pointer-events-none mix-blend-multiply"></div>
+<!-- Depth indicator gradient layer (subtle visual cue behind UI) -->
+<div class="absolute inset-0 bg-gradient-to-b from-secondary/5 via-primary/5 to-surface-dim/80 pointer-events-none mix-blend-overlay"></div>
+</div>
+<!-- HUD Layer (Z-10) -->
+<div class="absolute inset-0 z-10 p-md flex justify-between items-stretch pointer-events-none">
+<!-- LEFT FLANK: Ruler & Controls -->
+<div class="flex gap-md h-full items-stretch pointer-events-auto">
+<!-- Depth Ruler -->
+<div class="w-[48px] flex flex-col items-center py-xl relative border-r border-outline-variant/30 bg-surface/40 backdrop-blur-sm rounded-l">
+<div class="font-label-caps text-label-caps text-primary [writing-mode:vertical-rl] rotate-180 absolute top-4 tracking-widest">DEPTH [M]</div>
+<!-- Ruler Track -->
+<div class="absolute top-[80px] bottom-[40px] w-full flex flex-col relative">
+<!-- Ticks (Simulated compressed scale towards bottom) -->
+<div class="absolute top-0 w-full flex flex-col items-end right-0">
+<div class="w-2 h-[1px] bg-primary"></div>
+<span class="font-ui-mono text-ui-mono text-on-surface pr-1 -mt-2 absolute right-3 text-[10px]">0</span>
+</div>
+<div class="absolute top-[15%] w-full flex flex-col items-end right-0 text-outline">
+<div class="w-1 h-[1px] bg-outline-variant"></div>
+<span class="font-ui-mono text-ui-mono pr-1 -mt-2 absolute right-2 text-[10px]">50</span>
+</div>
+<div class="absolute top-[30%] w-full flex flex-col items-end right-0 text-outline">
+<div class="w-2 h-[1px] bg-outline"></div>
+<span class="font-ui-mono text-ui-mono pr-1 -mt-2 absolute right-3 text-[10px]">100</span>
+</div>
+<div class="absolute top-[50%] w-full flex flex-col items-end right-0 text-outline">
+<div class="w-1 h-[1px] bg-outline-variant"></div>
+<span class="font-ui-mono text-ui-mono pr-1 -mt-2 absolute right-2 text-[10px]">250</span>
+</div>
+<div class="absolute top-[70%] w-full flex flex-col items-end right-0 text-outline">
+<div class="w-2 h-[1px] bg-outline"></div>
+<span class="font-ui-mono text-ui-mono pr-1 -mt-2 absolute right-3 text-[10px]">500</span>
+</div>
+<div class="absolute top-[85%] w-full flex flex-col items-end right-0 text-outline">
+<div class="w-1 h-[1px] bg-outline-variant"></div>
+<span class="font-ui-mono text-ui-mono pr-1 -mt-2 absolute right-2 text-[10px]">1000</span>
+</div>
+<div class="absolute bottom-0 w-full flex flex-col items-end right-0 text-outline">
+<div class="w-2 h-[1px] bg-outline"></div>
+<span class="font-ui-mono text-ui-mono pr-1 -mt-2 absolute right-3 text-[10px]">2000</span>
+</div>
+</div>
+</div>
+<!-- Control Panel (288px) -->
+<div class="w-[288px] bg-surface-container-low/90 backdrop-blur-md border border-outline-variant/40 rounded flex flex-col shadow-xl">
+<div class="p-sm border-b border-outline-variant/30 bg-surface-container-lowest/50">
+<h2 class="font-ui-mono text-ui-mono text-on-surface flex items-center gap-2">
+<div class="w-1.5 h-1.5 bg-primary"></div>
+                            VOLUME PARAMETERS
+                        </h2>
+</div>
+<div class="flex-1 overflow-y-auto p-sm flex flex-col gap-lg custom-scrollbar">
+<!-- VARIABLE -->
+<div class="flex flex-col gap-base">
+<label class="font-label-caps text-label-caps text-outline uppercase tracking-wider">Variable</label>
+<button class="w-full bg-surface-container-highest border border-outline-variant/50 hover:border-primary/50 transition-colors px-sm py-xs flex justify-between items-center rounded-sm">
+<span class="font-ui-mono text-ui-mono text-on-surface">Temperature [°C]</span>
+<span class="material-symbols-outlined text-outline text-[16px]">expand_more</span>
+</button>
+</div>
+<!-- COLOURBAR -->
+<div class="flex flex-col gap-base">
+<label class="font-label-caps text-label-caps text-outline uppercase tracking-wider">Colourbar</label>
+<div class="w-full h-[12px] rounded-sm bg-gradient-to-r from-secondary via-primary-container to-surface-container-lowest border border-outline-variant/50 mb-1"></div>
+<div class="flex gap-xs">
+<div class="flex-1 bg-surface-container-highest border border-outline-variant/50 px-2 py-1 rounded-sm flex items-center justify-between">
+<span class="font-label-caps text-label-caps text-outline">MIN</span>
+<span class="font-ui-mono text-ui-mono text-on-surface">2.4</span>
+</div>
+<div class="flex-1 bg-surface-container-highest border border-outline-variant/50 px-2 py-1 rounded-sm flex items-center justify-between">
+<span class="font-label-caps text-label-caps text-outline">MAX</span>
+<span class="font-ui-mono text-ui-mono text-on-surface">28.1</span>
+</div>
+</div>
+</div>
+<!-- DEPTH SLICE -->
+<div class="flex flex-col gap-base">
+<div class="flex justify-between items-center">
+<label class="font-label-caps text-label-caps text-outline uppercase tracking-wider">Depth Slice</label>
+<span class="font-ui-mono text-ui-mono text-primary">450m</span>
+</div>
+<div class="relative w-full h-1 bg-surface-container-highest rounded-full mt-2">
+<div class="absolute left-0 top-0 h-full w-[45%] bg-primary rounded-l-full"></div>
+<div class="absolute left-[45%] top-1/2 -translate-y-1/2 w-3 h-3 bg-on-surface border-2 border-primary rounded-full cursor-pointer"></div>
+</div>
+</div>
+<!-- RENDERING -->
+<div class="flex flex-col gap-base">
+<label class="font-label-caps text-label-caps text-outline uppercase tracking-wider">Rendering</label>
+<div class="flex border border-outline-variant/50 rounded-sm overflow-hidden">
+<button class="flex-1 py-1 bg-primary text-on-primary font-ui-mono text-ui-mono text-center">Vol</button>
+<button class="flex-1 py-1 bg-surface-container text-on-surface-variant font-ui-mono text-ui-mono text-center hover:bg-surface-container-highest transition-colors border-l border-outline-variant/50">Iso</button>
+<button class="flex-1 py-1 bg-surface-container text-on-surface-variant font-ui-mono text-ui-mono text-center hover:bg-surface-container-highest transition-colors border-l border-outline-variant/50">Pts</button>
+</div>
+</div>
+<!-- ISOSURFACE -->
+<div class="flex flex-col gap-base opacity-50 pointer-events-none">
+<div class="flex justify-between items-center">
+<label class="font-label-caps text-label-caps text-outline uppercase tracking-wider">Isosurface Threshold</label>
+<span class="font-ui-mono text-ui-mono text-on-surface-variant">--</span>
+</div>
+<div class="relative w-full h-1 bg-surface-container-highest rounded-full mt-2">
+<div class="absolute left-1/2 top-1/2 -translate-y-1/2 w-3 h-3 bg-outline-variant rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT FLANK: Actions & Explanation -->
+<div class="flex flex-col justify-between items-end h-full pointer-events-auto w-[336px]">
+<!-- Top Right Action -->
+<button class="bg-surface-container-lowest/80 backdrop-blur-md border border-outline-variant/40 hover:border-primary/60 transition-colors flex items-center gap-xs px-sm py-xs rounded text-primary group shadow-md mt-sm mr-sm">
+<span class="material-symbols-outlined text-[18px] group-hover:-translate-x-1 transition-transform">arrow_back</span>
+<span class="font-ui-mono text-ui-mono uppercase tracking-wider">Return to globe</span>
+</button>
+<!-- Explanation Panel (336px) -->
+<div class="w-full bg-surface-container-low/90 backdrop-blur-md border border-outline-variant/40 rounded flex flex-col shadow-xl mb-xl">
+<!-- Header Badge -->
+<div class="bg-primary-container/20 border-b border-primary/30 p-xs flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary text-[16px]">visibility</span>
+<span class="font-label-caps text-label-caps text-primary uppercase tracking-widest">Changes only how it is drawn</span>
+</div>
+<div class="flex flex-col p-sm gap-md">
+<!-- Block 1 -->
+<div class="flex flex-col gap-xs">
+<span class="font-label-caps text-label-caps text-outline uppercase border-b border-outline-variant/30 pb-1">What it changes</span>
+<p class="font-body-reg text-body-reg text-on-surface leading-tight text-sm">
+                                Adjusting the volume parameters alters the voxel opacity and color mapping in 3D space, emphasizing distinct thermoclines without modifying the underlying sensor data array.
+                            </p>
+</div>
+<!-- Block 2 -->
+<div class="flex flex-col gap-xs">
+<span class="font-label-caps text-label-caps text-outline uppercase border-b border-outline-variant/30 pb-1">What that means</span>
+<p class="font-body-reg text-body-reg text-on-surface-variant leading-tight text-sm">
+                                You are visually isolating specific temperature bands. Low opacity reveals internal structures, while high opacity creates solid boundaries for rapid spatial orientation.
+                            </p>
+</div>
+<!-- Block 3 -->
+<div class="flex flex-col gap-xs">
+<span class="font-label-caps text-label-caps text-outline uppercase border-b border-outline-variant/30 pb-1">What to look for</span>
+<div class="flex items-start gap-xs mt-1">
+<div class="w-1.5 h-1.5 rounded-full bg-secondary mt-1.5 shrink-0"></div>
+<span class="font-ui-mono text-ui-mono text-on-surface">Sharp horizontal color shifts indicating stratification layers.</span>
+</div>
+<div class="flex items-start gap-xs">
+<div class="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0"></div>
+<span class="font-ui-mono text-ui-mono text-on-surface">Vertical anomalies suggesting upwelling or sensor drift.</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Timeline Bar (Z-20, Absolute Bottom) -->
+<div class="absolute bottom-md left-[360px] right-[360px] z-20 pointer-events-auto">
+<div class="bg-surface-container-lowest/90 backdrop-blur-md border border-outline-variant/40 rounded-full flex items-center px-sm py-xs gap-sm shadow-xl">
+<button class="w-8 h-8 flex items-center justify-center rounded-full bg-primary text-on-primary hover:bg-primary/90 transition-colors shrink-0">
+<span class="material-symbols-outlined text-[20px]">play_arrow</span>
+</button>
+<div class="flex-1 flex flex-col gap-1">
+<div class="flex justify-between items-end px-1">
+<span class="font-ui-mono text-[10px] text-outline">T-MINUS 24H</span>
+<span class="font-ui-mono text-ui-mono text-primary font-bold">2023-11-04T18:42:00Z</span>
+<span class="font-ui-mono text-[10px] text-outline">LIVE</span>
+</div>
+<div class="relative w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="absolute left-0 top-0 h-full w-[78%] bg-primary"></div>
+<!-- Scrubber handle indicator -->
+<div class="absolute left-[78%] top-0 h-full w-1 bg-on-surface"></div>
+</div>
+</div>
+<div class="flex items-center gap-xs px-2 border-l border-outline-variant/50 shrink-0">
+<span class="font-label-caps text-label-caps text-outline">SPEED</span>
+<span class="font-ui-mono text-ui-mono text-on-surface">1.0x</span>
+</div>
+</div>
+</div>
+</div>
+</div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/20 py-xl mt-xl"><div class="px-margin grid grid-cols-1 md:grid-cols-4 gap-xl"><div class="col-span-2"><div class="font-ui-mono text-body-reg text-on-surface mb-sm">SAMUDRA.3D</div><p class="font-body-reg text-on-surface-variant max-w-sm">High-precision oceanic telemetry and 3D spatial visualization for deep-sea research and tactical deployment.</p></div><div class="flex flex-col gap-base"><span class="font-label-caps text-label-caps text-on-surface-variant mb-base">LEGAL</span><a class="font-ui-mono text-ui-mono text-on-surface-variant hover:text-primary transition-colors" href="#">Terms of Service</a><a class="font-ui-mono text-ui-mono text-on-surface-variant hover:text-primary transition-colors" href="#">Privacy Protocol</a></div><div class="flex flex-col gap-base"><span class="font-label-caps text-label-caps text-on-surface-variant mb-base">SYSTEM</span><div class="flex items-center gap-xs"><div class="w-2 h-2 bg-primary"></div><span class="font-ui-mono text-ui-mono text-on-surface">UPLINK ACTIVE</span></div><div class="font-ui-mono text-ui-mono text-outline">VER: 4.8.2-OMEGA</div></div></div></footer></body></html>
