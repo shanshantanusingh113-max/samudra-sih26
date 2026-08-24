@@ -160,8 +160,9 @@ Named here so nobody wonders whether we forgot.
   A day of work for a checkbox no judge will click.
 - **User accounts, saved sessions, sharing.** No auth of any kind.
 - **Writing data back.** The platform is strictly read-only.
-- **Currents as animated 3D streamlines.** Geostrophic currents appear as 2D vectors on the
-  Globe View only. Volumetric flow visualisation is a project in itself.
+- **Currents, in any form.** Not implemented at all. INCOIS publish geostrophic currents
+  (`GEO_U`/`GEO_V`), but that series ends 2019-03 and cannot share a timeline with the
+  temperature field. Volumetric flow visualisation is a project in itself.
 - **Real-time streaming ingest.** Data is fetched and baked ahead of time, not subscribed to.
 - **Mobile layout.** Desktop browser only - the operational reality for a forecaster.
 - **WebGPU.** WebGL2 is universal today; WebGPU is noted as a migration path, not taken.
