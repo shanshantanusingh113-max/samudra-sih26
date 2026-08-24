@@ -91,7 +91,6 @@ uniform vec4  uRegion;        // west, east, south, north
 uniform float uDepthFraction; // which Level is painted on the sea surface
 uniform float uWindowMin;
 uniform float uWindowMax;
-uniform float uLogScale;
 uniform float uFieldOpacity;
 uniform vec3  uOceanColour;
 uniform vec3  uLightDirection;
@@ -135,7 +134,6 @@ void main() {
     vec3 tc = (fraction * (size - 1.0) + 0.5) / size;
     vec3 sampled = texture(uVolume, tc).rgb;
     float t = clamp((sampled.r - uWindowMin) / max(uWindowMax - uWindowMin, 1e-5), 0.0, 1.0);
-    if (uLogScale > 0.5) t = log(1.0 + 9.0 * t) / log(10.0);
     fieldColour = texture(uPalette, vec2(t, 0.5)).rgb;
     fieldAlpha = sampled.g * uFieldOpacity * regionMask;
   }

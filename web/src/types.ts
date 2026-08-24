@@ -9,6 +9,17 @@ export interface FieldSpec {
   display_max: number;
   /** The encoded byte range: byte 0 means `range[0]`, byte 255 means `range[1]`. */
   range: [number, number];
+  /** Optional render hints. A Field can say how it wants to be drawn; see bake.py. */
+  emphasis?: number | null;
+  opacity?: number | null;
+  description?: string | null;
+}
+
+/** Band thresholds and labels for the derived Observation Coverage Field. */
+export interface CoverageSpec {
+  bands: number[];
+  labels: string[];
+  windowDays: number;
 }
 
 export interface VolumeSpec {
@@ -40,6 +51,7 @@ export interface Manifest {
   volumeFiles: Record<string, string[]>;
   palettes: Record<string, number[][]>;
   floatCount: number;
+  coverage?: CoverageSpec;
 }
 
 export interface FloatFix {

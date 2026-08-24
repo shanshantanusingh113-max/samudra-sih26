@@ -61,8 +61,8 @@ This is not a mock-up with invented numbers. It reads:
 - **INCOIS's own public data server** for the model field - their 10-day gridded Argo analysis,
   temperature and salinity on 24 depth levels, updated continuously. Our demo data goes up to
   **30 July 2026**.
-- **The global Argo float network** for the real measurements - 92 floats and 1,145 casts
-  across the Arabian Sea, Bay of Bengal and equatorial Indian Ocean, of which 89 floats carry a
+- **The global Argo float network** for the real measurements - 93 floats and 1,154 casts
+  across the Arabian Sea, Bay of Bengal and equatorial Indian Ocean, of which 88 floats carry a
   full model-versus-instrument comparison.
 
 ## 3. Requirement coverage, clause by clause

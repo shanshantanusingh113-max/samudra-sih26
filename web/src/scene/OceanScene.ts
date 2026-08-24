@@ -43,7 +43,6 @@ export interface ViewState {
   windowMin: number;
   windowMax: number;
   opacity: number;
-  logScale: boolean;
   depthFrom: number;
   depthTo: number;
   surfaceLevel: number;
@@ -265,7 +264,6 @@ export class OceanScene {
         uDepthFraction: { value: 0 },
         uWindowMin: { value: 0 },
         uWindowMax: { value: 1 },
-        uLogScale: { value: 0 },
         uFieldOpacity: { value: 0.95 },
         uOceanColour: { value: SCENE_COLOURS.dark.ocean.clone() },
         uLightDirection: { value: new Vector3(0.6, 0.5, 0.7).normalize() },
@@ -332,7 +330,6 @@ export class OceanScene {
         uWindowMax: { value: 1 },
         uOpacity: { value: 0.012 },
         uSteps: { value: 128 },
-        uLogScale: { value: 0 },
         uDepthFrom: { value: 0 },
         uDepthTo: { value: 1 },
         uIsoValue: { value: 0.5 },
@@ -587,7 +584,6 @@ export class OceanScene {
     }
     this.setUniform(this.surface, "uWindowMin", state.windowMin);
     this.setUniform(this.surface, "uWindowMax", state.windowMax);
-    this.setUniform(this.surface, "uLogScale", state.logScale ? 1 : 0);
 
     if (this.volume) {
       const material = this.volume.material as ShaderMaterial;
@@ -597,7 +593,6 @@ export class OceanScene {
       material.uniforms.uWindowMax!.value = state.windowMax;
       material.uniforms.uOpacity!.value = state.opacity;
       material.uniforms.uSteps!.value = state.quality;
-      material.uniforms.uLogScale!.value = state.logScale ? 1 : 0;
       material.uniforms.uDepthFrom!.value = state.depthFrom;
       material.uniforms.uDepthTo!.value = state.depthTo;
       material.uniforms.uIsoEnabled!.value = state.isoEnabled ? 1 : 0;

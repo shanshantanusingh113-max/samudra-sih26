@@ -46,7 +46,6 @@ interface State {
   windowMin: number;
   windowMax: number;
   paletteName: string;
-  logScale: boolean;
   opacity: number;
 
   depthFrom: number;
@@ -95,7 +94,6 @@ export const useStore = create<State>((setState, getState) => ({
   windowMin: 0,
   windowMax: 1,
   paletteName: "thermal",
-  logScale: false,
   opacity: 0.05,
 
   depthFrom: 0,

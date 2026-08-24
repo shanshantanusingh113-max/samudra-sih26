@@ -137,7 +137,6 @@ export default function App() {
       windowMin: store.windowMin,
       windowMax: store.windowMax,
       opacity: store.opacity,
-      logScale: store.logScale,
       depthFrom: store.depthFrom,
       depthTo: store.depthTo,
       surfaceLevel: store.surfaceLevel,

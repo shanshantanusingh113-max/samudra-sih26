@@ -32,7 +32,6 @@ uniform float uWindowMin;     // Transfer Function window, normalised into the e
 uniform float uWindowMax;
 uniform float uOpacity;
 uniform float uSteps;
-uniform float uLogScale;      // 0 or 1
 uniform float uDepthFrom;     // depth-slice gate, 0 = surface, 1 = floor
 uniform float uDepthTo;
 uniform float uIsoValue;      // normalised; ignored unless uIsoEnabled
@@ -77,11 +76,7 @@ vec3 toTexture(vec3 p) {
 /** Value -> position along the Transfer Function, honouring the window and the scale. */
 float shape(float raw) {
   float t = (raw - uWindowMin) / max(uWindowMax - uWindowMin, 1e-5);
-  t = clamp(t, 0.0, 1.0);
-  if (uLogScale > 0.5) {
-    t = log(1.0 + 9.0 * t) / log(10.0);
-  }
-  return t;
+  return clamp(t, 0.0, 1.0);
 }
 
 /** Cheap hash, to dither the ray start and break up the wood-grain banding. */

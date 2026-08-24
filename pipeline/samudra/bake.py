@@ -25,11 +25,12 @@ from pathlib import Path
 import numpy as np
 
 from .collocation import collocate
+from .coverage import BANDS, BAND_LABELS, observation_coverage
 from .depth_warp import DepthWarp
 from .grid import Grid
-from .palettes import all_tables
+from .palettes import all_tables, banded_table
 from .sources.argo import ArgoErddapSource
-from .sources.base import BoundingBox
+from .sources.base import BoundingBox, FieldSpec
 from .sources.incois import IncoisErddapSource
 from .volume import encode_volume
 
@@ -41,6 +42,32 @@ DEMO_REGION = BoundingBox(south=-10.0, north=25.0, west=55.0, east=100.0)
 SURFACE_METRES = 5.0
 FLOOR_METRES = 2000.0
 DEPTH_SAMPLES = 48
+
+# Observation Coverage is a Field the browser selects like any other, but it is derived here
+# rather than fetched: no provider publishes "how much did anyone measure near this voxel".
+#
+# It is drawn flat rather than gradient-weighted, because the emphasis trick that makes
+# temperature legible would fade out precisely the uniform regions coverage exists to show, and
+# at higher opacity, because four discrete bands should read as solid blocks and not as haze.
+COVERAGE_FIELD = FieldSpec(
+    key="coverage",
+    label="Observation Coverage",
+    units="casts",
+    palette="coverage",
+    display_min=0.0,
+    display_max=40.0,
+    emphasis=0.0,
+    opacity=0.06,
+    description=(
+        "How many Argo casts were taken near each point and reached this depth. Counted in a "
+        "neighbourhood rather than per cell. This is evidence, not model error."
+    ),
+)
+
+# Profiles counted towards a Timestep. An Argo float surfaces about every ten days and the
+# analysis steps every ten days, so a five-day half-window collects roughly one cast per float
+# per step - which is what makes the coverage field animate rather than sit still.
+COVERAGE_WINDOW_DAYS = 5.0
 
 
 def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | None = None) -> None:
@@ -103,6 +130,19 @@ def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | N
         )
         print(f"[bake] wrote {len(grids)} native grids to {grid_dir}")
 
+    end = wanted[-1]
+    start = end - timedelta(days=profile_days)
+    # Reach past the last analysis by the coverage half-window. Those casts genuinely belong to
+    # that Timestep's window, and without them the final frame counts only the casts that
+    # happened to land before the analysis date - which halves its coverage and makes the frame
+    # the app opens on look like the worst-sampled one in the series.
+    profiles = list(
+        observations.fetch_profiles(
+            DEMO_REGION, start, end + timedelta(days=COVERAGE_WINDOW_DAYS)
+        )
+    )
+    print(f"[bake] {len(profiles)} Argo profiles from {len(set(p.platform_id for p in profiles))} floats")
+
     sample = grids[(model.fields()[0].key, 0)]
     volume_files: dict[str, list[str]] = {}
 
@@ -118,10 +158,11 @@ def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | N
         volume_files[field.key] = paths
         print(f"[bake] {field.key}: {len(paths)} volumes, range {vmin:.2f}..{vmax:.2f}")
 
-    end = wanted[-1]
-    start = end - timedelta(days=profile_days)
-    profiles = list(observations.fetch_profiles(DEMO_REGION, start, end))
-    print(f"[bake] {len(profiles)} Argo profiles from {len(set(p.platform_id for p in profiles))} floats")
+    coverage_paths, coverage_range = _bake_coverage(
+        output_dir, profiles, grids, wanted, model.fields()[0].key, warp
+    )
+    volume_files[COVERAGE_FIELD.key] = coverage_paths
+    ranges[COVERAGE_FIELD.key] = coverage_range
 
     floats, collocations = _build_observations(profiles, grids, wanted, model)
     (output_dir / "floats.json").write_text(json.dumps(floats), encoding="utf-8")
@@ -145,7 +186,15 @@ def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | N
             {"name": model.name, "attribution": model.attribution},
             {"name": observations.name, "attribution": observations.attribution},
         ],
-        "fields": [asdict(f) | {"range": list(ranges[f.key])} for f in model.fields()],
+        "fields": [
+            asdict(f) | {"range": list(ranges[f.key])}
+            for f in (*model.fields(), COVERAGE_FIELD)
+        ],
+        "coverage": {
+            "bands": list(BANDS),
+            "labels": list(BAND_LABELS),
+            "windowDays": COVERAGE_WINDOW_DAYS,
+        },
         "timesteps": [t.isoformat() for t in wanted],
         "volume": {
             "width": len(sample.longitudes),
@@ -160,11 +209,63 @@ def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | N
             "north": float(sample.latitudes[-1]),
         },
         "volumeFiles": volume_files,
-        "palettes": all_tables(),
+        "palettes": all_tables()
+        | {
+            # Built here, not in palettes.py, because the band edges have to be expressed in the
+            # encoded range this bake actually produced. A table built against a different range
+            # would draw its steps in the wrong places.
+            "coverage": banded_table(BANDS, *ranges[COVERAGE_FIELD.key])
+        },
         "floatCount": len(floats),
     }
     (output_dir / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
     print(f"[bake] wrote manifest to {output_dir}")
+
+
+def _bake_coverage(output_dir, profiles, grids, timesteps, mask_field_key, warp):
+    """Write one Observation Coverage Volume per Timestep, and return the paths and range.
+
+    The model's own missing-data mask is reused, so coverage is absent exactly where the ocean
+    is absent. Marking land as "zero observations" would be true but useless, and it would put
+    a solid band of the "no data" colour over every coastline and the whole sea floor.
+    """
+    paths: list[str] = []
+    fields: list[np.ndarray] = []
+
+    for index, stamp in enumerate(timesteps):
+        window = [
+            profile
+            for profile in profiles
+            if abs((profile.time - stamp).total_seconds()) <= COVERAGE_WINDOW_DAYS * 86400
+        ]
+        grid = grids[(mask_field_key, index)]
+        mask = np.isnan(_warp_to_volume(grid, warp))
+        field = observation_coverage(
+            window, grid.latitudes, grid.longitudes, warp, DEPTH_SAMPLES, mask
+        )
+        fields.append(field.counts)
+        print(
+            f"[bake]   coverage {stamp:%Y-%m-%d}: {len(window)} casts, "
+            f"{field.observed_fraction:.0%} of the ocean has a cast behind it"
+        )
+
+    # One range across every step, for the same reason the model Fields share one: a per-frame
+    # range would make the bands breathe during playback and read as a real change in sampling.
+    finite = np.concatenate([f[np.isfinite(f)].ravel() for f in fields])
+    top = float(np.percentile(finite, 99.5)) if finite.size else COVERAGE_FIELD.display_max
+    encoding_range = (0.0, max(top, float(BANDS[-1]) * 1.5))
+
+    for index, counts in enumerate(fields):
+        encoded = encode_volume(counts, vmin=encoding_range[0], vmax=encoding_range[1])
+        name = f"volumes/{COVERAGE_FIELD.key}_{index:03d}.bin"
+        (output_dir / name).write_bytes(encoded.data)
+        paths.append(name)
+
+    print(
+        f"[bake] {COVERAGE_FIELD.key}: {len(paths)} volumes, "
+        f"range {encoding_range[0]:.0f}..{encoding_range[1]:.0f} casts"
+    )
+    return paths, encoding_range
 
 
 def _warp_to_volume(grid: Grid, warp: DepthWarp) -> np.ndarray:

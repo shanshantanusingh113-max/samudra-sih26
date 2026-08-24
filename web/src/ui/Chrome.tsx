@@ -10,7 +10,7 @@ export function LoadingScreen() {
 }
 
 export function Chrome({ onDive }: { onDive: (into: boolean) => void }) {
-  const { manifest, stage, morph, field, timestepIndex, theme, set } = useStore();
+  const { manifest, stage, morph, field, timestepIndex, theme, touched, set } = useStore();
   if (!manifest) return null;
 
   const flipTheme = () => {
@@ -62,7 +62,7 @@ export function Chrome({ onDive }: { onDive: (into: boolean) => void }) {
         </div>
       </header>
 
-      {!inVolume && stage !== "diving" && (
+      {!inVolume && stage !== "diving" && !touched && (
         <div className="cue">
           <p className="cue-title">India&apos;s Exclusive Economic Zone</p>
           <p className="cue-body">

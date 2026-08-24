@@ -18,8 +18,26 @@ export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) 
   const collocation = collocations[selectedFloatId];
   if (!chosen) return null;
 
-  const series = collocation?.fields[fieldKey];
+  // A Collocation exists only for Fields the model actually predicts. Observation Coverage is
+  // derived from the floats themselves, so there is nothing to compare it against - selecting it
+  // used to make every float report "no usable data", which is both wrong and alarming. When the
+  // selected Field has no series, fall back to one the float does carry and say which.
+  const available = collocation ? Object.keys(collocation.fields) : [];
+  const shownKey = collocation?.fields[fieldKey] ? fieldKey : available[0];
+  const series = shownKey ? collocation?.fields[shownKey] : undefined;
+  const shownSpec = manifest?.fields.find((f) => f.key === shownKey) ?? spec;
+  const substituted = shownKey !== undefined && shownKey !== fieldKey;
   const volume = manifest?.volume;
+
+  // Five of the current 93 floats sit just past the southern or western edge of the loaded
+  // Grid. "No usable data" would be misleading about those: the observations are fine, the
+  // model simply does not extend that far, and saying so is a different and truer sentence.
+  const outsideGrid =
+    volume !== undefined &&
+    (chosen.latest.lat < volume.south ||
+      chosen.latest.lat > volume.north ||
+      chosen.latest.lon < volume.west ||
+      chosen.latest.lon > volume.east);
 
   // Scrubbing the timeline moves the header's analysis date, but a baked Collocation is pinned
   // to the analysis step nearest its own cast. Name the step this chart is actually against -
@@ -61,9 +79,15 @@ export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) 
 
       {series && volume ? (
         <>
-          <Chart series={series} spec={spec} volume={volume} />
-          <Verdict series={series} units={spec.units} label={spec.label} />
-          <Stats series={series} units={spec.units} />
+          {substituted && (
+            <p className="note substituted">
+              {spec.label} is measured, not predicted, so there is no model to compare it
+              against. Showing {shownSpec.label.replace("Sea Water ", "").toLowerCase()} instead.
+            </p>
+          )}
+          <Chart series={series} spec={shownSpec} volume={volume} />
+          <Verdict series={series} units={shownSpec.units} label={shownSpec.label} />
+          <Stats series={series} units={shownSpec.units} />
           <p className={`analysis-note${analysisDrifted ? " drifted" : ""}`}>
             cast {collocation?.time.slice(0, 10)} vs {analysisDate} analysis
             {analysisDrifted ? " (not the step above)" : ""}
@@ -71,7 +95,12 @@ export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) 
         </>
       ) : (
         <p className="empty">
-          This float reported no usable {spec.label.toLowerCase()} for the matched analysis step.
+          {outsideGrid
+            ? "This float's last cast is outside the model grid we loaded, so there is nothing" +
+              " here to compare it against. Its track is still real - it simply drifted past the" +
+              " edge of the region."
+            : "This float reported nothing the model could be compared against at the matched" +
+              " analysis step."}
         </p>
       )}
 

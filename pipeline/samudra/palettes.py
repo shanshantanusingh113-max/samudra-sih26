@@ -42,3 +42,43 @@ def lookup_table(name: str) -> np.ndarray:
 def all_tables() -> dict[str, list[list[int]]]:
     """Every palette, JSON-ready, for shipping in the manifest."""
     return {name: lookup_table(name).tolist() for name in AVAILABLE}
+
+
+# Not a cmocean palette, and deliberately not in AVAILABLE: it is derived here rather than
+# resolved through cmocean, and all_tables() would fail looking it up.
+#
+# Observation Coverage is not a continuous quantity a reader should interpolate. "Twice as many
+# observations" is not "twice as good", and a smooth ramp invites exactly that reading. So its
+# palette is four flat bands with hard edges: a voxel is in one band or another, and the
+# colourbar shows the thresholds rather than a gradient.
+#
+# Colours run grey (no evidence) through red and amber to green, which is the one ordering a
+# non-specialist reads correctly without a legend.
+COVERAGE_BANDS = (
+    (0x3A, 0x44, 0x4A),  # no observations
+    (0xC7, 0x54, 0x3D),  # very sparse
+    (0xE8, 0xA8, 0x38),  # moderate
+    (0x4F, 0xB0, 0x6B),  # good
+)
+
+
+def banded_table(thresholds, vmin: float, vmax: float) -> list[list[int]]:
+    """A 256-entry table that is flat within each band and steps at the thresholds.
+
+    `thresholds` are in the Field's own units - counts, here - and are converted to positions in
+    the encoded range so the colourbar's tick marks and the water agree about where a band ends.
+    """
+    if not vmax > vmin:
+        raise ValueError(f"need vmax > vmin, got vmin={vmin}, vmax={vmax}")
+    if len(thresholds) + 1 != len(COVERAGE_BANDS):
+        raise ValueError(
+            f"{len(thresholds)} thresholds need {len(thresholds) + 1} colours, "
+            f"have {len(COVERAGE_BANDS)}"
+        )
+
+    positions = np.clip(
+        (np.asarray(thresholds, dtype=float) - vmin) / (vmax - vmin), 0.0, 1.0
+    )
+    samples = np.linspace(0.0, 1.0, RESOLUTION)
+    index = np.searchsorted(positions, samples, side="right")
+    return [list(COVERAGE_BANDS[i]) for i in index]

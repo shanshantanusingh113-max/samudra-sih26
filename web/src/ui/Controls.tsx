@@ -1,15 +1,36 @@
 import { axisToDepth } from "../scene/geography";
+import { PALETTES } from "../guide";
 import { paletteGradient } from "../palette";
 import { useStore } from "../store";
 
+/**
+ * The colour the banded palette uses for one band.
+ *
+ * Read out of the shipped table rather than restated here, so the key and the water can never
+ * disagree - the same rule ADR 0007 applies to the colourbar.
+ */
+function bandColour(table: number[][], index: number): string {
+  const distinct: number[][] = [];
+  for (const entry of table) {
+    const last = distinct[distinct.length - 1];
+    if (!last || last[0] !== entry[0] || last[1] !== entry[1] || last[2] !== entry[2]) {
+      distinct.push(entry);
+    }
+  }
+  const [r, g, b] = distinct[index] ?? [128, 128, 128];
+  return `rgb(${r},${g},${b})`;
+}
+
 /** The colourbar the user edits: palette, range, and linear-or-log. */
 function Colourbar() {
-  const { manifest, paletteName, windowMin, windowMax, logScale, toValue, set, field, theme } =
+  const { manifest, paletteName, windowMin, windowMax, toValue, set, field, theme } =
     useStore();
   const spec = field();
   if (!manifest || !spec) return null;
 
   const stops = paletteGradient(manifest.palettes[paletteName] ?? [], theme);
+  // Only a banded Field gets a band key; every other Field gets the usual two-ended scale.
+  const bands = spec.palette === "coverage" ? manifest.coverage : undefined;
 
   return (
     <div className="control-group">
@@ -26,17 +47,32 @@ function Colourbar() {
           {Object.keys(manifest.palettes).map((name) => (
             <option key={name} value={name}>
               {name}
+              {PALETTES[name]?.suits.includes(spec.key) ? "  (for this field)" : ""}
             </option>
           ))}
         </select>
       </div>
 
       <div className="colourbar" style={{ background: `linear-gradient(90deg, ${stops})` }} />
-      <div className="colourbar-scale">
-        <span>{toValue(windowMin).toFixed(1)}</span>
-        <span className="units">{spec.units}</span>
-        <span>{toValue(windowMax).toFixed(1)}</span>
-      </div>
+      {bands ? (
+        <ul className="band-key">
+          {bands.labels.map((label, index) => (
+            <li key={label}>
+              <span
+                className="band-swatch"
+                style={{ background: bandColour(manifest.palettes.coverage ?? [], index) }}
+              />
+              {label}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="colourbar-scale">
+          <span>{toValue(windowMin).toFixed(1)}</span>
+          <span className="units">{spec.units}</span>
+          <span>{toValue(windowMax).toFixed(1)}</span>
+        </div>
+      )}
 
       <Slider
         guide="window"
@@ -59,17 +95,6 @@ function Colourbar() {
         onChange={(v) => set("windowMax", v)}
       />
 
-      <label className="toggle">
-        <input
-          type="checkbox"
-          checked={logScale}
-          onChange={(e) => {
-            set("touched", "logScale");
-            set("logScale", e.target.checked);
-          }}
-        />
-        <span>Logarithmic scale</span>
-      </label>
       <p className="note">
         Narrowing the range hides water outside it, which is how you isolate a single water mass.
       </p>
@@ -139,11 +164,15 @@ export function Controls() {
               key={f.key}
               className={f.key === store.fieldKey ? "on" : ""}
               onClick={() => {
-                set("touched", "field");
+                set("touched", f.key === "coverage" ? "coverage" : "field");
                 set("fieldKey", f.key);
                 set("paletteName", f.palette);
                 set("windowMin", 0);
                 set("windowMax", 1);
+                // A Field may ask to be drawn differently. Coverage does: gradient-weighted
+                // opacity would fade out exactly the flat regions it exists to show.
+                if (f.emphasis != null) set("emphasis", f.emphasis);
+                if (f.opacity != null) set("opacity", f.opacity);
               }}
             >
               {f.label.replace("Sea Water ", "")}

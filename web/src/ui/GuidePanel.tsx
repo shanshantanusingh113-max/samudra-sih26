@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { GUIDE, describeView } from "../guide";
+import { GUIDE, describePalette, describeView } from "../guide";
 import { axisToDepth } from "../scene/geography";
 import { useStore } from "../store";
 
@@ -26,9 +26,20 @@ export function GuidePanel() {
     return () => window.clearTimeout(timer);
   }, [touched, set]);
 
-  if (!manifest || !spec || selectedFloatId || morph < 0.5) return null;
+  // On the globe the panel stays out of the way until the user touches something, because the
+  // cue card is already explaining the view there. The moment a control is touched it takes
+  // over - otherwise changing the palette or the surface level from the globe explains nothing.
+  if (!manifest || !spec || selectedFloatId) return null;
+  if (morph < 0.5 && !touched) return null;
 
-  const entry = touched ? GUIDE[touched] : undefined;
+  // The palette entry is the one that cannot be static: what a palette *means* depends on
+  // which Field it has been put on, and saying so is the whole point of explaining it.
+  const entry =
+    touched === "palette"
+      ? describePalette(store.paletteName, store.fieldKey, spec.label)
+      : touched
+        ? GUIDE[touched]
+        : undefined;
   const volume = manifest.volume;
 
   return (

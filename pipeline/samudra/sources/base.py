@@ -44,6 +44,12 @@ class FieldSpec:
     palette: str        # cmocean palette name
     display_min: float  # sensible default Transfer Function range for the Indian Ocean
     display_max: float
+    # Optional render hints. Most Fields want the defaults; a Field like Observation Coverage
+    # does not, because gradient-weighted opacity would fade out exactly the flat regions it
+    # exists to show. Stated here so the frontend has no per-field special cases.
+    emphasis: float | None = None
+    opacity: float | None = None
+    description: str | None = None
 
 
 @dataclass(frozen=True)

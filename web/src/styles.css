@@ -1449,3 +1449,41 @@ input[type="range"]::-moz-range-thumb {
   .mapkey.in-volume { left: 300px; }
   .timeline-track { width: 260px; }
 }
+
+/* ---------------------------------------------------------------- band key */
+
+/*
+ * The legend for a banded Field. It replaces the two-ended colourbar scale, because a Field
+ * with hard band edges has names rather than endpoints, and reading "0" and "8" off the ends
+ * would tell you nothing about where a band starts.
+ */
+.band-key {
+  list-style: none;
+  margin: 8px 0 12px;
+  padding: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.band-key li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 11.5px;
+  color: var(--on-surface-variant);
+}
+
+.band-swatch {
+  flex: none;
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid var(--outline-variant);
+}
+
+/* Says the chart is showing a different Field from the one selected, and why. */
+.note.substituted {
+  margin: 14px 14px 0;
+  border-left-color: var(--secondary);
+  color: var(--on-surface-variant);
+}
