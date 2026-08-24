@@ -22,6 +22,7 @@ import {
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 import type { Manifest, OceanFloat } from "../types";
+import type { Theme } from "../store";
 import {
   coastlineFragmentShader,
   coastlineVertexShader,
@@ -55,6 +56,7 @@ export interface ViewState {
   selectedFloatId: string | null;
   showFloats: boolean;
   showTracks: boolean;
+  theme: Theme;
 }
 
 /**
@@ -69,10 +71,44 @@ export interface ViewState {
  */
 const ORDER = { surface: 0, lines: 5, volume: 10, markers: 20 } as const;
 
-const OCEAN_COLOUR = new Color(0x0a1a2c);
-const COAST_COLOUR = new Color(0x7fd4f5);
-const FLOAT_COLOUR = new Color(0xfdfdfd);
-const FLOAT_OUTLINE = new Color(0x07111d);
+/**
+ * Scene palettes, one per theme.
+ *
+ * The chrome could be themed in CSS alone, but the world could not: the globe's sea, the
+ * coastlines, the float markers and the box frame are all drawn by us, and on a white page the
+ * dark-on-dark set is invisible. So each theme carries its own, and `setTheme` swaps them.
+ *
+ * The float marker inverts rather than merely lightening. It is a bright core inside a dark
+ * ring on a dark ground, and a dark core inside a bright ring on a light one, because whatever
+ * colour it is, some water underneath it is that colour too.
+ */
+const SCENE_COLOURS = {
+  dark: {
+    ocean: new Color(0x0a1a2c),
+    coast: new Color(0x7fd4f5),
+    float: new Color(0xfdfdfd),
+    outline: new Color(0x07111d),
+    frame: new Color(0x3d5a76),
+    track: new Color(0xf0a04b),
+    rim: new Color(0.1, 0.28, 0.42),
+    shadeFloor: 0.62,
+    coastOpacity: 0.75,
+    trackOpacity: 0.5,
+  },
+  light: {
+    ocean: new Color(0xdff2f8),
+    coast: new Color(0x0e9bb4),
+    float: new Color(0x0c2531),
+    outline: new Color(0xffffff),
+    frame: new Color(0x6f9cb0),
+    track: new Color(0xc2621a),
+    rim: new Color(0.0, 0.0, 0.0),
+    shadeFloor: 0.88,
+    coastOpacity: 1.0,
+    trackOpacity: 0.7,
+  },
+} as const;
+
 const SELECTED_COLOUR = new Color(0x4ade80);
 
 /** Where the camera sits in each view. The Drill-down interpolates between them. */
@@ -137,6 +173,7 @@ export class OceanScene {
   private lastBoxKey = "";
   private lastColumnKey = "";
   private lastTrackTime = Number.NaN;
+  private lastTheme: Theme | null = null;
   private state?: ViewState;
   private frameId = 0;
   private elapsed = 0;
@@ -230,9 +267,12 @@ export class OceanScene {
         uWindowMax: { value: 1 },
         uLogScale: { value: 0 },
         uFieldOpacity: { value: 0.95 },
-        uOceanColour: { value: OCEAN_COLOUR },
+        uOceanColour: { value: SCENE_COLOURS.dark.ocean.clone() },
         uLightDirection: { value: new Vector3(0.6, 0.5, 0.7).normalize() },
         uRegionCutout: { value: 0 },
+        uShadeFloor: { value: 0.62 },
+        uRimStrength: { value: 1 },
+        uRimColour: { value: SCENE_COLOURS.dark.rim.clone() },
       },
     });
 
@@ -264,7 +304,7 @@ export class OceanScene {
       transparent: true,
       uniforms: {
         uMorph: { value: 0 },
-        uColour: { value: COAST_COLOUR },
+        uColour: { value: SCENE_COLOURS.dark.coast.clone() },
         uOpacity: { value: 0.75 },
       },
     });
@@ -312,7 +352,11 @@ export class OceanScene {
 
     this.boxFrame = new LineSegments(
       new BufferGeometry(),
-      new LineBasicMaterial({ color: 0x3d5a76, transparent: true, opacity: 0.7 }),
+      new LineBasicMaterial({
+        color: SCENE_COLOURS.dark.frame.clone(),
+        transparent: true,
+        opacity: 0.7,
+      }),
     );
     this.boxFrame.renderOrder = ORDER.markers;
     this.scene.add(this.boxFrame);
@@ -339,8 +383,8 @@ export class OceanScene {
       uniforms: {
         uMorph: { value: 0 },
         uSize: { value: 10 },
-        uColour: { value: FLOAT_COLOUR },
-        uOutline: { value: FLOAT_OUTLINE },
+        uColour: { value: SCENE_COLOURS.dark.float.clone() },
+        uOutline: { value: SCENE_COLOURS.dark.outline.clone() },
         uSelectedColour: { value: SELECTED_COLOUR },
         uPulse: { value: 0 },
       },
@@ -439,7 +483,7 @@ export class OceanScene {
       transparent: true,
       uniforms: {
         uMorph: { value: 0 },
-        uColour: { value: new Color(0xf0a04b) },
+        uColour: { value: SCENE_COLOURS.dark.track.clone() },
         uOpacity: { value: 0.5 },
       },
     });
@@ -483,8 +527,42 @@ export class OceanScene {
     this.setUniform(this.surface, "uPalette", texture);
   }
 
+  /**
+   * Repaint everything the scene draws itself. Cheap - it writes uniforms, touches no geometry
+   * and uploads no textures - so it is safe to call from update() behind a cache check.
+   */
+  setTheme(theme: Theme): void {
+    if (theme === this.lastTheme) return;
+    this.lastTheme = theme;
+    const palette = SCENE_COLOURS[theme];
+
+    (this.surface?.material as ShaderMaterial | undefined)?.uniforms.uOceanColour?.value.copy(
+      palette.ocean,
+    );
+    this.setUniform(this.surface, "uShadeFloor", palette.shadeFloor);
+    this.setUniform(this.surface, "uRimStrength", theme === "light" ? 0 : 1);
+    (this.surface?.material as ShaderMaterial | undefined)?.uniforms.uRimColour?.value.copy(
+      palette.rim,
+    );
+
+    const coastMaterial = this.coastlines?.material as ShaderMaterial | undefined;
+    coastMaterial?.uniforms.uColour?.value.copy(palette.coast);
+    this.setUniform(this.coastlines, "uOpacity", palette.coastOpacity);
+
+    const trackMaterial = this.trackLines?.material as ShaderMaterial | undefined;
+    trackMaterial?.uniforms.uColour?.value.copy(palette.track);
+    this.setUniform(this.trackLines, "uOpacity", palette.trackOpacity);
+
+    const floatMaterial = this.floatPoints?.material as ShaderMaterial | undefined;
+    floatMaterial?.uniforms.uColour?.value.copy(palette.float);
+    floatMaterial?.uniforms.uOutline?.value.copy(palette.outline);
+
+    if (this.boxFrame) (this.boxFrame.material as LineBasicMaterial).color.copy(palette.frame);
+  }
+
   update(state: ViewState): void {
     this.state = state;
+    this.setTheme(state.theme);
     const frame = makeFrame(this.manifest.volume, state.exaggeration);
     const { min, max } = boxBounds(frame);
 

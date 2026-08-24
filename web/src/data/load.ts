@@ -8,6 +8,7 @@ import {
 } from "three";
 import { liftedPalette } from "../palette";
 import type { Collocation, Manifest, OceanFloat } from "../types";
+import type { Theme } from "../store";
 
 const DATA_ROOT = `${import.meta.env.BASE_URL}data`;
 
@@ -58,8 +59,8 @@ export async function loadVolumeTexture(
 }
 
 /** A palette as a 256 x 1 texture the shader samples as its Transfer Function. */
-export function paletteTexture(colours: number[][]): DataTexture {
-  const lifted = liftedPalette(colours);
+export function paletteTexture(colours: number[][], theme: Theme = "dark"): DataTexture {
+  const lifted = liftedPalette(colours, theme);
   const pixels = new Uint8Array(lifted.length * 4);
   lifted.forEach(([r, g, b], index) => {
     pixels[index * 4 + 0] = r ?? 0;

@@ -4,11 +4,12 @@ import { useStore } from "../store";
 
 /** The colourbar the user edits: palette, range, and linear-or-log. */
 function Colourbar() {
-  const { manifest, paletteName, windowMin, windowMax, logScale, toValue, set, field } = useStore();
+  const { manifest, paletteName, windowMin, windowMax, logScale, toValue, set, field, theme } =
+    useStore();
   const spec = field();
   if (!manifest || !spec) return null;
 
-  const stops = paletteGradient(manifest.palettes[paletteName] ?? []);
+  const stops = paletteGradient(manifest.palettes[paletteName] ?? [], theme);
 
   return (
     <div className="control-group">

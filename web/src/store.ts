@@ -2,6 +2,31 @@ import { create } from "zustand";
 import type { Collocation, FieldSpec, Manifest, OceanFloat } from "./types";
 
 export type Stage = "globe" | "diving" | "volume";
+export type Theme = "dark" | "light";
+
+/**
+ * The console defaults to dark because that is what the ray-marched water is calibrated
+ * against, but a forecaster in a bright room needs the other one. Remembered per browser so a
+ * choice survives a reload; a private window that refuses storage simply falls back to dark.
+ */
+const THEME_KEY = "samudra.theme";
+
+export function storedTheme(): Theme {
+  try {
+    return localStorage.getItem(THEME_KEY) === "light" ? "light" : "dark";
+  } catch {
+    return "dark";
+  }
+}
+
+export function applyTheme(theme: Theme): void {
+  document.documentElement.dataset.theme = theme;
+  try {
+    localStorage.setItem(THEME_KEY, theme);
+  } catch {
+    // A browser that blocks storage still gets the theme, just not the memory of it.
+  }
+}
 
 interface State {
   manifest: Manifest | null;
@@ -39,6 +64,8 @@ interface State {
 
   /** Which control the user last touched, so the guide can explain it. Null = describe the view. */
   touched: string | null;
+
+  theme: Theme;
 
   stage: Stage;
   morph: number;
@@ -84,6 +111,8 @@ export const useStore = create<State>((setState, getState) => ({
   quality: 128,
 
   touched: null,
+
+  theme: storedTheme(),
 
   stage: "globe",
   morph: 0,

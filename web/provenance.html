@@ -10,8 +10,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script>
+  // Shared with the platform: one key, so a choice made on either side holds on both.
+  (function () {
+    try {
+      if (localStorage.getItem("samudra.theme") === "light") {
+        document.documentElement.dataset.theme = "light";
+      }
+    } catch (e) { /* storage blocked: dark is the default and still correct */ }
+  })();
+</script>
 <style>
-  /* Same single dark theme as the landing page, painted explicitly. */
+  /* Same two themes as the landing page, painted explicitly. */
   :root {
     --abyss: #04070d; --deep: #071420; --shelf: #0c1f2e; --panel: #102737;
     --edge: rgba(120, 170, 195, 0.16); --edge-hot: rgba(120, 190, 210, 0.4);
@@ -19,7 +29,59 @@
     --cyan: #3fb8c4; --amber: #f5b841; --coral: #f2765f; --green: #5fd68a;
     --d: "Chivo", "Helvetica Neue", Arial, sans-serif;
     --m: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+
+    --nav-bg: rgba(7, 20, 32, 0.86);
+    --accent-wash: rgba(63, 184, 196, 0.12);
+    --accent-wash-strong: rgba(63, 184, 196, 0.24);
+    --accent-edge: rgba(63, 184, 196, 0.5);
+    --ghost-bg: rgba(16, 39, 55, 0.7);
+    --glow: rgba(63, 184, 196, 0.12);
+    --coral-wash: rgba(242, 118, 95, 0.1);
+    --coral-edge: rgba(242, 118, 95, 0.28);
+    --amber-wash: rgba(245, 184, 65, 0.07);
+    --good-edge: rgba(95, 214, 138, 0.45);
+    --cta-ink: #eafcff;
+
+    color-scheme: dark;
   }
+  /*
+   * Light console. The same page, inverted: surfaces come up, ink goes down, and the accent
+   * darkens so cyan still holds its contrast against a pale ground. Choice is shared with the
+   * platform through one localStorage key, so switching in either place switches both.
+   */
+  :root[data-theme="light"] {
+    --abyss: #ffffff;
+    --deep: #f4f9fa;
+    --shelf: #ffffff;
+    --panel: #eef5f7;
+    --edge: rgba(14, 60, 78, 0.16);
+    --edge-hot: rgba(14, 110, 130, 0.42);
+
+    --ink: #0d1b22;
+    --body: #2f4450;
+    --dim: #4f6773;
+    --faint: #6d838e;
+
+    --cyan: #00707d;
+    --amber: #8a5c00;
+    --coral: #b2371d;
+    --green: #1d7a45;
+
+    --nav-bg: rgba(255, 255, 255, 0.9);
+    --accent-wash: rgba(0, 112, 125, 0.08);
+    --accent-wash-strong: rgba(0, 112, 125, 0.16);
+    --accent-edge: rgba(0, 112, 125, 0.42);
+    --ghost-bg: rgba(238, 245, 247, 0.9);
+    --glow: rgba(0, 112, 125, 0.09);
+    --coral-wash: rgba(178, 55, 29, 0.08);
+    --coral-edge: rgba(178, 55, 29, 0.3);
+    --amber-wash: rgba(138, 92, 0, 0.08);
+    --good-edge: rgba(29, 122, 69, 0.5);
+    --cta-ink: #00363b;
+
+    color-scheme: light;
+  }
+
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--deep); color: var(--body); font-family: var(--d); font-size: 16px; line-height: 1.65; -webkit-font-smoothing: antialiased; }
   .wrap { max-width: 1000px; margin: 0 auto; padding: 0 28px; }
@@ -30,14 +92,14 @@
   .eyebrow { display: flex; align-items: center; gap: 12px; font-family: var(--m); font-size: 10.5px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--cyan); margin-bottom: 16px; }
   .eyebrow::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--edge-hot), transparent); }
 
-  nav { position: sticky; top: 0; z-index: 10; background: rgba(7, 20, 32, 0.86); backdrop-filter: blur(14px); border-bottom: 1px solid var(--edge); }
+  nav { position: sticky; top: 0; z-index: 10; background: var(--nav-bg); backdrop-filter: blur(14px); border-bottom: 1px solid var(--edge); }
   nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 62px; max-width: 1140px; }
   .brand { font-family: var(--m); font-size: 15px; font-weight: 600; letter-spacing: 0.15em; color: var(--ink); text-decoration: none; }
   .brand i { color: var(--cyan); font-style: normal; }
   .nav-links { display: flex; align-items: center; gap: 26px; }
   .nav-links a { font-size: 13.5px; color: var(--dim); text-decoration: none; }
   .nav-links a:hover { color: var(--ink); }
-  .cta { display: inline-flex; align-items: center; gap: 9px; padding: 10px 18px; border-radius: 9px; border: 1px solid rgba(63, 184, 196, 0.5); background: linear-gradient(180deg, rgba(63, 184, 196, 0.24), rgba(63, 184, 196, 0.08)); color: #eafcff; font-size: 13.5px; font-weight: 500; text-decoration: none; }
+  .cta { display: inline-flex; align-items: center; gap: 9px; padding: 10px 18px; border-radius: 9px; border: 1px solid var(--accent-edge); background: linear-gradient(180deg, var(--accent-wash-strong), var(--accent-wash)); color: var(--cta-ink); font-size: 13.5px; font-weight: 500; text-decoration: none; }
 
   header.head { padding: 70px 0 40px; }
   h1 { font-size: clamp(34px, 4.6vw, 52px); font-weight: 900; line-height: 1.02; letter-spacing: -0.03em; }
@@ -66,12 +128,22 @@
   code { font-family: var(--m); font-size: 0.92em; color: var(--ink); }
 
   .tag { display: inline-block; font-family: var(--m); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--edge); color: var(--dim); vertical-align: middle; }
-  .tag.live { border-color: rgba(95, 214, 138, 0.45); color: var(--green); }
+  .tag.live { border-color: var(--good-edge); color: var(--green); }
   .note { font-size: 14px; color: var(--dim); border-left: 2px solid var(--edge-hot); padding-left: 14px; margin-top: 18px; }
   .err { color: var(--coral); font-family: var(--m); font-size: 13.5px; }
   footer { padding: 40px 0 60px; border-top: 1px solid var(--edge); font-size: 13px; color: var(--faint); }
   footer a { color: var(--dim); }
   @media (max-width: 640px) { .nav-links a:not(.cta) { display: none; } }
+
+  .theme-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; padding: 0;
+    border: 1px solid var(--edge); border-radius: 50%;
+    background: var(--ghost-bg); color: var(--dim);
+    font-size: 14px; line-height: 1; cursor: pointer;
+    transition: color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+  }
+  .theme-toggle:hover { color: var(--cyan); border-color: var(--edge-hot); transform: translateY(-1px); }
 </style>
 </head>
 <body>
@@ -81,6 +153,7 @@
     <a class="brand" href="./index.html">SAMUDRA<i>&middot;3D</i></a>
     <div class="nav-links">
       <a href="./index.html">Overview</a>
+      <button class="theme-toggle" id="theme-toggle" type="button">☀</button>
       <a class="cta" href="./app.html">Launch the platform</a>
     </div>
   </div>
@@ -347,6 +420,28 @@ python -m samudra.bake</pre>
       "Run python -m samudra.bake in pipeline/ to regenerate web/public/data.";
   });
 })();
+</script>
+
+
+<script>
+  (function () {
+    var button = document.getElementById("theme-toggle");
+    if (!button) return;
+    var paint = function () {
+      var light = document.documentElement.dataset.theme === "light";
+      button.textContent = light ? "☾" : "☀";
+      button.setAttribute("aria-label", light ? "Switch to dark" : "Switch to light");
+      button.title = button.getAttribute("aria-label");
+    };
+    button.addEventListener("click", function () {
+      var next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+      if (next === "light") document.documentElement.dataset.theme = "light";
+      else delete document.documentElement.dataset.theme;
+      try { localStorage.setItem("samudra.theme", next); } catch (e) { /* no memory, still applied */ }
+      paint();
+    });
+    paint();
+  })();
 </script>
 
 </body>

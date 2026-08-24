@@ -3,8 +3,8 @@ import { useStore } from "../store";
 import type { CollocationSeries, VolumeSpec } from "../types";
 
 const WIDTH = 340;
-const HEIGHT = 340;
-const PAD = { top: 14, right: 16, bottom: 42, left: 52 };
+const HEIGHT = 290;
+const PAD = { top: 12, right: 16, bottom: 36, left: 48 };
 
 const DEPTH_TICKS = [0, 50, 100, 200, 500, 1000, 2000];
 

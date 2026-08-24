@@ -1,4 +1,4 @@
-import { useStore } from "../store";
+import { applyTheme, useStore } from "../store";
 
 export function LoadingScreen() {
   return (
@@ -10,8 +10,14 @@ export function LoadingScreen() {
 }
 
 export function Chrome({ onDive }: { onDive: (into: boolean) => void }) {
-  const { manifest, stage, morph, field, timestepIndex } = useStore();
+  const { manifest, stage, morph, field, timestepIndex, theme, set } = useStore();
   if (!manifest) return null;
+
+  const flipTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    set("theme", next);
+    applyTheme(next);
+  };
 
   const spec = field();
   const stamp = manifest.timesteps[timestepIndex];
@@ -38,6 +44,14 @@ export function Chrome({ onDive }: { onDive: (into: boolean) => void }) {
             <span className="stamp-label">Field</span>
             <span className="stamp-value">{spec?.label ?? "-"}</span>
           </div>
+          <button
+            className="theme-toggle"
+            onClick={flipTheme}
+            title={theme === "dark" ? "Switch to light console" : "Switch to dark console"}
+            aria-label={theme === "dark" ? "Switch to light console" : "Switch to dark console"}
+          >
+            {theme === "dark" ? "☀" : "☾"}
+          </button>
           <button
             className={`dive ${inVolume ? "dive-up" : ""}`}
             onClick={() => onDive(!inVolume)}

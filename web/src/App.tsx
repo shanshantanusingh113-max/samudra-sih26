@@ -125,8 +125,8 @@ export default function App() {
     const colours = store.manifest?.palettes[store.paletteName];
     if (!scene || !colours) return;
     // The scene takes ownership and releases the palette it replaces.
-    scene.setPalette(paletteTexture(colours));
-  }, [ready, store.manifest, store.paletteName]);
+    scene.setPalette(paletteTexture(colours, store.theme));
+  }, [ready, store.manifest, store.paletteName, store.theme]);
 
   // ---- push view state into the scene every render -------------------------
   useEffect(() => {
@@ -150,6 +150,7 @@ export default function App() {
       selectedFloatId: store.selectedFloatId,
       showFloats: store.showFloats,
       showTracks: store.showTracks,
+      theme: store.theme,
     });
   });
 

@@ -97,6 +97,9 @@ uniform vec3  uOceanColour;
 uniform vec3  uLightDirection;
 uniform float uMorph;
 uniform float uRegionCutout;  // 1 = the study region is open, so you look into the water
+uniform float uShadeFloor;    // how dark the unlit limb goes; higher keeps a pale globe pale
+uniform float uRimStrength;   // 0 on the light console: an additive glow on white is a smudge
+uniform vec3  uRimColour;
 
 in vec2 vLonLat;
 in vec3 vNormal;
@@ -140,13 +143,14 @@ void main() {
   vec3 colour = mix(base, fieldColour, fieldAlpha);
 
   // Gentle shading so the globe reads as a sphere, fading out as it flattens into a map.
-  float lambert = 0.62 + 0.38 * max(dot(normalize(vNormal), normalize(uLightDirection)), 0.0);
+  float lambert = uShadeFloor +
+    (1.0 - uShadeFloor) * max(dot(normalize(vNormal), normalize(uLightDirection)), 0.0);
   colour *= mix(lambert, 1.0, uMorph * 0.75);
 
   // A rim light that only exists while there is a limb to catch it.
   vec3 viewDirection = normalize(cameraPosition - vWorld);
   float fresnel = pow(1.0 - max(dot(normalize(vNormal), viewDirection), 0.0), 3.0);
-  colour += vec3(0.10, 0.28, 0.42) * fresnel * (1.0 - uMorph);
+  colour += uRimColour * fresnel * (1.0 - uMorph) * uRimStrength;
 
   fragColor = vec4(colour, 1.0 - cutout);
 }

@@ -1,5 +1,5 @@
 /**
- * A display lift for ocean palettes.
+ * A display lift for ocean palettes, applied per theme.
  *
  * Every perceptually-uniform ocean palette - cmocean's `thermal`, `haline`, `deep` - runs to
  * near-black at its cold end, because that is what makes it perceptually uniform on a white
@@ -9,25 +9,44 @@
  * are all there, they just cannot be seen.
  *
  * A gamma lift fixes it. It is monotonic, so colder still reads darker than warmer and the
- * ordering a viewer infers from the image is never wrong. Crucially it is applied *here*, to
- * the palette itself, so the colourbar drawn in the control panel and the water drawn in the
- * scene are the same numbers - a lift applied only in the shader would have quietly made the
- * legend a lie.
+ * ordering a viewer infers from the image is never wrong.
+ *
+ * On a *light* console the problem inverts. cmocean was designed for exactly that ground, so
+ * the palette is used as its authors published it. Lifting it there would wash the cold end out
+ * against a white page and cost the contrast the lift exists to protect.
+ *
+ * Crucially the lift is applied *here*, to the palette itself, so the colourbar drawn in the
+ * control panel and the water drawn in the scene are always the same numbers. A lift applied
+ * only in the shader would have quietly made the legend a lie - and that stays true now that
+ * there are two themes, because both read the same value.
  */
 
-const LIFT = 0.62;
+import type { Theme } from "./store";
 
-export function liftedPalette(colours: number[][]): number[][] {
-  return colours.map(([r, g, b]) => [lift(r ?? 0), lift(g ?? 0), lift(b ?? 0)]);
+const LIFT_DARK = 0.62;
+const LIFT_LIGHT = 1.0; // identity: cmocean as published
+
+export function liftFor(theme: Theme): number {
+  return theme === "light" ? LIFT_LIGHT : LIFT_DARK;
 }
 
-function lift(channel: number): number {
-  return Math.round(255 * Math.pow(channel / 255, LIFT));
+export function liftedPalette(colours: number[][], theme: Theme = "dark"): number[][] {
+  const gamma = liftFor(theme);
+  if (gamma === 1) return colours;
+  return colours.map(([r, g, b]) => [
+    lift(r ?? 0, gamma),
+    lift(g ?? 0, gamma),
+    lift(b ?? 0, gamma),
+  ]);
+}
+
+function lift(channel: number, gamma: number): number {
+  return Math.round(255 * Math.pow(channel / 255, gamma));
 }
 
 /** A CSS gradient for the colourbar swatch, using exactly the colours the scene will draw. */
-export function paletteGradient(colours: number[][], stops = 32): string {
-  const lifted = liftedPalette(colours);
+export function paletteGradient(colours: number[][], theme: Theme = "dark", stops = 32): string {
+  const lifted = liftedPalette(colours, theme);
   const step = Math.max(1, Math.floor(lifted.length / stops));
   const picked = lifted.filter((_, index) => index % step === 0);
   return picked
