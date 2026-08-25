@@ -86,7 +86,7 @@ VIABILITY, IMPACT AND BENEFITS, RESEARCH AND REFERENCES.
 **Layout:** three boxes across the top, one image across the bottom.
 
 **Image:** `images/03-globe-full.png`
-Caption: *India's EEZ with INCOIS temperature and 92 Argo floats. Click any float to compare.*
+Caption: *India's EEZ with INCOIS temperature and 93 Argo floats. Click any float to compare.*
 
 ---
 
@@ -114,6 +114,9 @@ Caption: *India's EEZ with INCOIS temperature and 92 Argo floats. Click any floa
 
 - **Still water becomes invisible.** We fade out water that is not changing, so the layers show
   through. *Without this you see a warm lid and a black void underneath.*
+- **It shows where the evidence is, not just the model.** A third view counts how many Argo casts
+  were actually taken near each point. *About a fifth of the block has none, so the analysis there
+  is interpolation - and the tool says so instead of hiding it.*
 - **The comparison is the product.** Model volume and instrument profile in one view is the exact
   gap PS 26067 names.
 - **It refuses to invent data.** Land can never leak a temperature into the sea. *A naive render
@@ -190,7 +193,7 @@ change from the previous version, and it fits the slide far better.
 - **GLSL** - the ray-marching shader
 
 **Quality**
-- **pytest** - 54 automated tests
+- **pytest** - 67 automated tests
 
 ### Bottom strip - `METHODOLOGY :`
 
@@ -206,7 +209,7 @@ One muted line beneath:
 
 > **Working prototype, running on real INCOIS data.**
 > Ingestion, 3D rendering, instrument overlay and model-versus-observation comparison are all
-> built and tested. **54 tests passing.** What is left is deployment and more variables, not core
+> built and tested. **67 tests passing.** What is left is deployment and more variables, not core
 > capability.
 
 *(Set "Working prototype" in green `#5FD68A`. This is the line a judge remembers.)*
@@ -254,6 +257,8 @@ One muted line beneath:
   as the animation plays.*
 - **Land is tracked separately.** *A second channel records where the ocean actually is, so land
   can never contribute a value at any zoom.*
+- **We show our own uncertainty.** *The Observation Coverage view marks where there is no float
+  data behind the model, rather than presenting every cell with equal confidence.*
 
 **Muted line under the three boxes:**
 > Every risk above was met during the build and resolved. This is a record, not a forecast.
@@ -384,6 +389,7 @@ Those two are the whole idea. Give them room.
 | `04-collocation-panel.png` | The comparison chart | Slide 5 |
 | `11-isosurface.png` | The 20 °C isotherm | Slide 4, optional |
 | `01-volume-full.png` | Full app with controls | Spare |
+| `coverage.jpg` | Observation Coverage, four bands | **Slide 2 or 4** - the newest and least expected view |
 | `12-watermass.png` | Colourbar narrowed to one water mass | Spare |
 | `13-salinity.png` | Salinity field | Spare |
 

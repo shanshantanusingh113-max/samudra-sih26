@@ -165,7 +165,7 @@ screenshots the app.
 
 ### Pass 3 - The demo and the story
 
-Read `script.md`, `ppt/SLIDES.md` and `docs/Samudra3D-Dossier.pdf`, then actually use the live
+Read `docs/demo/script.md`, `ppt/SLIDES.md` and `docs/Samudra3D-Dossier.pdf`, then actually use the live
 app as a judge would.
 
 - Where would a non-specialist get lost or draw the wrong conclusion?
@@ -206,7 +206,7 @@ which section of the dossier. Flag anything we currently say that the research c
 ### Pass 5 - What you would do next
 
 Given roughly a day of work, ranked by value per hour, what would most improve this submission?
-Weigh it against `plan/01-cut-features.md`, which already lists what was deliberately cut and
+Weigh it against `docs/plan/01-cut-features.md`, which already lists what was deliberately cut and
 why. Tell me if anything on that cut list should be reinstated.
 
 ---

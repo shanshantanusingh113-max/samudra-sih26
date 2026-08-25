@@ -54,6 +54,12 @@ A website. You open a link - nothing to install.
 
 That third step is the thing that does not exist today.
 
+4. **You switch to Observation Coverage.** The model disappears and the evidence takes its
+   place: how many Argo casts were actually taken near each point. About a fifth of the block
+   turns out to have none at all, which means the analysis there is interpolation rather than
+   observation. A model has a value everywhere whether or not anyone measured; this separates
+   the two.
+
 ### It runs on INCOIS's real data
 
 This is not a mock-up with invented numbers. It reads:
@@ -160,9 +166,10 @@ cd web && npm run dev            # then open http://localhost:5173
 
 If you skip step 2, the data is already committed, so the website still works.
 
-**Tests:** `cd pipeline && ../.venv/Scripts/python -m pytest` - 54 tests covering the depth
-warp, volume encoding, grid interpolation, collocation maths, the Argo parser, and the adapter
-seam that lets two providers with incompatible column layouts share one parser.
+**Tests:** `cd pipeline && ../.venv/Scripts/python -m pytest` - 67 tests covering the depth
+warp, volume encoding, grid interpolation, collocation maths, the Argo parser, observation
+coverage, and the adapter seam that lets two providers with incompatible column layouts share
+one parser.
 
 ## 5. How it is put together
 
@@ -186,13 +193,16 @@ The design decisions, including the ones that were hard-won, are written up in
 | File | What it is |
 | --- | --- |
 | [`docs/Samudra3D-Dossier.pdf`](docs/Samudra3D-Dossier.pdf) | The full project dossier - problem, solution, every feature, feasibility, impact, and an anticipated-questions section written for non-specialist judges |
-| [`script.md`](script.md) | The demo script: what to say, and what to do, minute by minute |
+| [`docs/demo/script.md`](docs/demo/script.md) | The demo script: 4 minutes of deck, 4 minutes of live demo |
+| [`docs/demo/technical-approach.md`](docs/demo/technical-approach.md) | The spoken version of the Technical Approach slide, about 70 seconds |
+| [`docs/research/operational-stakes.md`](docs/research/operational-stakes.md) | Sourced figures for the pitch: cyclones, upwelling, the Argo programme |
+| [`docs/BUGS.md`](docs/BUGS.md) | Known defects, ranked, with file and line |
 | [`ppt/SLIDES.md`](ppt/SLIDES.md) | Slide-by-slide content and art direction for the SIH submission deck |
 | [`ppt/PROMPT.md`](ppt/PROMPT.md) | A ready-to-paste prompt for generating that deck with an AI |
 | [`design/STITCH.md`](design/STITCH.md) | Per-screen prompts for Google Stitch |
-| [`plan/01-cut-features.md`](plan/01-cut-features.md) | What was deliberately not built, and what is worth adding back |
+| [`docs/plan/01-cut-features.md`](docs/plan/01-cut-features.md) | What was deliberately not built, and what is worth adding back |
 | [`CLAUDE.md`](CLAUDE.md) | Orientation for anyone picking this up: a map of every file, the commands, and the rules that matter |
-| [`REVIEW-PROMPT.md`](REVIEW-PROMPT.md) | A brief for reviewing the whole project against the problem statement |
+| [`docs/REVIEW-PROMPT.md`](docs/REVIEW-PROMPT.md) | A brief for reviewing the whole project against the problem statement |
 
 ## 6. What we deliberately did **not** build
 
