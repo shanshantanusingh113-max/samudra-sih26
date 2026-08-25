@@ -13,13 +13,17 @@ export interface FieldSpec {
   emphasis?: number | null;
   opacity?: number | null;
   description?: string | null;
+  /** False when an isosurface is not a meaningful operation on this Field. */
+  isosurface?: boolean;
 }
 
 /** Band thresholds and labels for the derived Observation Coverage Field. */
 export interface CoverageSpec {
   bands: number[];
   labels: string[];
+  /** Half-window either side of the analysis date. The Float markers use it too; see floatTime.ts. */
   windowDays: number;
+  radiusKm: number;
 }
 
 export interface VolumeSpec {

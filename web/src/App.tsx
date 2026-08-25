@@ -6,6 +6,7 @@ import {
   loadVolumeTexture,
   paletteTexture,
 } from "./data/load";
+import { useCoverageWindow } from "./floatTime";
 import { OceanScene } from "./scene/OceanScene";
 import { useStore } from "./store";
 import { Chrome, LoadingScreen } from "./ui/Chrome";
@@ -38,6 +39,8 @@ export default function App() {
           ),
         ]);
         if (cancelled) return;
+        // Before anything draws a Float: the marker rule and the coverage window are one number.
+        if (manifest.coverage) useCoverageWindow(manifest.coverage.windowDays);
         const first = manifest.fields[0];
         useStore.setState({
           manifest,
@@ -46,7 +49,6 @@ export default function App() {
           coastlines,
           timestepIndex: manifest.timesteps.length - 1,
           fieldKey: first?.key ?? "temperature",
-          paletteName: first?.palette ?? "thermal",
         });
       } catch (error) {
         if (!cancelled) {
@@ -122,11 +124,13 @@ export default function App() {
   // ---- palette -------------------------------------------------------------
   useEffect(() => {
     const scene = sceneRef.current;
-    const colours = store.manifest?.palettes[store.paletteName];
+    // The palette a Field is drawn with is the Field's own, named in its FieldSpec. There used
+    // to be a chooser beside the variable selector; see samudra/palettes.py for why there is not.
+    const colours = store.manifest?.palettes[store.field()?.palette ?? ""];
     if (!scene || !colours) return;
     // The scene takes ownership and releases the palette it replaces.
     scene.setPalette(paletteTexture(colours, store.theme));
-  }, [ready, store.manifest, store.paletteName, store.theme]);
+  }, [ready, store.manifest, store.fieldKey, store.theme]);
 
   // ---- push view state into the scene every render -------------------------
   useEffect(() => {

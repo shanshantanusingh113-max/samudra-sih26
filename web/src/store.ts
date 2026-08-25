@@ -45,7 +45,6 @@ interface State {
   /** Transfer Function window, as a fraction of the Field's encoded range. */
   windowMin: number;
   windowMax: number;
-  paletteName: string;
   opacity: number;
 
   depthFrom: number;
@@ -73,6 +72,15 @@ interface State {
   showTracks: boolean;
 
   set: <K extends keyof State>(key: K, value: State[K]) => void;
+  /**
+   * Switch Variable, and apply everything that switching implies.
+   *
+   * One place, because there are three: the button in the panel, the capture harness, and the
+   * console. This used to live in the button's onClick, so a Field selected any other way kept
+   * the previous Field's Transfer Function window and render hints and drew something subtly
+   * wrong that nobody would question.
+   */
+  selectField: (key: string) => void;
   field: () => FieldSpec | undefined;
   /** Turn a window fraction back into the physical value a user should read. */
   toValue: (fraction: number) => number;
@@ -93,7 +101,6 @@ export const useStore = create<State>((setState, getState) => ({
 
   windowMin: 0,
   windowMax: 1,
-  paletteName: "thermal",
   opacity: 0.05,
 
   depthFrom: 0,
@@ -119,6 +126,23 @@ export const useStore = create<State>((setState, getState) => ({
   showTracks: true,
 
   set: (key, value) => setState({ [key]: value } as never),
+
+  selectField: (key) => {
+    const spec = getState().manifest?.fields.find((f) => f.key === key);
+    if (!spec) return;
+    setState({
+      fieldKey: key,
+      // The window is a fraction of the Field's own encoded range, so carrying it across a
+      // switch would silently mean a different span of a different quantity.
+      windowMin: 0,
+      windowMax: 1,
+      // A Field may ask to be drawn differently. Coverage does, because gradient-weighted
+      // opacity would fade out exactly the flat regions it exists to show; the anomaly asks for
+      // part of it, to clear the flat abyss without losing a uniform warm patch.
+      ...(spec.emphasis != null ? { emphasis: spec.emphasis } : {}),
+      ...(spec.opacity != null ? { opacity: spec.opacity } : {}),
+    });
+  },
 
   field: () => getState().manifest?.fields.find((f) => f.key === getState().fieldKey),
 

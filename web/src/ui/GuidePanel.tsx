@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { GUIDE, describePalette, describeView } from "../guide";
+import { GUIDE, describeIsosurface, describePalette, describeView } from "../guide";
 import { axisToDepth } from "../scene/geography";
 import { useStore } from "../store";
 
@@ -19,12 +18,9 @@ export function GuidePanel() {
   const { manifest, touched, selectedFloatId, morph, set } = store;
   const spec = store.field();
 
-  // A control explanation is a response to an action, so it should fade rather than stick.
-  useEffect(() => {
-    if (!touched) return;
-    const timer = window.setTimeout(() => set("touched", null), 14000);
-    return () => window.clearTimeout(timer);
-  }, [touched, set]);
+  // An explanation used to time out after fourteen seconds, which meant a reader who paused to
+  // look at the water lost the answer to the question they had just asked. It now stays until
+  // they touch another control or close it, which is what the close button is for.
 
   // On the globe the panel stays out of the way until the user touches something, because the
   // cue card is already explaining the view there. The moment a control is touched it takes
@@ -32,14 +28,16 @@ export function GuidePanel() {
   if (!manifest || !spec || selectedFloatId) return null;
   if (morph < 0.5 && !touched) return null;
 
-  // The palette entry is the one that cannot be static: what a palette *means* depends on
-  // which Field it has been put on, and saying so is the whole point of explaining it.
+  // The colourbar entry is built rather than written, because it names the palette the current
+  // Field carries. Every other entry is a fixed piece of prose.
   const entry =
     touched === "palette"
-      ? describePalette(store.paletteName, store.fieldKey, spec.label)
-      : touched
-        ? GUIDE[touched]
-        : undefined;
+      ? describePalette(spec.palette, spec.label)
+      : touched === "isosurface"
+        ? describeIsosurface(spec.key, spec.units)
+        : touched
+          ? GUIDE[touched]
+          : undefined;
   const volume = manifest.volume;
 
   return (

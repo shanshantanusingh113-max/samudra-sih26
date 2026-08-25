@@ -14,17 +14,26 @@ from __future__ import annotations
 import cmocean
 import numpy as np
 
-# Palette per quantity, following cmocean's own guidance.
+# One palette per Field, and nothing else.
+#
+# There used to be nine, offered to the user in a dropdown next to the variable selector. Seven
+# of them named quantities this platform does not carry - `algae` is chlorophyll, `oxy` is
+# dissolved oxygen - so choosing one recoloured the temperature field in the colours of a
+# measurement nobody had taken, under a warning line admitting the colours meant nothing. A
+# presentation control was reading as a data control.
+#
+# The ones that named something derivable became Fields instead: `dense` now carries density and
+# `balance` carries the temperature anomaly. The ones that never could - chlorophyll and oxygen
+# are biological and optical, bathymetry is a separate dataset and is scenery rather than a
+# variable - are gone, because offering their palettes was offering a lie. `delta` went with
+# them as a second diverging scale with nothing to sit on.
+#
+# Each Field names its palette in its FieldSpec, so a Field and its colours cannot be separated.
 AVAILABLE = {
     "thermal": "Temperature - cold and dark to warm and bright",
     "haline": "Salinity - fresh to saline",
     "dense": "Density",
-    "speed": "Current speed",
     "balance": "Diverging - anomalies and Residuals about zero",
-    "delta": "Diverging - differences",
-    "algae": "Chlorophyll",
-    "oxy": "Dissolved oxygen",
-    "deep": "Bathymetry / depth",
 }
 
 RESOLUTION = 256
@@ -62,11 +71,27 @@ COVERAGE_BANDS = (
 )
 
 
-def banded_table(thresholds, vmin: float, vmax: float) -> list[list[int]]:
-    """A 256-entry table that is flat within each band and steps at the thresholds.
+# Band edges are placed half a count below the threshold they name, not on it.
+#
+# The thresholds are whole numbers of casts, and the Volume that carries them has been quantised
+# to 255 levels. Putting an edge exactly on a threshold makes the answer depend on which side
+# `rint` happened to round to: at an encoding range of 0..7 a count of 1 becomes byte 36, whose
+# position 0.1412 falls just under the edge at 1/7 = 0.1429, so every one-cast voxel was painted
+# with the "no casts" colour and the sparse band was never drawn at all. It worked at 0..8 and
+# broke the first time a re-bake moved the 99.5th percentile.
+#
+# Half a count is also where the edge belongs on its own merits. The GPU filters the value
+# channel trilinearly, so the boundary a viewer sees between "none" and "one" is a contour
+# through interpolated values, and 0.5 is the honest place to draw it.
+_EDGE_OFFSET_COUNTS = 0.5
 
-    `thresholds` are in the Field's own units - counts, here - and are converted to positions in
-    the encoded range so the colourbar's tick marks and the water agree about where a band ends.
+
+def banded_table(thresholds, vmin: float, vmax: float) -> list[list[int]]:
+    """A 256-entry table that is flat within each band and steps just below each threshold.
+
+    `thresholds` are whole numbers in the Field's own units - casts, here - and are converted to
+    positions in the encoded range so the colourbar's tick marks and the water agree about where
+    a band ends. `test_palettes.py` holds the round trip that keeps them agreeing.
     """
     if not vmax > vmin:
         raise ValueError(f"need vmax > vmin, got vmin={vmin}, vmax={vmax}")
@@ -76,9 +101,8 @@ def banded_table(thresholds, vmin: float, vmax: float) -> list[list[int]]:
             f"have {len(COVERAGE_BANDS)}"
         )
 
-    positions = np.clip(
-        (np.asarray(thresholds, dtype=float) - vmin) / (vmax - vmin), 0.0, 1.0
-    )
+    edges = np.asarray(thresholds, dtype=float) - _EDGE_OFFSET_COUNTS
+    positions = np.clip((edges - vmin) / (vmax - vmin), 0.0, 1.0)
     samples = np.linspace(0.0, 1.0, RESOLUTION)
     index = np.searchsorted(positions, samples, side="right")
     return [list(COVERAGE_BANDS[i]) for i in index]

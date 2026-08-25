@@ -24,8 +24,16 @@ from pathlib import Path
 
 import numpy as np
 
+from .anomaly import anomaly_series, symmetric_encoding_range
 from .collocation import collocate
-from .coverage import BANDS, BAND_LABELS, observation_coverage
+from .coverage import (
+    BANDS,
+    BAND_LABELS,
+    METRES_PER_DEGREE,
+    RADIUS_DEGREES,
+    observation_coverage,
+)
+from .density import potential_density, profile_density
 from .depth_warp import DepthWarp
 from .grid import Grid
 from .palettes import all_tables, banded_table
@@ -58,15 +66,67 @@ COVERAGE_FIELD = FieldSpec(
     display_max=40.0,
     emphasis=0.0,
     opacity=0.06,
+    isosurface=False,
     description=(
-        "How many Argo casts were taken near each point and reached this depth. Counted in a "
-        "neighbourhood rather than per cell. This is evidence, not model error."
+        "How many Argo casts were taken near each point and whose dive passed through this "
+        "depth. Counted in a neighbourhood rather than per cell. This is evidence, not model "
+        "error."
     ),
 )
 
-# Profiles counted towards a Timestep. An Argo float surfaces about every ten days and the
-# analysis steps every ten days, so a five-day half-window collects roughly one cast per float
-# per step - which is what makes the coverage field animate rather than sit still.
+# Density and Temperature Anomaly are computed here from Fields already on disk. Neither needs
+# a provider, a download or an assumption: density is fixed by TEOS-10 given temperature,
+# salinity and pressure, and an anomaly is a subtraction. They ride the same encoder, the same
+# manifest and the same shader as the fetched Fields, which is the claim PS 26067 asks for -
+# additional model variables with minimal code change - demonstrated rather than asserted.
+DENSITY_FIELD = FieldSpec(
+    key="density",
+    label="Sea Water Density",
+    units="kg/m³",
+    palette="dense",
+    display_min=20.0,
+    display_max=28.0,
+    description=(
+        "Potential density anomaly, sigma-theta, from TEOS-10. Computed from the temperature "
+        "and salinity analyses at each cell's own pressure. Density is what the ocean responds "
+        "to: water moves because it is light, not because it is warm."
+    ),
+)
+
+# Drawn with the gradient emphasis turned part way down. Anomaly is near zero below about 300 m,
+# so at full emphasis the deep half of the block correctly vanishes but a large uniform warm
+# patch - the thing worth seeing - fades with it. Part way keeps the patch and still clears the
+# flat abyss out of the way.
+ANOMALY_FIELD = FieldSpec(
+    key="temperature_anomaly",
+    label="Temperature Anomaly",
+    units="°C",
+    palette="balance",
+    display_min=-3.0,
+    display_max=3.0,
+    emphasis=0.55,
+    opacity=0.05,
+    description=(
+        "Departure of each cell from its own average across the twelve Timesteps in this bake, "
+        "roughly April to July 2026. A seasonal swing, not a climatological normal: there is no "
+        "thirty-year reference series in this build."
+    ),
+)
+
+# Order is the order of the buttons in the Variable selector. Fetched Fields first, then the
+# ones derived from them, then the evidence behind all of it.
+DERIVED_FIELDS = (DENSITY_FIELD, ANOMALY_FIELD)
+
+
+# Profiles counted towards a Timestep, as a half-window either side of the analysis date. An
+# Argo float surfaces about every ten days and the analysis steps every ten days, so five days
+# each way collects roughly one cast per float per step, and the half-windows tile the timeline
+# without gaps or overlap. That is what makes the coverage field animate rather than sit still.
+#
+# It is shipped in the manifest because the frontend needs the same number: a Float marker is
+# drawn at a Timestep exactly when a cast of its own was counted by that Timestep's window.
+# These used to be two independent constants, 5 here and 12 in floatTime.ts, and 2% of the
+# markers on screen were therefore instruments that no coverage window had counted.
 COVERAGE_WINDOW_DAYS = 5.0
 
 
@@ -97,6 +157,20 @@ def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | N
             grids[(field.key, index)] = model.fetch_grid(field.key, stamp, DEMO_REGION)
             print(f"[bake]   {field.key} {stamp:%Y-%m-%d}")
 
+    # Derived Fields, computed from the Grids just fetched. Added to the same dictionary, so
+    # everything downstream - the native-grid export, the encoder, the manifest - treats them
+    # exactly as it treats temperature.
+    for index in range(len(wanted)):
+        grids[(DENSITY_FIELD.key, index)] = potential_density(
+            grids[("temperature", index)], grids[("salinity", index)]
+        )
+    anomalies = anomaly_series([grids[("temperature", i)] for i in range(len(wanted))])
+    for index, grid in enumerate(anomalies):
+        grids[(ANOMALY_FIELD.key, index)] = grid
+    print(f"[bake] derived {', '.join(f.key for f in DERIVED_FIELDS)}")
+
+    volume_fields = [*model.fields(), *DERIVED_FIELDS]
+
     # One encoding range per Field across every Timestep. If each frame were scaled to its own
     # min/max the colours would breathe as the animation ran and a viewer would read that
     # shimmer as a real seasonal signal.
@@ -104,8 +178,11 @@ def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | N
         field.key: _encoding_range(
             [grids[(field.key, i)] for i in range(len(wanted))], field
         )
-        for field in model.fields()
+        for field in volume_fields
     }
+    # Except the anomaly, whose range has to be symmetric or the diverging palette's midpoint
+    # stops meaning "no departure". See samudra/anomaly.py.
+    ranges[ANOMALY_FIELD.key] = symmetric_encoding_range(anomalies)
 
     # The native Grids are kept for the API, which must never answer a scientific question from
     # the Volume: the Volume is quantised, depth-warped and back-filled across land for the sake
@@ -122,7 +199,7 @@ def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | N
         (grid_dir / "index.json").write_text(
             json.dumps(
                 {
-                    "fields": [f.key for f in model.fields()],
+                    "fields": [f.key for f in volume_fields],
                     "timesteps": [t.isoformat() for t in wanted],
                 }
             ),
@@ -132,21 +209,39 @@ def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | N
 
     end = wanted[-1]
     start = end - timedelta(days=profile_days)
-    # Reach past the last analysis by the coverage half-window. Those casts genuinely belong to
-    # that Timestep's window, and without them the final frame counts only the casts that
-    # happened to land before the analysis date - which halves its coverage and makes the frame
-    # the app opens on look like the worst-sampled one in the series.
-    profiles = list(
-        observations.fetch_profiles(
-            DEMO_REGION, start, end + timedelta(days=COVERAGE_WINDOW_DAYS)
-        )
+    # Fetched wider than the region on purpose, in both space and time.
+    #
+    # In time, by the coverage half-window: otherwise the last Timestep counts only the casts
+    # that happened to land before the analysis date, which halves its coverage on the frame the
+    # app opens on.
+    #
+    # In space, by the coverage radius: a float at 54 E is real evidence about a voxel at
+    # 55.5 E, and fetching only inside the region made every edge voxel reachable from one side
+    # only. Measured before the fix: 0.41 casts at the western edge against 2.71 in the
+    # interior, and 0.00 at the eastern edge - a false "no observations" rim that a viewer would
+    # read as a genuine gap in the Argo array.
+    halo = BoundingBox(
+        south=DEMO_REGION.south - RADIUS_DEGREES,
+        north=DEMO_REGION.north + RADIUS_DEGREES,
+        west=DEMO_REGION.west - RADIUS_DEGREES,
+        east=DEMO_REGION.east + RADIUS_DEGREES,
     )
-    print(f"[bake] {len(profiles)} Argo profiles from {len(set(p.platform_id for p in profiles))} floats")
+    profiles = list(
+        observations.fetch_profiles(halo, start, end + timedelta(days=COVERAGE_WINDOW_DAYS))
+    )
+    # Coverage counts every cast in the halo. Everything else - the Floats drawn on screen and
+    # the Collocations - is restricted to the region, so the halo never puts a marker outside
+    # the box or a comparison against a Grid that does not reach it.
+    in_region = [p for p in profiles if DEMO_REGION.contains(p.latitude, p.longitude)]
+    print(
+        f"[bake] {len(profiles)} Argo profiles in the halo, {len(in_region)} inside the region, "
+        f"from {len(set(p.platform_id for p in in_region))} floats"
+    )
 
     sample = grids[(model.fields()[0].key, 0)]
     volume_files: dict[str, list[str]] = {}
 
-    for field in model.fields():
+    for field in volume_fields:
         vmin, vmax = ranges[field.key]
         paths = []
         for index in range(len(wanted)):
@@ -164,7 +259,11 @@ def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | N
     volume_files[COVERAGE_FIELD.key] = coverage_paths
     ranges[COVERAGE_FIELD.key] = coverage_range
 
-    floats, collocations = _build_observations(profiles, grids, wanted, model)
+    # Density joins the Collocation because a Float measures both of its ingredients, so both
+    # sides of the comparison can be put through the same TEOS-10 chain. The anomaly cannot: a
+    # single cast has no baseline of its own to depart from.
+    collocated = [*model.fields(), DENSITY_FIELD]
+    floats, collocations = _build_observations(in_region, grids, wanted, collocated)
     (output_dir / "floats.json").write_text(json.dumps(floats), encoding="utf-8")
     (output_dir / "collocations.json").write_text(json.dumps(collocations), encoding="utf-8")
 
@@ -173,9 +272,14 @@ def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | N
             grid_dir / "profiles.npz",
             **{
                 f"{p.platform_id}|{p.time.isoformat()}|{p.latitude}|{p.longitude}": np.vstack(
-                    [p.depths, p.values.get("temperature"), p.values.get("salinity")]
+                    [
+                        p.depths,
+                        p.values.get("temperature"),
+                        p.values.get("salinity"),
+                        _observed_density(p),
+                    ]
                 )
-                for p in profiles
+                for p in in_region
             },
         )
 
@@ -188,12 +292,13 @@ def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | N
         ],
         "fields": [
             asdict(f) | {"range": list(ranges[f.key])}
-            for f in (*model.fields(), COVERAGE_FIELD)
+            for f in (*volume_fields, COVERAGE_FIELD)
         ],
         "coverage": {
             "bands": list(BANDS),
             "labels": list(BAND_LABELS),
             "windowDays": COVERAGE_WINDOW_DAYS,
+            "radiusKm": round(RADIUS_DEGREES * METRES_PER_DEGREE / 1000),
         },
         "timesteps": [t.isoformat() for t in wanted],
         "volume": {
@@ -288,7 +393,18 @@ def _encoding_range(grids: list[Grid], field) -> tuple[float, float]:
     return float(np.percentile(stacked, 0.5)), float(np.percentile(stacked, 99.5))
 
 
-def _build_observations(profiles, grids, timesteps, model):
+def _observed_density(profile):
+    """Sigma-theta down one cast, or all-NaN if it did not report both ingredients."""
+    temperature = profile.values.get("temperature")
+    salinity = profile.values.get("salinity")
+    if temperature is None or salinity is None:
+        return np.full(len(profile.depths), np.nan)
+    return profile_density(
+        profile.latitude, profile.longitude, profile.depths, temperature, salinity
+    )
+
+
+def _build_observations(profiles, grids, timesteps, fields):
     """Group Profiles into Floats, and pre-compute a Collocation for each latest cast."""
     by_float: dict[str, list] = {}
     for profile in profiles:
@@ -322,9 +438,11 @@ def _build_observations(profiles, grids, timesteps, model):
         latest = casts[-1]
         index = _nearest_timestep(latest.time, timesteps)
         entry = {"timestepIndex": index, "time": latest.time.isoformat(), "fields": {}}
-        for field in model.fields():
+        observed_for = dict(latest.values)
+        observed_for[DENSITY_FIELD.key] = _observed_density(latest)
+        for field in fields:
             grid = grids[(field.key, index)]
-            observed = latest.values.get(field.key)
+            observed = observed_for.get(field.key)
             if observed is None or not np.isfinite(observed).any():
                 continue
             try:

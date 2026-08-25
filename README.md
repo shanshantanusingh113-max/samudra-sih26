@@ -54,7 +54,13 @@ A website. You open a link - nothing to install.
 
 That third step is the thing that does not exist today.
 
-4. **You switch to Observation Coverage.** The model disappears and the evidence takes its
+4. **You switch to Density, and the picture changes.** Density is not downloaded; it is worked
+   out here from the temperature and salinity analyses using TEOS-10. The northern Bay of Bengal
+   turns out to be 0.8 degrees *warmer* than the Arabian Sea and still 3.0 kg/m3 *lighter*,
+   because the Ganges and Brahmaputra make it 3.6 PSU fresher. No temperature map can show you
+   that, and it is why a cyclone crossing the Bay meets water that will not mix away beneath it.
+
+5. **You switch to Observation Coverage.** The model disappears and the evidence takes its
    place: how many Argo casts were actually taken near each point. About a fifth of the block
    turns out to have none at all, which means the analysis there is interpolation rather than
    observation. A model has a value everywhere whether or not anyone measured; this separates
@@ -96,15 +102,15 @@ it is better they hear it from us.
 | ...with isosurface extraction | **Met** | Draws the surface at one chosen value, e.g. the 20 °C isotherm | `volumeShader.ts` |
 | ...with time-step animation | **Met** | Play button, 12 analyses over 4 months | `Timeline.tsx` |
 | ...using WebGL / Three.js or Cesium.js | **Met** | Three.js and WebGL2. Why not Cesium: `docs/adr/0001` | `OceanScene.ts` |
-| ...of **current vectors** | **Not met** | Not implemented. INCOIS publish geostrophic currents, but that series ends 2019-03 and cannot share a timeline with the temperature field | - |
+| ...of **current vectors** | **Not met** | INCOIS publish geostrophic currents, but that series ends 2019-03 and cannot share a timeline with the temperature field. Deriving them ourselves by thermal wind was built and rejected on measurement: it gave 0.16 m/s for the Somali Current in peak monsoon against a real 1.5-2.5 m/s. `docs/adr/0010` | - |
 | **Instrument overlay** with geospatially accurate markers | **Met** | Floats drawn at the position they held at the moment on screen, with drift tracks | `OceanScene.ts` |
 | ...click a float to inspect a depth-vs-variable profile chart with timestamps | **Met** | Observed against modelled on one axis, gap shaded, cast and analysis dates named | `ProfilePanel.tsx` |
 | ...of **Glider, CTD and BGC** data | **Not met** | The `Float` abstraction and the adapter seam would carry them unchanged, but none is demonstrated | - |
 | **Multi-format ingestion**: NetCDF via xarray backend | **Met** | `xarray` + `netCDF4`. PyNIO is deprecated upstream; xarray is its sanctioned replacement | `sources/incois.py` |
 | ...and delimited text formats | **Met** | The Argo CSV parser, with the column layout stored as data rather than code | `sources/argo.py` |
 | ...modular, new sources with minimal code change | **Met** | See the gap table above | `sources/base.py` |
-| **Colourbar editor**: palette, min/max range, log/linear | **Met** | cmocean palettes, both range handles, a log toggle | `Controls.tsx` |
-| **Variable selector** | **Met** | Temperature and salinity | `Controls.tsx` |
+| **Colourbar editor**: palette, min/max range, log/linear | **Partly** | Both range handles, and the range is analytical rather than cosmetic - water outside it is not drawn. No palette chooser: each variable carries the cmocean scale designed for its quantity, because a chooser let you put an oxygen scale on temperature. No log toggle: it warped the water while the colourbar stayed linear. `docs/adr/0010` | `Controls.tsx` |
+| **Variable selector** | **Met** | Five: temperature, salinity, density, temperature anomaly, observation coverage. The last three are computed here rather than downloaded | `Controls.tsx` |
 | **Layer opacity control** | **Met** | Water opacity, plus a feature-emphasis slider | `Controls.tsx` |
 | **Vertical exaggeration slider** | **Met** | 200x to 3500x, with the real depths labelled on the flank | `Controls.tsx`, `DepthRuler.tsx` |
 | **Modern JS frontend** | **Met** | TypeScript, React 19, Vite | `web/` |
@@ -166,10 +172,10 @@ cd web && npm run dev            # then open http://localhost:5173
 
 If you skip step 2, the data is already committed, so the website still works.
 
-**Tests:** `cd pipeline && ../.venv/Scripts/python -m pytest` - 67 tests covering the depth
+**Tests:** `cd pipeline && ../.venv/Scripts/python -m pytest` - 102 tests covering the depth
 warp, volume encoding, grid interpolation, collocation maths, the Argo parser, observation
-coverage, and the adapter seam that lets two providers with incompatible column layouts share
-one parser.
+coverage, the TEOS-10 density chain, the anomaly baseline, and the adapter seam that lets two
+providers with incompatible column layouts share one parser.
 
 ## 5. How it is put together
 

@@ -38,6 +38,7 @@
   --primary: #64d7e3;
   --primary-strong: #3fb8c4;
   --on-primary: #00363b;
+  --primary-hover: #86e5ef;
   --primary-wash: rgba(100, 215, 227, 0.1);
   --primary-edge: rgba(100, 215, 227, 0.34);
 
@@ -102,6 +103,7 @@
   --primary: #00666e;
   --primary-strong: #00838d;
   --on-primary: #ffffff;
+  --primary-hover: #00858f;
   --primary-wash: rgba(0, 102, 110, 0.09);
   --primary-edge: rgba(0, 102, 110, 0.3);
 
@@ -316,7 +318,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding: 6px 12px;
+  padding: 7px 13px;
   border: 1px solid var(--outline-variant);
   border-radius: var(--radius-sm);
   background: var(--surface-low);
@@ -359,27 +361,46 @@ body {
   transform: translateY(-1px);
 }
 
+/*
+ * The primary action, matching the landing page: a solid accent fill rather than a soft wash
+ * inside an outline. The arrow moves on hover instead of the whole button lifting.
+ */
 .dive {
-  padding: 10px 18px;
-  border: 1px solid var(--primary-edge);
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 20px;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  background: linear-gradient(180deg, var(--primary-wash), transparent);
-  color: var(--primary);
+  background: var(--primary);
+  color: var(--on-primary);
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.005em;
   cursor: pointer;
   white-space: nowrap;
-  transition: transform 0.16s var(--ease), border-color 0.16s var(--ease),
-    background 0.16s var(--ease);
+  transition: background 0.18s var(--ease), box-shadow 0.18s var(--ease),
+    transform 0.12s var(--ease);
 }
 
-.dive:hover:not(:disabled) {
-  transform: translateY(-1px);
-  border-color: var(--primary);
-  background: linear-gradient(180deg, var(--primary-wash), var(--primary-wash));
+.dive::after {
+  content: "↓";
+  font-size: 14px;
+  line-height: 1;
+  transition: transform 0.22s var(--ease);
 }
+
+.dive-up::after { content: "↑"; }
+
+.dive:hover:not(:disabled) {
+  background: var(--primary-hover);
+  box-shadow: 0 6px 18px var(--primary-wash);
+}
+
+.dive:hover:not(:disabled)::after { transform: translateY(2px); }
+.dive-up:hover:not(:disabled)::after { transform: translateY(-2px); }
+.dive:active:not(:disabled) { transform: translateY(1px); }
 
 .dive:disabled {
   opacity: 0.45;
@@ -388,9 +409,15 @@ body {
 
 .dive-up {
   border-color: var(--outline);
-  color: var(--on-surface-variant);
+  color: var(--on-surface);
   background: var(--surface-low);
   font-weight: 500;
+}
+
+.dive-up:hover:not(:disabled) {
+  background: var(--surface-high);
+  border-color: var(--primary-edge);
+  box-shadow: none;
 }
 
 /* ---------------------------------------------------------------- cue */
@@ -456,7 +483,8 @@ body {
   position: absolute;
   top: 74px;
   z-index: 5;
-  width: 300px;
+  width: 344px;
+  overflow-x: hidden;
   max-height: calc(100% - 186px);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -509,7 +537,11 @@ body {
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 12px;
+  min-width: 0;
 }
+
+.control-head > select { flex: 1 1 auto; }
+.control-head > label { flex: 0 0 auto; }
 
 .control-head label {
   display: inline-flex;
@@ -539,6 +571,11 @@ body {
 }
 
 select {
+  /* The option labels name what each palette encodes, which makes the control's intrinsic
+     width far wider than the panel. Cap it and let the native dropdown be as wide as it likes. */
+  max-width: 100%;
+  min-width: 0;
+  text-overflow: ellipsis;
   padding: 7px 10px;
   border: 1px solid var(--outline-variant);
   border-radius: 6px;
@@ -554,18 +591,29 @@ select:hover {
 }
 
 /* Segmented control: the active segment is filled, not merely tinted, so it reads at a glance. */
+/*
+ * Two columns, and it wraps. It was a fixed three-across row built for temperature, salinity
+ * and coverage; density and the temperature anomaly made five, and "Observation Coverage" does
+ * not fit a third of this panel. The 1px gap over a coloured ground draws the dividers, which
+ * is what lets the grid wrap to any number of Fields without a last-child border rule to get
+ * wrong.
+ */
 .segmented {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--outline-variant);
   border: 1px solid var(--outline-variant);
   border-radius: 6px;
   overflow: hidden;
 }
 
 .segmented button {
-  flex: 1;
-  padding: 9px 8px;
+  min-width: 0;
+  padding: 9px 6px;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
   border: none;
-  border-right: 1px solid var(--outline-variant);
   background: var(--surface-low);
   color: var(--on-surface-variant);
   font-family: var(--mono);
@@ -575,13 +623,14 @@ select:hover {
   transition: background 0.16s var(--ease), color 0.16s var(--ease);
 }
 
-.segmented button:last-child {
-  border-right: none;
-}
-
 .segmented button:hover {
   background: var(--surface-high);
   color: var(--on-surface);
+}
+
+/* An odd number of Fields would otherwise leave a hole in the bottom right. */
+.segmented button:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
 }
 
 .segmented button.on {
@@ -592,10 +641,19 @@ select:hover {
 
 /* ---------------------------------------------------------------- colourbar */
 
+/* A button, because touching it asks the guide panel what the colours mean. */
 .colourbar {
+  display: block;
+  width: 100%;
   height: 12px;
+  padding: 0;
   border: 1px solid var(--outline-variant);
   border-radius: 3px;
+  cursor: help;
+}
+
+.colourbar:hover {
+  border-color: var(--outline);
 }
 
 .colourbar-scale {
@@ -615,6 +673,21 @@ select:hover {
   text-transform: uppercase;
   font-size: 9px;
 }
+
+/*
+ * A one-line statement of what the Field's colour scale encodes.
+ *
+ * It had a `.warn` variant, for when the user had put an oxygen scale on salinity. That is no
+ * longer reachable: the palette belongs to the Field, so there is no mismatch left to flag.
+ */
+.palette-note {
+  margin: 8px 0 12px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--on-surface-faint);
+}
+
+.readout.muted { color: var(--on-surface-faint); }
 
 /* ---------------------------------------------------------------- sliders */
 
@@ -832,7 +905,7 @@ input[type="range"]::-moz-range-thumb {
 /* On the globe the left panel is short, so the key sits under it. In the volume view the panel
    runs long, so the key moves clear of it rather than overlapping. */
 .mapkey.in-volume {
-  left: 336px;
+  left: 372px;
 }
 
 .mapkey-label {
@@ -1444,9 +1517,9 @@ input[type="range"]::-moz-range-thumb {
 /* ---------------------------------------------------------------- narrow screens */
 
 @media (max-width: 1180px) {
-  .panel-left { width: 268px; }
+  .panel-left { width: 300px; }
   .panel-right { width: 312px; }
-  .mapkey.in-volume { left: 300px; }
+  .mapkey.in-volume { left: 336px; }
   .timeline-track { width: 260px; }
 }
 

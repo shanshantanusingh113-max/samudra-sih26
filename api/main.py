@@ -107,6 +107,9 @@ def profiles() -> dict[str, list[dict]]:
                     "depths": block[0],
                     "temperature": block[1],
                     "salinity": block[2],
+                    # Computed in the bake from the two above, so /api/collocation can answer
+                    # for density with both sides through the same TEOS-10 chain.
+                    "density": block[3],
                 }
             )
     for casts in grouped.values():

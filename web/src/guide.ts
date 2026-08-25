@@ -29,15 +29,62 @@ export const GUIDE: Record<string, GuideEntry> = {
   field: {
     title: "Variable",
     kind: "science",
-    does: "Switches which ocean property is drawn: temperature or salinity.",
+    does: "Switches which ocean property is drawn.",
     means:
-      "Both come from the same INCOIS analysis, on the same 24 depth levels. Temperature drives" +
-      " cyclone intensity and where the thermocline sits. Salinity traces where water came from," +
-      " because river outflow and evaporation leave a lasting fingerprint.",
+      "Temperature and salinity are fetched from INCOIS, on the same 24 depth levels. Density" +
+      " and the temperature anomaly are computed here from those two, so they cost no extra" +
+      " download and make no extra assumption. Observation Coverage is not the model at all: it" +
+      " is how much real measurement stands behind each part of it.",
     look:
       "Switch to salinity and compare the two coasts. The Bay of Bengal is visibly fresher than" +
-      " the Arabian Sea, because the Ganges and Brahmaputra pour into it.",
-    tryThis: "Switch to Salinity and look at the surface on either side of India.",
+      " the Arabian Sea, because the Ganges and Brahmaputra pour into it. Then switch to density" +
+      " and watch what that freshness does.",
+    tryThis: "Move along the row: the same water, four different questions about it.",
+  },
+
+  density: {
+    title: "Density",
+    kind: "science",
+    does:
+      "Draws potential density - sigma-theta - worked out here from the temperature and" +
+      " salinity analyses at each cell's own pressure, using TEOS-10.",
+    means:
+      "The ocean does not move because water is warm. It moves because water is light, and how" +
+      " light depends on temperature and salinity together. The figure is an anomaly: 22 means" +
+      " 1022 kg per cubic metre, because seawater varies over about 8 units against an absolute" +
+      " value near 1025 and a scale running 1020 to 1028 would spend itself on a constant." +
+      " Nothing was downloaded for this: density is a fixed function of what we already held.",
+    look:
+      "The northern Bay of Bengal against the northern Arabian Sea. In this bake the Bay's" +
+      " surface is 0.8 degrees warmer and still 3.0 units lighter, because it is 3.6 PSU" +
+      " fresher. A temperature map cannot show you that, and it is why a cyclone crossing the" +
+      " Bay meets water that will not mix away beneath it.",
+    tryThis:
+      "Look at Temperature first, then at Density, without moving the camera. The layers change" +
+      " shape.",
+  },
+
+  temperature_anomaly: {
+    title: "Temperature Anomaly",
+    kind: "science",
+    does:
+      "Draws how far each point is from its own average across the twelve Timesteps loaded," +
+      " rather than its absolute temperature.",
+    means:
+      "The baseline is those twelve steps and nothing else: roughly April to July 2026. It is" +
+      " a seasonal swing, not a climatological normal. Saying water is 'warmer than usual' the" +
+      " way an operational centre means it needs a thirty-year reference series, which this" +
+      " build does not carry and would have to download and validate separately. The two read" +
+      " identically on screen and mean different things, so this one says which it is." +
+      " Subtracting each cell's own average is what removes the map: the Arabian Sea being" +
+      " warmer than the equator is geography, not an anomaly.",
+    look:
+      "The signal is strongest at 75 to 125 metres, not at the surface. Measured here, the" +
+      " spread is 0.74 degrees at 5 m, 1.55 at 100 m and 0.08 by 2000 m. What moves over a" +
+      " season is the thermocline, and the deep ocean barely notices.",
+    tryThis:
+      "Drag Range min up past the middle. Everything cooler than its own average disappears," +
+      " leaving only the water that warmed.",
   },
 
   coverage: {
@@ -45,7 +92,7 @@ export const GUIDE: Record<string, GuideEntry> = {
     kind: "science",
     does:
       "Stops drawing the model and draws the evidence instead: how many Argo casts were taken" +
-      " within about 300 km of each point, and reached that depth.",
+      " within about 330 km of each point, and dived through that depth.",
     means:
       "A model has a value in every cell whether or not anyone measured there. That is a" +
       " property of the grid, not of the evidence. This field separates the two. Grey water is" +
@@ -54,21 +101,27 @@ export const GUIDE: Record<string, GuideEntry> = {
     look:
       "Look at the middle of the Arabian Sea against the water close to the coasts and the" +
       " Andamans. Then press play: the pattern shifts as the floats drift, because coverage is" +
-      " a property of where the instruments were that week, not a fixed map.",
+      " a property of where the instruments were that week, not a fixed map." +
+      " A float sitting on a red patch is not a contradiction: red means one cast nearby, and" +
+      " the float you are looking at is that cast.",
     tryThis:
       "Switch back to Temperature afterwards and look at the same spot. The model is confident" +
       " there either way - that is the point.",
   },
 
   palette: {
-    title: "Colour palette",
+    title: "Colourbar",
     kind: "rendering",
-    does: "Changes which colours represent which values.",
+    does: "Shows which colour stands for which value in the Field on screen.",
     means:
       "These are cmocean palettes, the standard in oceanography. They are perceptually uniform," +
-      " meaning an equal step in value looks like an equal step in colour. Rainbow palettes are" +
-      " avoided because they invent sharp boundaries that are not in the data.",
-    look: "thermal suits temperature, haline suits salinity, balance suits differences about zero.",
+      " meaning an equal step in value looks like an equal step in colour, and rainbow scales" +
+      " are avoided because they invent sharp boundaries that are not in the data. There is no" +
+      " palette chooser: each variable carries the scale its quantity is drawn with, so the" +
+      " colours can never end up meaning something other than what the label says.",
+    look:
+      "The numbers at the ends of the bar move when you narrow the range, because the range is" +
+      " the part that is yours to change. The colours are not.",
   },
 
   window: {
@@ -162,13 +215,9 @@ export const GUIDE: Record<string, GuideEntry> = {
     kind: "science",
     does: "Draws a solid skin through every point where the water is exactly one chosen value.",
     means:
-      "For temperature, the 20 C isotherm is the standard marker for the bottom of the warm" +
-      " surface layer. How deep it sits tells a forecaster how much warm water a cyclone can draw" +
-      " energy from. This is a real operational number, not a visual effect.",
-    look:
-      "The surface is not flat. Where it bulges downward there is a deep pool of warm water," +
-      " which is fuel for a storm. Where it rises, cold water is close to the surface.",
-    tryThis: "Turn off 'Show volume', then set the value near 20 C and look at the shape.",
+      "A surface of constant value. What that surface *is* depends on the variable it is cut" +
+      " through, and each one has its own name and its own meaning in oceanography.",
+    look: "Turn off 'Show volume' to see the surface on its own.",
   },
 
   surfaceLevel: {
@@ -259,14 +308,15 @@ export function describeView(options: {
 /**
  * What each cmocean palette was designed for.
  *
- * The selector offers all nine, because a user exploring should not be locked out of a
- * comparison. But cmocean's palettes are *designed per quantity* - `algae` encodes chlorophyll,
- * `oxy` encodes dissolved oxygen - and putting one on the wrong field is not merely ugly, it
- * miscues anyone who knows the convention. Rather than remove the choice, the panel names what
- * each one is for and says plainly when the current pairing is unconventional.
+ * There used to be nine of these and a dropdown to pick between them, and the panel would say
+ * plainly when the pairing was unconventional. That was the wrong fix for the right problem:
+ * cmocean's palettes are designed per quantity, so putting one on the wrong Field miscues
+ * anyone who knows the convention, and no amount of explanatory text repairs a control that
+ * reads as a data control and is not one. See docs/adr/0010.
  *
- * `suits` lists the Field keys a palette is the house choice for. A palette with an empty list
- * has no field in this build it belongs to, which is exactly the thing worth saying out loud.
+ * Now every Field names its own palette and there is nothing to choose. What survives here is
+ * the sentence saying what each scale encodes, which the colourbar still shows and the guide
+ * panel still expands. `suits` names the Field a palette belongs to.
  */
 export interface PaletteNote {
   title: string;
@@ -302,60 +352,24 @@ export const PALETTES: Record<string, PaletteNote> = {
     title: "dense",
     designedFor: "Density",
     form: "sequential",
-    suits: [],
+    suits: ["density"],
     note:
-      "Built for seawater density, which this build does not carry. It still reads correctly as" +
-      " low-to-high, so it works as a neutral alternative.",
-  },
-  speed: {
-    title: "speed",
-    designedFor: "Current speed",
-    form: "sequential",
-    suits: [],
-    note:
-      "Designed for the magnitude of a current, which is always positive and has a true zero." +
-      " There is no current field in this build.",
+      "Built for seawater density, and running light to heavy in the direction people already" +
+      " expect weight to run. The house palette for density.",
   },
   balance: {
     title: "balance",
     designedFor: "Anomalies about zero",
     form: "diverging",
-    suits: [],
+    suits: ["temperature_anomaly"],
     note:
-      "A diverging palette: it is built around a meaningful midpoint, with cool on one side and" +
-      " warm on the other. Right for a residual or an anomaly. On a plain temperature field the" +
-      " midpoint is arbitrary, so the colour break it draws is not a real boundary.",
-  },
-  delta: {
-    title: "delta",
-    designedFor: "Differences",
-    form: "diverging",
-    suits: [],
-    note:
-      "Diverging, like balance, and meant for the difference between two fields. Same caution:" +
-      " on an absolute field its centre implies a boundary the data does not have.",
-  },
-  algae: {
-    title: "algae",
-    designedFor: "Chlorophyll",
-    form: "sequential",
-    suits: [],
-    note:
-      "Encodes chlorophyll concentration, so an oceanographer reads green here as biology. This" +
-      " build carries no chlorophyll, so on temperature or salinity it is decorative only.",
-  },
-  oxy: {
-    title: "oxy",
-    designedFor: "Dissolved oxygen",
-    form: "sequential",
-    suits: [],
-    note:
-      "Carries deliberate emphasis at its ends to mark hypoxic and supersaturated water. Those" +
-      " end markers mean nothing on a field that is not oxygen.",
+      "A diverging palette, built around a midpoint that means something: the pale middle is" +
+      " water sitting at its own average, and the two dark ends are warmer and cooler than it." +
+      " The encoding range is forced to be symmetric so that midpoint really is zero.",
   },
   coverage: {
     title: "coverage",
-    designedFor: "Observation density",
+    designedFor: "Observation coverage",
     form: "sequential",
     suits: ["coverage"],
     note:
@@ -364,43 +378,109 @@ export const PALETTES: Record<string, PaletteNote> = {
       " reading. Grey through red and amber to green, which is the one ordering a non-specialist" +
       " reads correctly without a legend.",
   },
-  deep: {
-    title: "deep",
-    designedFor: "Bathymetry",
-    form: "sequential",
-    suits: [],
-    note:
-      "Made for depth and sea-floor topography. Legible on any field, but it invites a viewer to" +
-      " read it as depth rather than as the value being shown.",
+};
+
+/**
+ * What an isosurface *is*, per Field.
+ *
+ * A surface of constant value has a different name and a different meaning in every variable:
+ * an isotherm, an isohaline and an isopycnal are three different objects. This used to be one
+ * static entry written for temperature, so selecting density and asking what the surface meant
+ * got an answer about cyclones drawing energy from warm water.
+ *
+ * `hint` is the one-liner printed beside the slider; the rest fills the guide panel.
+ */
+export const ISOSURFACES: Record<
+  string,
+  { name: string; hint: string; means: string; look: string; tryThis: string }
+> = {
+  temperature: {
+    name: "isotherm",
+    hint:
+      "The 20 °C isotherm is the conventional proxy for the thermocline, and its depth drives" +
+      " cyclone-intensity forecasts.",
+    means:
+      "A surface of constant temperature, an isotherm. The 20 °C one is the standard marker for" +
+      " the bottom of the warm surface layer, and how deep it sits tells a forecaster how much" +
+      " warm water a cyclone can draw energy from. A real operational number, not an effect.",
+    look:
+      "The surface is not flat. Where it bulges downward there is a deep pool of warm water," +
+      " which is fuel for a storm. Where it rises, cold water is close to the surface.",
+    tryThis: "Set the value near 20 °C and look at the shape.",
+  },
+  salinity: {
+    name: "isohaline",
+    hint: "An isohaline traces the edge of a freshwater plume rather than a temperature layer.",
+    means:
+      "A surface of constant salinity, an isohaline. It wraps the river water: the Ganges and" +
+      " Brahmaputra put a fresh lid on the Bay of Bengal, and this draws the underside of that" +
+      " lid, which no map of the surface can show you.",
+    look:
+      "Set the value low, around 33 PSU, and the surface closes around the northern Bay of" +
+      " Bengal. That shape is the plume, and how thick it is decides whether a storm can mix it" +
+      " away.",
+    tryThis: "Set the value near 33 PSU and look at the northern Bay of Bengal.",
+  },
+  density: {
+    name: "isopycnal",
+    hint: "An isopycnal is a surface the ocean genuinely moves along, not just a contour.",
+    means:
+      "A surface of constant density, an isopycnal, and it is the most physical of the three." +
+      " Water moves *along* surfaces of equal density far more easily than across them, so an" +
+      " isopycnal is close to a real sheet the ocean slides on. Oceanographers label water" +
+      " masses by the isopycnals they sit between.",
+    look:
+      "Where the surface bulges downward, light water is piled up - a warm or fresh lens." +
+      " Where it lifts toward the surface, denser water is close to the top, which is what" +
+      " upwelling looks like from the side.",
+    tryThis: "Set the value near 24 kg/m³ and watch it dome across the equator.",
+  },
+  temperature_anomaly: {
+    name: "contour of departure",
+    hint: "Here the surface encloses the water that departed by more than the chosen amount.",
+    means:
+      "Not a water mass but a boundary: the skin around every region that departed from its own" +
+      " average by more than the value you set. Inside it, the water changed by at least that" +
+      " much; outside it, less.",
+    look:
+      "Set a positive value and the surface closes around the warm patches only, so you can see" +
+      " how big and how deep each one is rather than guessing from colour.",
+    tryThis: "Set the value near +1 °C and count how many separate warm blobs there are.",
   },
 };
 
-/** The guide entry for one palette, worded against the Field it is currently paired with. */
-export function describePalette(name: string, fieldKey: string, fieldLabel: string): GuideEntry {
+/** The guide entry for the isosurface, worded for the Field it is being cut through. */
+export function describeIsosurface(fieldKey: string, units: string): GuideEntry {
+  const entry = ISOSURFACES[fieldKey];
+  if (!entry) return GUIDE.isosurface as GuideEntry;
+  return {
+    title: `Isosurface: the ${entry.name}`,
+    kind: "science",
+    does:
+      `Draws a solid skin through every point where the water is exactly one chosen value in` +
+      ` ${units}. That surface is called ${/^[aeiou]/i.test(entry.name) ? "an" : "a"}` +
+      ` ${entry.name}.`,
+    means: entry.means,
+    look: entry.look,
+    tryThis: `Turn off 'Show volume', then: ${entry.tryThis}`,
+  };
+}
+
+/** The guide entry for the colourbar of one Field. */
+export function describePalette(name: string, fieldLabel: string): GuideEntry {
   const palette = PALETTES[name];
   if (!palette) return GUIDE.palette as GuideEntry;
 
-  const conventional = palette.suits.includes(fieldKey);
-  const house = Object.values(PALETTES).find((entry) => entry.suits.includes(fieldKey));
-
   return {
-    title: `Palette: ${palette.title}`,
+    title: `Colourbar: ${palette.title}`,
     kind: "rendering",
     does:
       `Draws ${fieldLabel.toLowerCase()} using cmocean's ${palette.title} palette, a` +
       ` ${palette.form} scale designed for ${palette.designedFor.toLowerCase()}.`,
     means: palette.note,
-    look: conventional
-      ? "This is the conventional pairing, so the colours mean what an oceanographer expects." +
-        " Only the colourbar decides which value each colour stands for, and it updates with you."
-      : `This is not the usual palette for ${fieldLabel.toLowerCase()}` +
-        (house ? `, which is normally drawn with ${house.title}` : "") +
-        ". Nothing about the data changes, but the colours no longer carry their usual meaning," +
-        " so read values off the colourbar rather than from the colour itself.",
-    tryThis: conventional
-      ? undefined
-      : house
-        ? `Switch back to ${house.title} to see the conventional reading.`
-        : undefined,
+    look:
+      "This pairing is fixed. The palette belongs to the variable rather than being chosen" +
+      " beside it, so the colours always mean what the label says. Only the range below is" +
+      " yours, and the figures at the ends of the bar follow it.",
   };
 }

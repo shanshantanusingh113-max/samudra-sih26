@@ -1,13 +1,16 @@
 import { axisToDepth } from "../scene/geography";
-import { PALETTES } from "../guide";
-import { paletteGradient } from "../palette";
+import { GUIDE, ISOSURFACES, PALETTES } from "../guide";
+import { liftedPalette, paletteGradient } from "../palette";
 import { useStore } from "../store";
 
 /**
- * The colour the banded palette uses for one band.
+ * The colour the banded palette uses for one band, as the scene will actually draw it.
  *
  * Read out of the shipped table rather than restated here, so the key and the water can never
- * disagree - the same rule ADR 0007 applies to the colourbar.
+ * disagree - the same rule ADR 0007 applies to the colourbar. The display lift has to be applied
+ * too, for the same reason: on the dark console the "no casts" band is drawn at (102, 111, 116)
+ * and the raw table says (58, 68, 74), so a key built from the raw table was quietly showing a
+ * darker swatch than the water beside it.
  */
 function bandColour(table: number[][], index: number): string {
   const distinct: number[][] = [];
@@ -21,51 +24,73 @@ function bandColour(table: number[][], index: number): string {
   return `rgb(${r},${g},${b})`;
 }
 
-/** The colourbar the user edits: palette, range, and linear-or-log. */
+/**
+ * The colourbar: what the colours mean, and the range the user narrows.
+ *
+ * There is no palette chooser here any more. It offered nine cmocean scales, seven of which
+ * named quantities the platform does not carry, so picking "dense - Density" recoloured
+ * temperature in the colours of density and printed a warning saying the colours meant nothing.
+ * A presentation control was reading as a data control. The derivable ones became Variables and
+ * the rest were deleted; see pipeline/samudra/palettes.py. Each Field now carries its own
+ * palette in its FieldSpec, so a Field and its colours cannot be separated and the warning has
+ * nothing left to warn about.
+ */
 function Colourbar() {
-  const { manifest, paletteName, windowMin, windowMax, toValue, set, field, theme } =
-    useStore();
+  const { manifest, windowMin, windowMax, toValue, set, field, theme } = useStore();
   const spec = field();
   if (!manifest || !spec) return null;
 
-  const stops = paletteGradient(manifest.palettes[paletteName] ?? [], theme);
+  const stops = paletteGradient(manifest.palettes[spec.palette] ?? [], theme);
   // Only a banded Field gets a band key; every other Field gets the usual two-ended scale.
   const bands = spec.palette === "coverage" ? manifest.coverage : undefined;
+  const note = PALETTES[spec.palette];
+  const short = spec.label.replace("Sea Water ", "");
+  const explain = () => set("touched", "palette");
 
   return (
     <div className="control-group">
       <div className="control-head">
         <label>Colourbar</label>
-        <select
-          value={paletteName}
-          onFocus={() => set("touched", "palette")}
-          onChange={(e) => {
-            set("touched", "palette");
-            set("paletteName", e.target.value);
-          }}
-        >
-          {Object.keys(manifest.palettes).map((name) => (
-            <option key={name} value={name}>
-              {name}
-              {PALETTES[name]?.suits.includes(spec.key) ? "  (for this field)" : ""}
-            </option>
-          ))}
-        </select>
+        <span className="readout muted">{spec.palette}</span>
       </div>
 
-      <div className="colourbar" style={{ background: `linear-gradient(90deg, ${stops})` }} />
+      <button
+        type="button"
+        className="colourbar"
+        style={{ background: `linear-gradient(90deg, ${stops})` }}
+        onPointerDown={explain}
+        onFocus={explain}
+        aria-label={`${note?.designedFor ?? short} colour scale - explain`}
+      />
+      <p className="palette-note">
+        {note?.designedFor ?? "This scale"}, {note?.form ?? "sequential"}. The conventional
+        oceanographic scale for {short.toLowerCase()}.
+      </p>
+
       {bands ? (
-        <ul className="band-key">
-          {bands.labels.map((label, index) => (
-            <li key={label}>
-              <span
-                className="band-swatch"
-                style={{ background: bandColour(manifest.palettes.coverage ?? [], index) }}
-              />
-              {label}
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="band-key">
+            {bands.labels.map((label, index) => (
+              <li key={label}>
+                <span
+                  className="band-swatch"
+                  style={{
+                    background: bandColour(
+                      liftedPalette(manifest.palettes.coverage ?? [], theme),
+                      index,
+                    ),
+                  }}
+                />
+                {label}
+              </li>
+            ))}
+          </ul>
+          <p className="note">
+            Argo casts within {bands.radiusKm} km that dived through this depth, in the{" "}
+            {bands.windowDays * 2} days around this step. A float drawn on a one-cast patch is
+            that cast.
+          </p>
+        </>
       ) : (
         <div className="colourbar-scale">
           <span>{toValue(windowMin).toFixed(1)}</span>
@@ -76,7 +101,7 @@ function Colourbar() {
 
       <Slider
         guide="window"
-              label="Range min"
+        label="Range min"
         value={windowMin}
         min={0}
         max={Math.max(windowMax - 0.02, 0.02)}
@@ -86,7 +111,7 @@ function Colourbar() {
       />
       <Slider
         guide="window"
-              label="Range max"
+        label="Range max"
         value={windowMax}
         min={Math.min(windowMin + 0.02, 0.98)}
         max={1}
@@ -151,6 +176,7 @@ export function Controls() {
   const fromDepth = axisToDepth(volume, store.depthFrom);
   const toDepth = axisToDepth(volume, store.depthTo);
   const inVolume = store.morph > 0.5;
+  const short = spec.label.replace("Sea Water ", "");
 
   return (
     <aside className="panel panel-left">
@@ -164,15 +190,10 @@ export function Controls() {
               key={f.key}
               className={f.key === store.fieldKey ? "on" : ""}
               onClick={() => {
-                set("touched", f.key === "coverage" ? "coverage" : "field");
-                set("fieldKey", f.key);
-                set("paletteName", f.palette);
-                set("windowMin", 0);
-                set("windowMax", 1);
-                // A Field may ask to be drawn differently. Coverage does: gradient-weighted
-                // opacity would fade out exactly the flat regions it exists to show.
-                if (f.emphasis != null) set("emphasis", f.emphasis);
-                if (f.opacity != null) set("opacity", f.opacity);
+                // A Field with its own guide entry explains itself; the rest fall back to the
+                // entry describing the selector as a whole.
+                set("touched", GUIDE[f.key] ? f.key : "field");
+                store.selectField(f.key);
               }}
             >
               {f.label.replace("Sea Water ", "")}
@@ -271,6 +292,20 @@ export function Controls() {
             </label>
           </div>
 
+          {spec.isosurface === false ? (
+            <div className="control-group">
+              <div className="control-head">
+                <label>Isosurface</label>
+                <span className="readout muted">not applicable</span>
+              </div>
+              <p className="note">
+                {short} counts casts in whole numbers, so it steps rather than varies smoothly.
+                An isosurface through it would trace the boundary between "1 cast" and "2 casts"
+                as a wall of flat slabs, which looks like structure and is not. Switch to
+                Temperature or Salinity to draw one.
+              </p>
+            </div>
+          ) : (
           <div className="control-group">
             <div className="control-head">
               <label>Isosurface</label>
@@ -301,13 +336,11 @@ export function Controls() {
                 onChange={(v) => set("isoValue", v)}
               />
             )}
-            {store.isoEnabled && store.fieldKey === "temperature" && (
-              <p className="note">
-                The 20 °C isotherm is the conventional proxy for the thermocline, and its depth
-                drives cyclone-intensity forecasts.
-              </p>
+            {store.isoEnabled && ISOSURFACES[spec.key] && (
+              <p className="note">{ISOSURFACES[spec.key]?.hint}</p>
             )}
           </div>
+          )}
         </>
       )}
 

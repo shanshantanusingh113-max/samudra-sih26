@@ -38,17 +38,26 @@ await page.evaluate(() => window.__store.setState({ isoEnabled: true, isoValue: 
 await page.waitForTimeout(2500);
 await shot("04-isosurface");
 
-await page.evaluate(() => window.__store.setState({
-  isoEnabled: false, volumeEnabled: true, fieldKey: "salinity", paletteName: "haline",
-}));
-await page.waitForTimeout(3000);
-await shot("05-salinity");
+// Every Variable in turn, switched through the store's own action so each Field's render hints
+// are applied exactly as the panel would apply them.
+await page.evaluate(() => window.__store.setState({ isoEnabled: false, volumeEnabled: true }));
+for (const [name, key] of [
+  ["05-salinity", "salinity"],
+  ["06-density", "density"],
+  ["07-anomaly", "temperature_anomaly"],
+  ["08-coverage", "coverage"],
+]) {
+  await page.evaluate((k) => window.__store.getState().selectField(k), key);
+  await page.waitForTimeout(3000);
+  await shot(name);
+}
 
-await page.evaluate(() => window.__store.setState({
-  fieldKey: "temperature", paletteName: "thermal", windowMin: 0.55, windowMax: 0.80, selectedFloatId: null,
-}));
+await page.evaluate(() => {
+  window.__store.getState().selectField("temperature");
+  window.__store.setState({ windowMin: 0.55, windowMax: 0.80, selectedFloatId: null });
+});
 await page.waitForTimeout(2500);
-await shot("06-watermass");
+await shot("09-watermass");
 
 console.log(problems.length ? `PROBLEMS: ${problems.join(" | ")}` : "clean");
 await browser.close();

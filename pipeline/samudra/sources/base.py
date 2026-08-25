@@ -50,6 +50,10 @@ class FieldSpec:
     emphasis: float | None = None
     opacity: float | None = None
     description: str | None = None
+    # Whether an Isosurface is a meaningful operation on this Field. It is not on a banded
+    # count: the field is a step function, so the "surface" is a set of axis-aligned slabs and
+    # its shading normal is degenerate. False hides the control rather than drawing nonsense.
+    isosurface: bool = True
 
 
 @dataclass(frozen=True)

@@ -56,15 +56,54 @@ def test_one_cast_never_counts_more_than_once_in_a_slab():
     assert fine.max() == 1
 
 
-def test_a_coarsely_sampled_cast_leaves_the_thin_surface_slabs_empty():
-    """Honest, not a bug. Near the surface a slab is a few metres thick, so a cast sampling
-    every 50 m really did not measure in most of them, and the field must not pretend it did."""
+def test_how_finely_a_cast_reports_does_not_change_what_it_constrains():
+    """The bug this replaced a test for.
+
+    Argo reports every 2 dbar in delayed mode and at round depths in real time. Both are one
+    float, one dive, the same water. The earlier rule asked "did this cast have a level inside
+    this slab", which near the surface is a question about our slab edges rather than about the
+    ocean: at 19 m a slab is 5 m thick and a real-time cast reporting at 10 and 20 m can miss it.
+    Measured over the shipped bake, that cost slab 3 (19 m) 22 percentage points of casts against
+    its neighbours at 25 m and 37 m, and put "no observations" directly under floats.
+    """
     coarse = column_at(
-        coverage([profile_at(0.5, 65.5, np.arange(5.0, 2000.0, 50.0))]), 0.5, 65.5
+        coverage([profile_at(0.5, 65.5, [5.0, 10, 20, 30, 50, 75, 100, 150, 200, 300, 500, 1000])]),
+        0.5,
+        65.5,
     )
-    assert coarse.max() == 1
-    assert (coarse[:6] == 0).any()   # thin slabs near the surface are missed
-    assert (coarse[-6:] == 1).all()  # thick slabs in the abyss are not
+    fine = column_at(
+        coverage([profile_at(0.5, 65.5, np.linspace(5.0, 1000.0, 498))]), 0.5, 65.5
+    )
+    assert np.array_equal(coarse, fine)
+
+
+def test_a_cast_whose_levels_straddle_the_surface_slab_still_counts_for_it():
+    """The exact cast that exposed it: float 1902196, 2026-04-26, at -6.11 N 78.24 E.
+
+    Its two shallowest levels are 4.71 m and 9.1 m. The surface slab spans 5.00 to 7.16 m in the
+    shipped bake, so the old rule found nothing in it - the 4.71 m level falling below the first
+    bin edge and the 9.1 m one above the slab - and painted the water directly under a float that
+    had just measured there as unobserved.
+    """
+    levels = [4.71, 9.1, 19.1, 30.2, 39.4, 50.2, 58.3, 68.0, 77.2, 89.3]
+    # 48 slabs, as the bake ships, because it is that geometry that makes the top slab 2.16 m
+    # thick. At the 24 this file uses elsewhere the slab is wide enough to hide the fault.
+    field = observation_coverage(
+        [profile_at(0.5, 65.5, levels)], LATITUDES, LONGITUDES, WARP, 48
+    )
+    assert slab_edges(WARP, 48)[1] < 9.1  # the second level really is below the top slab
+    assert field.counts[0, LATITUDES == 0.5, LONGITUDES == 65.5].ravel()[0] == 1
+
+
+def test_a_cast_that_starts_below_the_surface_does_not_claim_the_surface():
+    """The other end of the same rule. Some floats only begin reporting at 25 m, and the water
+    above that genuinely was not measured, so being generous downwards must not be generous
+    upwards as well."""
+    column = column_at(
+        coverage([profile_at(0.5, 65.5, np.arange(25.0, 2000.0, 2.0))]), 0.5, 65.5
+    )
+    assert column[0] == 0
+    assert column[-1] == 1
 
 
 def test_full_depth_sampling_is_flat_with_depth():
@@ -98,6 +137,17 @@ def test_the_neighbourhood_reaches_exactly_as_far_as_the_stated_radius():
     field = coverage([profile_at(0.5, 65.5, FULL_CAST)])
     assert column_at(field, 0.5 + RADIUS_DEGREES, 65.5).sum() > 0
     assert column_at(field, 0.5 + RADIUS_DEGREES + 1.0, 65.5).sum() == 0
+
+
+def test_the_neighbourhood_is_a_circle_and_not_a_square():
+    """A square box reaches 1.41 times further diagonally than it claims, and its right-angled
+    corners are visible in the render as structure that is not in the ocean."""
+    field = coverage([profile_at(0.5, 65.5, FULL_CAST)])
+    assert column_at(field, 0.5 + 3.0, 65.5).sum() > 0   # due north at the radius, inside
+    assert column_at(field, 0.5, 65.5 + 3.0).sum() > 0   # due east at the radius, inside
+    # 2 degrees north and 3 east is 3.6 degrees away, so the circle excludes it and the old
+    # square included it.
+    assert column_at(field, 0.5 + 2.0, 65.5 + 3.0).sum() == 0
 
 
 def test_longitude_window_widens_away_from_the_equator():

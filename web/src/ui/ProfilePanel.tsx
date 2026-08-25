@@ -18,10 +18,12 @@ export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) 
   const collocation = collocations[selectedFloatId];
   if (!chosen) return null;
 
-  // A Collocation exists only for Fields the model actually predicts. Observation Coverage is
-  // derived from the floats themselves, so there is nothing to compare it against - selecting it
-  // used to make every float report "no usable data", which is both wrong and alarming. When the
-  // selected Field has no series, fall back to one the float does carry and say which.
+  // A Collocation exists only where both sides of the comparison exist. Temperature, salinity
+  // and density all do - a Float measures the first two and TEOS-10 turns them into the third,
+  // so both sides go through the same chain. The other two Fields cannot, for reasons that are
+  // different from each other, and WHY_NO_COLLOCATION says which rather than offering one vague
+  // sentence that is wrong about at least one of them. When the selected Field has no series,
+  // fall back to one the float does carry and say so.
   const available = collocation ? Object.keys(collocation.fields) : [];
   const shownKey = collocation?.fields[fieldKey] ? fieldKey : available[0];
   const series = shownKey ? collocation?.fields[shownKey] : undefined;
@@ -81,8 +83,9 @@ export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) 
         <>
           {substituted && (
             <p className="note substituted">
-              {spec.label} is measured, not predicted, so there is no model to compare it
-              against. Showing {shownSpec.label.replace("Sea Water ", "").toLowerCase()} instead.
+              {WHY_NO_COLLOCATION[fieldKey] ??
+                `There is no ${spec.label.toLowerCase()} to compare against this cast.`}{" "}
+              Showing {shownSpec.label.replace("Sea Water ", "").toLowerCase()} instead.
             </p>
           )}
           <Chart series={series} spec={shownSpec} volume={volume} />
@@ -259,14 +262,12 @@ function Verdict({
   if (rms === null || bias === null) return null;
 
   const quantity = label.replace("Sea Water ", "").toLowerCase();
-  const sense =
-    quantity === "salinity"
-      ? bias > 0
-        ? "more saline than"
-        : "fresher than"
-      : bias > 0
-        ? "cooler than"
-        : "warmer than";
+  // Which way round the model read, in the words the quantity actually uses. This was a
+  // temperature/salinity ternary, so adding density made it say the model read "cooler than"
+  // the float - a sentence about density that means nothing. A Field with no entry here falls
+  // back to the arithmetic rather than to a borrowed adjective.
+  const words = SENSE[fieldKeyOf(label)];
+  const sense = words ? (bias > 0 ? words[0] : words[1]) : bias > 0 ? "below" : "above";
 
   const tone = rms < 0.6 ? "good" : rms < 1.5 ? "fair" : "poor";
   const headline =
@@ -283,6 +284,23 @@ function Verdict({
       <b>{headline}</b> {detail}
     </p>
   );
+}
+
+/**
+ * How to say "the model read high" or "the model read low" for each quantity.
+ *
+ * `residual = observed - modelled`, so a positive bias means the float measured MORE than the
+ * model did. Read the pairs as [what the model is when bias > 0, what it is when bias < 0].
+ */
+const SENSE: Record<string, [string, string]> = {
+  temperature: ["cooler than", "warmer than"],
+  salinity: ["more saline than", "fresher than"],
+  density: ["lighter than", "denser than"],
+};
+
+/** The Field key behind a label, without threading it through every caller. */
+function fieldKeyOf(label: string): string {
+  return label.replace("Sea Water ", "").toLowerCase().replace(/\s+/g, "_");
 }
 
 function Stats({ series, units }: { series: CollocationSeries; units: string }) {
@@ -308,3 +326,20 @@ function Stats({ series, units }: { series: CollocationSeries; units: string }) 
     </div>
   );
 }
+
+/**
+ * Why a Field has no Collocation, in its own terms.
+ *
+ * There was one sentence here for all of them - "is measured, not predicted" - written when
+ * Observation Coverage was the only Field it had to cover. It is false of density, which is
+ * predicted and measured, and false of the anomaly, which is neither.
+ */
+const WHY_NO_COLLOCATION: Record<string, string> = {
+  coverage:
+    "Observation Coverage is counted from the floats themselves, so there is no model" +
+    " prediction to hold it against.",
+  temperature_anomaly:
+    "An anomaly is a departure from an average over time, and a single cast has no average of" +
+    " its own to depart from.",
+};
+
