@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  loadAnomalies,
   loadCollocations,
   loadFloats,
   loadManifest,
@@ -12,6 +13,7 @@ import { useStore } from "./store";
 import { Chrome, LoadingScreen } from "./ui/Chrome";
 import { Controls } from "./ui/Controls";
 import { DepthRuler } from "./ui/DepthRuler";
+import { AnomalyPanel } from "./ui/AnomalyPanel";
 import { GuidePanel } from "./ui/GuidePanel";
 import { MapKey } from "./ui/MapKey";
 import { ProfilePanel } from "./ui/ProfilePanel";
@@ -30,10 +32,11 @@ export default function App() {
     let cancelled = false;
     (async () => {
       try {
-        const [manifest, floats, collocations, coastlines] = await Promise.all([
+        const [manifest, floats, collocations, anomalies, coastlines] = await Promise.all([
           loadManifest(),
           loadFloats(),
           loadCollocations(),
+          loadAnomalies(),
           fetch(`${import.meta.env.BASE_URL}data/coastlines.json`).then(
             (r) => r.json() as Promise<number[][][]>,
           ),
@@ -46,6 +49,7 @@ export default function App() {
           manifest,
           floats,
           collocations,
+          anomalies,
           coastlines,
           timestepIndex: manifest.timesteps.length - 1,
           fieldKey: first?.key ?? "temperature",
@@ -132,6 +136,12 @@ export default function App() {
     scene.setPalette(paletteTexture(colours, store.theme));
   }, [ready, store.manifest, store.fieldKey, store.theme]);
 
+  // A Feature is found within one Timestep, so the panel cannot survive the timeline moving:
+  // index 3 of the next step is a different body of water in a different place.
+  useEffect(() => {
+    useStore.setState({ selectedAnomaly: null });
+  }, [store.timestepIndex, store.fieldKey]);
+
   // ---- push view state into the scene every render -------------------------
   useEffect(() => {
     sceneRef.current?.update({
@@ -151,6 +161,10 @@ export default function App() {
       exaggeration: store.exaggeration,
       quality: store.quality,
       selectedFloatId: store.selectedFloatId,
+      fieldKey: store.fieldKey,
+      anomalies: store.features(),
+      showAnomalies: store.showAnomalies,
+      selectedAnomaly: store.selectedAnomaly,
       showFloats: store.showFloats,
       showTracks: store.showTracks,
       theme: store.theme,
@@ -188,18 +202,29 @@ export default function App() {
     return () => window.clearInterval(timer);
   }, [store.playing, store.manifest]);
 
-  // ---- selecting a Float ---------------------------------------------------
+  // ---- selecting a Float, or an Anomaly Feature ----------------------------
+  //
+  // Floats win a tie. A Feature is a body of water hundreds of kilometres across and its marker
+  // is only a handle on it, whereas a Float is a specific instrument at a specific point, so
+  // when the two overlap the precise thing is the one the user meant.
   const onCanvasClick = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
     const scene = sceneRef.current;
     if (!scene) return;
-    const hit = scene.pickFloat(event.clientX, event.clientY);
-    useStore.setState({ selectedFloatId: hit ? hit.id : null });
+    const float = scene.pickFloat(event.clientX, event.clientY);
+    if (float) {
+      useStore.setState({ selectedFloatId: float.id, selectedAnomaly: null });
+      return;
+    }
+    const feature = scene.pickAnomaly(event.clientX, event.clientY);
+    useStore.setState({ selectedFloatId: null, selectedAnomaly: feature });
   }, []);
 
   const onCanvasMove = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
     const scene = sceneRef.current;
     if (!scene) return;
-    const hit = scene.pickFloat(event.clientX, event.clientY);
+    const hit =
+      scene.pickFloat(event.clientX, event.clientY) !== null ||
+      scene.pickAnomaly(event.clientX, event.clientY) !== null;
     event.currentTarget.style.cursor = hit ? "pointer" : "grab";
   }, []);
 
@@ -238,6 +263,7 @@ export default function App() {
           <MapKey />
           <Controls />
           <GuidePanel />
+          <AnomalyPanel />
           <ProfilePanel onFocus={(lon, lat) => sceneRef.current?.focusOn(lon, lat)} />
           <Timeline />
         </>

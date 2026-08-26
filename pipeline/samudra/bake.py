@@ -18,13 +18,21 @@ from __future__ import annotations
 
 import argparse
 import json
+import warnings
 from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import numpy as np
 
-from .anomaly import anomaly_series, symmetric_encoding_range
+from .anomaly import (
+    DEGREES_THRESHOLD,
+    MIN_CELLS,
+    Z_THRESHOLD,
+    anomaly_series,
+    find_anomaly_features,
+    symmetric_encoding_range,
+)
 from .collocation import collocate
 from .coverage import (
     BANDS,
@@ -37,6 +45,7 @@ from .density import potential_density, profile_density
 from .depth_warp import DepthWarp
 from .grid import Grid
 from .palettes import all_tables, banded_table
+from .thermocline import isotherm_depth, swept_through
 from .sources.argo import ArgoErddapSource
 from .sources.base import BoundingBox, FieldSpec
 from .sources.incois import IncoisErddapSource
@@ -116,6 +125,12 @@ ANOMALY_FIELD = FieldSpec(
 # Order is the order of the buttons in the Variable selector. Fetched Fields first, then the
 # ones derived from them, then the evidence behind all of it.
 DERIVED_FIELDS = (DENSITY_FIELD, ANOMALY_FIELD)
+
+
+# The isotherm an anomaly feature is explained against. 20 degC is the conventional proxy for
+# the bottom of the warm surface layer and is what INCOIS publishes; see samudra/thermocline.py
+# for the correlation that makes it an explanation rather than a decoration.
+ISOTHERM_VALUE = 20.0
 
 
 # Profiles counted towards a Timestep, as a half-window either side of the analysis date. An
@@ -253,7 +268,7 @@ def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | N
         volume_files[field.key] = paths
         print(f"[bake] {field.key}: {len(paths)} volumes, range {vmin:.2f}..{vmax:.2f}")
 
-    coverage_paths, coverage_range = _bake_coverage(
+    coverage_paths, coverage_range, coverage_fields = _bake_coverage(
         output_dir, profiles, grids, wanted, model.fields()[0].key, warp
     )
     volume_files[COVERAGE_FIELD.key] = coverage_paths
@@ -263,6 +278,13 @@ def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | N
     # sides of the comparison can be put through the same TEOS-10 chain. The anomaly cannot: a
     # single cast has no baseline of its own to depart from.
     collocated = [*model.fields(), DENSITY_FIELD]
+    features = _build_anomaly_features(anomalies, grids, wanted, coverage_fields, warp)
+    (output_dir / "anomalies.json").write_text(json.dumps(features), encoding="utf-8")
+    print(
+        f"[bake] {sum(len(f) for f in features)} anomaly features across {len(features)} steps, "
+        f"{sum(len(f) for f in features) / len(features):.1f} per step"
+    )
+
     floats, collocations = _build_observations(in_region, grids, wanted, collocated)
     (output_dir / "floats.json").write_text(json.dumps(floats), encoding="utf-8")
     (output_dir / "collocations.json").write_text(json.dumps(collocations), encoding="utf-8")
@@ -299,6 +321,13 @@ def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | N
             "labels": list(BAND_LABELS),
             "windowDays": COVERAGE_WINDOW_DAYS,
             "radiusKm": round(RADIUS_DEGREES * METRES_PER_DEGREE / 1000),
+        },
+        "anomalyFeatures": {
+            "field": ANOMALY_FIELD.key,
+            "zThreshold": Z_THRESHOLD,
+            "valueThreshold": DEGREES_THRESHOLD,
+            "minCells": MIN_CELLS,
+            "isothermValue": ISOTHERM_VALUE,
         },
         "timesteps": [t.isoformat() for t in wanted],
         "volume": {
@@ -370,7 +399,7 @@ def _bake_coverage(output_dir, profiles, grids, timesteps, mask_field_key, warp)
         f"[bake] {COVERAGE_FIELD.key}: {len(paths)} volumes, "
         f"range {encoding_range[0]:.0f}..{encoding_range[1]:.0f} casts"
     )
-    return paths, encoding_range
+    return paths, encoding_range, fields
 
 
 def _warp_to_volume(grid: Grid, warp: DepthWarp) -> np.ndarray:
@@ -402,6 +431,94 @@ def _observed_density(profile):
     return profile_density(
         profile.latitude, profile.longitude, profile.depths, temperature, salinity
     )
+
+
+def _build_anomaly_features(anomalies, grids, timesteps, coverage_counts, warp):
+    """Find each Timestep's Anomaly Features and attach what is known about them.
+
+    Finding a blob is the easy half. A coloured patch tells a user *that* something departed and
+    nothing about what it is, so every entry here carries the four things that make it readable,
+    and every one of them is measured rather than interpreted:
+
+    Every one of them is read at the feature's **centre** cell, which is where the ring is drawn,
+    because a user clicking a ring is asking about the water under it.
+
+    - **Why.** Where the 20 degC isotherm sits at this exact cell, against its own average over
+      the series. Across this bake that departure correlates +0.63 with the temperature anomaly
+      at 100 m, so for a feature in the thermocline it is the cause rather than a coincidence.
+      `isothermExplains` says whether the isotherm actually swept through this water, which is
+      what separates an explanation from a nearby fact.
+    - **What kind.** What salinity and density did in the same cell. Warm and fresh is a river
+      lens; warm and salty is water that came from somewhere else. The frontend words it, but
+      the numbers decide.
+    - **Whether to believe it.** How many Argo casts stand behind that cell. A large anomaly in
+      water with no observations is the model interpolating, and that is the single most valuable
+      line on the panel.
+    - **Who else saw it.** The nearest Float reporting at this Timestep, and how far off the
+      model was against it.
+    """
+    isotherms = [
+        isotherm_depth(grids[("temperature", i)], ISOTHERM_VALUE) for i in range(len(timesteps))
+    ]
+    # Land is NaN at every Timestep, so nanmean over it is an all-NaN slice. That is the
+    # right answer and not worth a warning.
+    with np.errstate(invalid="ignore"):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            isotherm_mean = np.nanmean(np.stack(isotherms), axis=0)
+
+    # Salinity and density departures are computed for the description only. They are not
+    # rendered, so they are never encoded or written as Volumes.
+    salinity_anomaly = anomaly_series([grids[("salinity", i)] for i in range(len(timesteps))])
+    density_anomaly = anomaly_series(
+        [grids[(DENSITY_FIELD.key, i)] for i in range(len(timesteps))]
+    )
+
+    found = find_anomaly_features(anomalies)
+    out = []
+    for index, step in enumerate(found):
+        entries = []
+        for feature in step:
+            level, row, column = feature.centre_index
+            here = isotherms[index][row, column]
+            usually = isotherm_mean[row, column]
+            slab = int(np.argmin(np.abs(warp.sample_depths(DEPTH_SAMPLES) - feature.depth_metres)))
+            casts = coverage_counts[index][slab, row, column]
+
+            entries.append(
+                {
+                    "sign": feature.sign,
+                    "peakValue": round(feature.peak_value, 3),
+                    "peakZ": round(feature.peak_z, 2),
+                    "lat": feature.latitude,
+                    "lon": feature.longitude,
+                    "depth": feature.depth_metres,
+                    "topMetres": feature.top_metres,
+                    "bottomMetres": feature.bottom_metres,
+                    "south": feature.south,
+                    "north": feature.north,
+                    "west": feature.west,
+                    "east": feature.east,
+                    "cells": feature.cell_count,
+                    "footprintKm2": round(feature.footprint_km2),
+                    "isothermDepth": _json_number(here),
+                    "isothermDeparture": _json_number(here - usually),
+                    # Only a cause if the isotherm actually moved through this water. See
+                    # thermocline.swept_through for why containment is the wrong test.
+                    "isothermExplains": swept_through(
+                        here, usually, feature.top_metres, feature.bottom_metres
+                    ),
+                    "salinityDeparture": _json_number(
+                        salinity_anomaly[index].values[level, row, column]
+                    ),
+                    "densityDeparture": _json_number(
+                        density_anomaly[index].values[level, row, column]
+                    ),
+                    "casts": _json_number(casts),
+                }
+            )
+        out.append(entries)
+    return out
 
 
 def _build_observations(profiles, grids, timesteps, fields):

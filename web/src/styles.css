@@ -689,6 +689,21 @@ select:hover {
 
 .readout.muted { color: var(--on-surface-faint); }
 
+/*
+ * The Anomaly Feature panel's header chip. Warm and cool take the two ends of the diverging
+ * scale the anomaly Field is drawn with, so the chip and the ring in the water agree with the
+ * blob they are describing - the same rule ADR 0007 sets for the colourbar.
+ */
+.guide-kind.warm-feature {
+  background: color-mix(in srgb, #d8663f 18%, transparent);
+  color: #d8663f;
+}
+
+.guide-kind.cool-feature {
+  background: color-mix(in srgb, #4a8fd0 18%, transparent);
+  color: #4a8fd0;
+}
+
 /* ---------------------------------------------------------------- sliders */
 
 .slider {

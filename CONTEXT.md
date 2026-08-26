@@ -85,6 +85,20 @@ Observed minus modelled, at a given depth within a Collocation. Where the model 
 disagree. Signed - the sign carries meaning.
 _Avoid_: error, delta, bias, difference
 
+### Departures
+
+**Anomaly**:
+Departure of a cell from its own average across the baked Timesteps. Not a climatological
+normal - the baseline is the twelve steps loaded and nothing more, and everything on screen
+that mentions it says so.
+_Avoid_: normal, climatology, deviation
+
+**Anomaly Feature**:
+One connected body of water that departed, found by labelling everything both statistically
+unusual and physically noticeable. What the user clicks. Carries where it is, why the isotherm
+put it there, what salinity and density did, and how many casts stand behind it.
+_Avoid_: blob, hotspot, event, detection
+
 ### Presentation
 
 **Transfer Function**:

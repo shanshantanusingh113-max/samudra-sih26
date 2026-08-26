@@ -1,4 +1,7 @@
 import { axisToDepth } from "../scene/geography";
+
+/** The Field the Anomaly Features were found in. They mean nothing drawn over any other. */
+const ANOMALY_FIELD = "temperature_anomaly";
 import { GUIDE, ISOSURFACES, PALETTES } from "../guide";
 import { liftedPalette, paletteGradient } from "../palette";
 import { useStore } from "../store";
@@ -390,6 +393,32 @@ export function Controls() {
           <span>Drift tracks</span>
         </label>
       </div>
+
+      {inVolume && spec.key === ANOMALY_FIELD && store.features().length > 0 && (
+        <div className="control-group">
+          <div className="control-head">
+            <label>Anomaly features</label>
+            <span className="readout muted">{store.features().length} this step</span>
+          </div>
+          <label className="toggle">
+            <input
+              type="checkbox"
+              checked={store.showAnomalies}
+              onChange={(e) => {
+                set("touched", "anomalyFeatures");
+                set("showAnomalies", e.target.checked);
+                if (!e.target.checked) set("selectedAnomaly", null);
+              }}
+            />
+            <span>Mark them in the water</span>
+          </label>
+          <p className="note">
+            Rings sit on every body of water that departed from its own average. Click one and
+            this panel is replaced by what it is, why it is there, and whether anything measured
+            it.
+          </p>
+        </div>
+      )}
     </aside>
   );
 }

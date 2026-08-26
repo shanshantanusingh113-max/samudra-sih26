@@ -732,11 +732,12 @@ python -m samudra.bake</pre>
 
     // ---- the test suite, by module -------------------------------------
     rows(el("tests"), ["Module", "Tests", "What it defends"], [
+      ["test_anomaly.py", "20", "The anomaly baseline, a range symmetric about zero, and Anomaly Features - warm and cool never merging, and a departure having to be both unusual and physically noticeable"],
+      ["test_thermocline.py", "12", "Where the 20 degC line sits, and whether it moved through a body of water"],
       ["test_coverage.py", "16", "Observation Coverage: casts not measurements, a slab count that cannot be changed by how finely a float reported, a circular neighbourhood, land missing rather than zero"],
       ["test_volume.py", "13", "Byte encoding, the coverage channel, land never contributing a fabricated value"],
       ["test_argo.py", "12", "The CSV parser, pressure-to-depth, per-channel quality control"],
       ["test_density.py", "11", "TEOS-10 against an independent evaluation, the physics the right way up, and the same chain on both sides of the comparison"],
-      ["test_anomaly.py", "11", "A per-cell baseline, a range symmetric about zero, and a refusal to invent one from a single Timestep"],
       ["test_palettes.py", "10", "That every cast count survives the byte encoder and reads back as its own band"],
       ["test_collocation.py", "8", "Pairing a cast against the model, refusing to extrapolate or bridge a gap"],
       ["test_depth_warp.py", "8", "The mapping between real metres and the GPU's even axis, both directions"],

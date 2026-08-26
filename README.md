@@ -1,14 +1,53 @@
+<div align="center">
+
 # Samudra 3D
 
-**A website that lets you fly into the Indian Ocean and look at it in 3D - and see, in the same
-picture, what the computer model predicted and what real instruments in the water actually
-measured.**
+**Fly into the Indian Ocean and see, in one picture, what the model predicted
+and what the instruments in the water actually measured.**
 
-**Live: https://rak2315.github.io/samudra-sih26/**
-(landing page; the platform itself is at [`/app.html`](https://rak2315.github.io/samudra-sih26/app.html))
+[![Live platform](https://img.shields.io/badge/Live-Launch%20the%20platform-0f766e?style=for-the-badge&logo=googleearth&logoColor=white)](https://rak2315.github.io/samudra-sih26/app.html)
+[![Landing page](https://img.shields.io/badge/Landing-samudra--sih26-0891b2?style=for-the-badge)](https://rak2315.github.io/samudra-sih26/)
+[![Data provenance](https://img.shields.io/badge/Provenance-every%20figure%20live-155e75?style=for-the-badge)](https://rak2315.github.io/samudra-sih26/provenance.html)
+
+[![SIH 2026](https://img.shields.io/badge/Smart%20India%20Hackathon-2026-ff9933)](https://sih.gov.in/)
+[![PS 26067](https://img.shields.io/badge/Problem%20Statement-26067-138808)](https://sih.gov.in/)
+[![MoES / INCOIS](https://img.shields.io/badge/MoES-INCOIS-000080)](https://incois.gov.in/)
+![Tests](https://img.shields.io/badge/tests-123%20passing-2ea043)
+![Network calls at demo time](https://img.shields.io/badge/network%20calls%20at%20demo%20time-0-2ea043)
+
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Three.js](https://img.shields.io/badge/three.js-WebGL2-000000?logo=threedotjs&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![FastAPI](https://img.shields.io/badge/FastAPI-REST-009688?logo=fastapi&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-multi--page-646CFF?logo=vite&logoColor=white)
+
+<img src="docs/images/hero.jpg" width="760" alt="A three-dimensional block of Indian Ocean water, warm yellow at the surface fading through orange to deep violet at 2000 metres, with Argo float markers across the top.">
+
+*Temperature from 5 m to 2000 m over the Arabian Sea and the Bay of Bengal.
+The orange band is the thermocline. Every number is INCOIS's own published analysis.*
+
+</div>
+
+---
 
 Built for **Smart India Hackathon 2026**, Problem Statement **26067**
 (Ministry of Earth Sciences → INCOIS). Category: Software. Theme: Smart Automation.
+
+**Live:** [landing page](https://rak2315.github.io/samudra-sih26/) ·
+[the platform](https://rak2315.github.io/samudra-sih26/app.html) ·
+[data provenance](https://rak2315.github.io/samudra-sih26/provenance.html)
+
+## What it looks like
+
+| | |
+| --- | --- |
+| <img src="docs/images/globe.jpg" alt="A dark globe showing the Indian Ocean with a warm temperature field over India's exclusive economic zone."> | <img src="docs/images/collocation.jpg" alt="The ocean block with one float highlighted, and a panel comparing what it measured against what the model said."> |
+| **Globe view.** The colour on the sea is the field you are about to fly into. One continuous motion unrolls the globe into the study region. | **Click a float.** What the instrument measured on the way down, against what the model said at that exact place and time, with the gap shaded and reported. |
+| <img src="docs/images/density.jpg" alt="The ocean block drawn in the density palette."> | <img src="docs/images/anomaly.jpg" alt="The ocean block drawn as a temperature anomaly, with rings marking each departure and a panel explaining one of them."> |
+| **Density**, computed here from temperature and salinity via TEOS-10. The Bay of Bengal is 0.8 °C *warmer* than the Arabian Sea and still 3.0 kg/m³ *lighter*, because the rivers make it fresher. | **Anomaly features.** Every body of water that departed from its own average gets a ring. Click one and it tells you why it is there, and whether anything measured it. |
+| <img src="docs/images/coverage.jpg" alt="The ocean block drawn as observation coverage, in four flat colour bands."> | <img src="docs/images/isosurface.jpg" alt="A shaded three-dimensional surface showing the undulating 20 degree Celsius isotherm."> |
+| **Observation coverage.** Not the model - the *evidence* for it. About a fifth of the block has no Argo cast behind it at all, and the picture says so. | **Isosurface.** The 20 °C isotherm, the conventional thermocline proxy, visibly doming. Its depth drives cyclone-intensity forecasts. |
 
 ---
 
@@ -60,11 +99,31 @@ That third step is the thing that does not exist today.
    because the Ganges and Brahmaputra make it 3.6 PSU fresher. No temperature map can show you
    that, and it is why a cyclone crossing the Bay meets water that will not mix away beneath it.
 
-5. **You switch to Observation Coverage.** The model disappears and the evidence takes its
+5. **You switch to Temperature Anomaly, and click a blob.** Every body of water that departed
+   from its own average is ringed. Click one and the panel tells you where it is, how unusual it
+   is, *why* it is there - usually because the 20 °C line swept up or down through that water -
+   what salinity and density did, and how many Argo casts stand behind it. About a fifth of them
+   have none.
+
+6. **You switch to Observation Coverage.** The model disappears and the evidence takes its
    place: how many Argo casts were actually taken near each point. About a fifth of the block
    turns out to have none at all, which means the analysis there is interpolation rather than
    observation. A model has a value everywhere whether or not anyone measured; this separates
    the two.
+
+### Five variables, three of them computed here
+
+Temperature and salinity come from INCOIS. The other three are worked out from them in the bake,
+so they cost no extra download and make no extra assumption - which is the problem statement's
+"additional model variables with minimal code change" demonstrated rather than asserted.
+
+| Variable | Where it comes from |
+| --- | --- |
+| **Temperature** | INCOIS 10-day gridded Argo analysis, 24 levels |
+| **Salinity** | the same analysis |
+| **Density** | TEOS-10 sigma-theta from the two above, at each cell's own pressure |
+| **Temperature anomaly** | departure from the mean of the 12 baked timesteps - a seasonal swing, *not* a climatological normal, and the app says so |
+| **Observation coverage** | Argo casts within 334 km whose dive passed through each depth |
 
 ### It runs on INCOIS's real data
 
@@ -172,12 +231,24 @@ cd web && npm run dev            # then open http://localhost:5173
 
 If you skip step 2, the data is already committed, so the website still works.
 
-**Tests:** `cd pipeline && ../.venv/Scripts/python -m pytest` - 102 tests covering the depth
+**Tests:** `cd pipeline && ../.venv/Scripts/python -m pytest` - 123 tests covering the depth
 warp, volume encoding, grid interpolation, collocation maths, the Argo parser, observation
-coverage, the TEOS-10 density chain, the anomaly baseline, and the adapter seam that lets two
-providers with incompatible column layouts share one parser.
+coverage, the TEOS-10 density chain, the anomaly baseline and the features found in it, the
+isotherm depth, and the adapter seam that lets two providers with incompatible column layouts
+share one parser.
 
 ## 5. How it is put together
+
+```
+INCOIS ERDDAP ──┐
+                ├─► pipeline/ ──► Grid ──► Volume (4 bytes/voxel) ──► web/public/data/
+Argo GDAC ──────┘   (Python)      │                                        │
+                                  │                                        ▼
+                                  ├─► Collocation ──────────────►  web/ (React + Three.js)
+                                  ├─► Anomaly features                one WebGL scene
+                                  └─► data/grids/ ──► api/ (FastAPI, live queries)
+```
+
 
 ```
 INCOIS ERDDAP ─┐

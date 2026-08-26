@@ -15,7 +15,7 @@ import { useStore } from "../store";
  */
 export function GuidePanel() {
   const store = useStore();
-  const { manifest, touched, selectedFloatId, morph, set } = store;
+  const { manifest, touched, selectedFloatId, selectedAnomaly, morph, set } = store;
   const spec = store.field();
 
   // An explanation used to time out after fourteen seconds, which meant a reader who paused to
@@ -25,7 +25,9 @@ export function GuidePanel() {
   // On the globe the panel stays out of the way until the user touches something, because the
   // cue card is already explaining the view there. The moment a control is touched it takes
   // over - otherwise changing the palette or the surface level from the globe explains nothing.
-  if (!manifest || !spec || selectedFloatId) return null;
+  // The Collocation and the Anomaly Feature panels both take this space, because at the moment
+  // one is open it *is* the answer to "what am I looking at".
+  if (!manifest || !spec || selectedFloatId || selectedAnomaly !== null) return null;
   if (morph < 0.5 && !touched) return null;
 
   // The colourbar entry is built rather than written, because it names the palette the current

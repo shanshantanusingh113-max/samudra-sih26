@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Collocation, FieldSpec, Manifest, OceanFloat } from "./types";
+import type { AnomalyFeature, Collocation, FieldSpec, Manifest, OceanFloat } from "./types";
 
 export type Stage = "globe" | "diving" | "volume";
 export type Theme = "dark" | "light";
@@ -32,6 +32,8 @@ interface State {
   manifest: Manifest | null;
   floats: OceanFloat[];
   collocations: Record<string, Collocation>;
+  /** Anomaly Features, one list per Timestep. */
+  anomalies: AnomalyFeature[][];
   coastlines: number[][][];
   /** Fatal: the app cannot start at all. */
   loadError: string | null;
@@ -70,6 +72,9 @@ interface State {
   selectedFloatId: string | null;
   showFloats: boolean;
   showTracks: boolean;
+  showAnomalies: boolean;
+  /** Index into this Timestep's features. Cleared whenever the Timestep changes. */
+  selectedAnomaly: number | null;
 
   set: <K extends keyof State>(key: K, value: State[K]) => void;
   /**
@@ -82,6 +87,8 @@ interface State {
    */
   selectField: (key: string) => void;
   field: () => FieldSpec | undefined;
+  /** The Anomaly Features of the Timestep on screen. */
+  features: () => AnomalyFeature[];
   /** Turn a window fraction back into the physical value a user should read. */
   toValue: (fraction: number) => number;
   fromValue: (value: number) => number;
@@ -91,6 +98,7 @@ export const useStore = create<State>((setState, getState) => ({
   manifest: null,
   floats: [],
   collocations: {},
+  anomalies: [],
   coastlines: [],
   loadError: null,
   notice: null,
@@ -124,6 +132,8 @@ export const useStore = create<State>((setState, getState) => ({
   selectedFloatId: null,
   showFloats: true,
   showTracks: true,
+  showAnomalies: true,
+  selectedAnomaly: null,
 
   set: (key, value) => setState({ [key]: value } as never),
 
@@ -145,6 +155,8 @@ export const useStore = create<State>((setState, getState) => ({
   },
 
   field: () => getState().manifest?.fields.find((f) => f.key === getState().fieldKey),
+
+  features: () => getState().anomalies[getState().timestepIndex] ?? [],
 
   toValue: (fraction) => {
     const field = getState().field();

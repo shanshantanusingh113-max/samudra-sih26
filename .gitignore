@@ -14,3 +14,6 @@ web/tsconfig.tsbuildinfo
 
 # Claude Code local state, including throwaway agent worktrees.
 .claude/
+
+# /skill-doctor writes this before rewriting CLAUDE.md. A tool backup, not a document.
+*.doctor-backup

@@ -7,7 +7,7 @@ import {
   UnsignedByteType,
 } from "three";
 import { liftedPalette } from "../palette";
-import type { Collocation, Manifest, OceanFloat } from "../types";
+import type { AnomalyFeature, Collocation, Manifest, OceanFloat } from "../types";
 import type { Theme } from "../store";
 
 const DATA_ROOT = `${import.meta.env.BASE_URL}data`;
@@ -21,6 +21,8 @@ async function getJson<T>(name: string): Promise<T> {
 export const loadManifest = () => getJson<Manifest>("manifest.json");
 export const loadFloats = () => getJson<OceanFloat[]>("floats.json");
 export const loadCollocations = () => getJson<Record<string, Collocation>>("collocations.json");
+/** One list per Timestep, strongest first. */
+export const loadAnomalies = () => getJson<AnomalyFeature[][]>("anomalies.json");
 
 /**
  * Fetch one Volume and hand it to the GPU.

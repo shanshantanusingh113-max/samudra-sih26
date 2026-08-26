@@ -223,6 +223,8 @@ at the default camera. Scene geometry, not CSS.
 | Feature emphasis appeared to do nothing at the default water opacity | Diagnosed: at 0.05 the ray saturates in ~20 steps. Still open as a **default**, see below |
 | Observation Coverage showed a false "no observations" rim at the region edges | The profile fetch stopped at the region boundary, so an edge voxel could only be reached from one side. Measured: 0.00 casts at the eastern edge against 2.71 in the interior. The fetch now takes a 3 degree halo and counts it, while Floats and Collocations stay inside the region |
 | An isosurface on Observation Coverage drew black slabs and towers | Not a shader fault: a cast count is a step function, so the "surface" is the boundary between whole numbers and its shading normal is degenerate. `FieldSpec.isosurface` now marks the operation inapplicable and the control is replaced by an explanation |
+| The Anomaly Feature ring sat on the body's hottest cell rather than on the body | Measured: a median 222 km from the middle of its own feature, 451 km at the ninetieth percentile, 1063 km at worst - so a ring could sit on pale water at one end of a long body while the panel described conditions at the other. Marker and every reported fact now come from the cell nearest the centre; the peak survives as "at its strongest". Now 56 / 166 / 300 km |
+| An Anomaly Feature's size was the span of its bounding box | A diagonal or curved band inflates that badly: one reported 3228 km "across" from 705 cells. It is a horizontal area now, each column counted once however deep it runs |
 | The palette dropdown offered nine flat options with no statement of what each encodes | Superseded: there is no dropdown. The one-line note under the colourbar stays, saying what the Field's own scale encodes |
 | Observation Coverage undercounted casts wherever a slab was thinner than Argo's reporting interval | The rule asked whether a level fell *inside* a slab, which near the surface is a question about our depth axis. Measured: slab 3 (19 m) reached by 76.6% of casts against 98.9% at 25 m, 23.1% of voxels in the wrong band there, and 15 of 16 "float sitting on no casts" cases had a cast from that float at that position inside the window. A cast now counts for every slab between its shallowest and deepest good level |
 | A voxel with exactly one cast was painted with the "no casts" colour | The band edges sat exactly on the thresholds, and the byte encoder rounded a count of 1 to the wrong side of one at a range of 0..7. The red band was unreachable and the whole sparse tier was invisible. Edges now sit half a count below their threshold, and `test_palettes.py` checks the round trip at seven plausible ranges. It had worked at 0..8 by luck |
@@ -234,6 +236,19 @@ at the default camera. Scene geometry, not CSS.
 | The left panel needed a horizontal scrollbar | Widened to 344 px. The Variable selector is now a two-column grid that wraps, which is what lets it hold five Fields with labels as long as "Observation Coverage"; the palette select that used to force the panel wider no longer exists |
 
 ---
+
+## Known and stated, not a defect
+
+**Most vivid anomaly colour carries no ring, and that is correct.** The anomaly Field is painted
+in degrees and the Feature detector selects on a z-score, so the two disagree by construction.
+Measured on the last step: of 163 cells past 3 degC of departure, 99 carry no ring, and those
+cells swing 2.07 degC routinely against a z of 1.71 where 2.0 is needed. They sit at 50-100 m -
+the thermocline band, which is large in degrees and unremarkable for that water. The detector is
+right and the picture is the misleading half, so the rule is now stated in the guide entry and
+on the Feature panel itself rather than left for a viewer to trip over.
+
+Lowering the threshold to 1.75 would catch them and roughly double the marker count for cases
+that genuinely are borderline. Explaining the rule beats blurring it.
 
 ## Open question, not a bug
 

@@ -109,6 +109,30 @@ export const GUIDE: Record<string, GuideEntry> = {
       " there either way - that is the point.",
   },
 
+  anomalyFeatures: {
+    title: "Anomaly features",
+    kind: "science",
+    does:
+      "Puts a ring on every connected body of water that departed from its own average, and" +
+      " makes each one clickable.",
+    means:
+      "The anomaly field shows you that something departed. It cannot tell you which blob you" +
+      " are looking at, how big it is, why it is there, or whether to believe it. A body has to" +
+      " be both unusual - past two standard deviations for its own cell - and physically" +
+      " noticeable, past half a degree, before it is marked. A hundredth of a degree in water" +
+      " that never moves is a huge statistical outlier and a meaningless one.",
+    look:
+      "Click one. The panel names its depth and size, then says whether the 20 °C line swept" +
+      " through it, what salinity and density did there, and how many Argo casts stand behind" +
+      " it. In the current bake about a fifth of these have none at all - the model departed" +
+      " and no instrument checked it. Plenty of vivid colour carries no ring: most of the bright" +
+      " band at 50-100 m is the thermocline doing what it does every step, which is large in" +
+      " degrees and not unusual for that water.",
+    tryThis:
+      "Open the strongest one, then switch to Observation Coverage without closing it and see" +
+      " whether anything measured that water.",
+  },
+
   palette: {
     title: "Colourbar",
     kind: "rendering",

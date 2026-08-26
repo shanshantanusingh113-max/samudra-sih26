@@ -21,7 +21,7 @@ import {
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
-import type { Manifest, OceanFloat } from "../types";
+import type { AnomalyFeature, Manifest, OceanFloat } from "../types";
 import type { Theme } from "../store";
 import {
   coastlineFragmentShader,
@@ -30,7 +30,7 @@ import {
   surfaceFragmentShader,
   surfaceVertexShader,
 } from "./earthShader";
-import { boxBounds, depthToY, latToZ, lonToX, makeFrame } from "./geography";
+import { axisToDepth, boxBounds, depthToY, latToZ, lonToX, makeFrame } from "./geography";
 import { freshness, positionAt, trackUpTo } from "../floatTime";
 import { morphedPosition } from "./morph";
 import { volumeFragmentShader, volumeVertexShader } from "./volumeShader";
@@ -55,6 +55,12 @@ export interface ViewState {
   selectedFloatId: string | null;
   showFloats: boolean;
   showTracks: boolean;
+  /** Which Field is drawn. The Anomaly Features belong to one of them and to no other. */
+  fieldKey: string;
+  /** This Timestep's Anomaly Features, and which of them is open. */
+  anomalies: AnomalyFeature[];
+  showAnomalies: boolean;
+  selectedAnomaly: number | null;
   theme: Theme;
 }
 
@@ -68,7 +74,10 @@ export interface ViewState {
  * flat ocean straight over the water column - the volume rendered perfectly and was covered up.
  * Ordering the passes by hand is the fix; it is also simply what we mean.
  */
-const ORDER = { surface: 0, lines: 5, volume: 10, markers: 20 } as const;
+const ORDER = { surface: 0, lines: 5, volume: 10, markers: 20, anomalies: 25 } as const;
+
+/** The Field the Anomaly Features were found in. Must match the FieldSpec key in bake.py. */
+const ANOMALY_FIELD = "temperature_anomaly";
 
 /**
  * Scene palettes, one per theme.
@@ -164,6 +173,7 @@ export class OceanScene {
   private volume?: Mesh;
   private boxFrame?: LineSegments;
   private floatPoints?: Points;
+  private anomalyPoints?: Points;
   private trackLines?: LineSegments;
   private selectedColumn?: LineSegments;
 
@@ -172,6 +182,7 @@ export class OceanScene {
   private lastBoxKey = "";
   private lastColumnKey = "";
   private lastTrackTime = Number.NaN;
+  private lastAnomalyKey = "";
   private lastTheme: Theme | null = null;
   private state?: ViewState;
   private frameId = 0;
@@ -214,6 +225,7 @@ export class OceanScene {
     this.buildCoastlines(coastlines);
     this.buildVolume();
     this.buildFloats();
+    this.buildAnomalies();
     this.buildTracks();
   }
 
@@ -638,6 +650,8 @@ export class OceanScene {
       lonLat.needsUpdate = true;
     }
 
+    this.updateAnomalies(state, frame);
+
     if (this.trackLines) {
       this.trackLines.visible = state.showTracks;
       // Only the drift that had already happened by this Timestep, so pressing play draws the
@@ -688,6 +702,164 @@ export class OceanScene {
   }
 
   // ---------------------------------------------------------------- interaction
+
+  /**
+   * Ring markers on the Anomaly Features of the Timestep on screen.
+   *
+   * Unlike a Float, a Feature lives at a depth, so these are placed in world space rather than
+   * morphed onto a sphere and they only appear once the camera is inside the box. They are rings
+   * rather than discs so the water they are marking stays visible through them, and they draw
+   * after everything - a marker hidden behind the haze it is labelling is not a marker.
+   */
+  private buildAnomalies(): void {
+    const material = new ShaderMaterial({
+      glslVersion: GLSL3,
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        uSize: { value: 26 },
+        uWarm: { value: new Color(0xd8663f) },
+        uCool: { value: new Color(0x4a8fd0) },
+        uSelectedColour: { value: SELECTED_COLOUR },
+        uPulse: { value: 0 },
+      },
+      vertexShader: /* glsl */ `
+        in float sign;
+        in float selected;
+        uniform float uSize;
+        out float vSign;
+        out float vSelected;
+        void main() {
+          vSign = sign;
+          vSelected = selected;
+          vec4 view = viewMatrix * modelMatrix * vec4(position, 1.0);
+          gl_Position = projectionMatrix * view;
+          gl_PointSize = uSize * (1.0 + 0.35 * selected);
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        precision highp float;
+        uniform vec3 uWarm;
+        uniform vec3 uCool;
+        uniform vec3 uSelectedColour;
+        uniform float uPulse;
+        in float vSign;
+        in float vSelected;
+        out vec4 fragColor;
+        void main() {
+          float distance = length(gl_PointCoord - vec2(0.5));
+          if (distance > 0.5) discard;
+          // A ring: solid at the rim, hollow in the middle, so the water shows through.
+          float ring = smoothstep(0.30, 0.36, distance) * (1.0 - smoothstep(0.44, 0.50, distance));
+          float dot = 1.0 - smoothstep(0.07, 0.12, distance);
+          float alpha = clamp(ring + dot * 0.9, 0.0, 1.0);
+          if (alpha < 0.02) discard;
+          vec3 colour = mix(uCool, uWarm, step(0.0, vSign));
+          colour = mix(colour, uSelectedColour, vSelected * (0.55 + 0.45 * uPulse));
+          fragColor = vec4(colour, alpha * (0.55 + 0.45 * vSelected));
+        }
+      `,
+    });
+
+    const geometry = new BufferGeometry();
+    geometry.setAttribute("position", new BufferAttribute(new Float32Array(0), 3));
+    geometry.setAttribute("sign", new BufferAttribute(new Float32Array(0), 1));
+    geometry.setAttribute("selected", new BufferAttribute(new Float32Array(0), 1));
+
+    this.anomalyPoints = new Points(geometry, material);
+    this.anomalyPoints.renderOrder = ORDER.anomalies;
+    this.anomalyPoints.frustumCulled = false;
+    this.anomalyPoints.visible = false;
+    this.scene.add(this.anomalyPoints);
+  }
+
+  /**
+   * The Features that should be on screen: this Timestep's, minus any the Depth Slice has cut
+   * away. The slice is described as hiding all water outside its range, so leaving a ring
+   * floating over water that is no longer drawn would contradict it - and clicking that ring
+   * would open a panel about water the user cannot see.
+   *
+   * Returned with the original index attached, because that index is what the store selects by.
+   */
+  private visibleAnomalies(state: ViewState): { feature: AnomalyFeature; index: number }[] {
+    // They were found in the anomaly Field and describe departures in it. Drawn over
+    // temperature or salinity they would look like markers on that Field, which they are not.
+    if (state.fieldKey !== ANOMALY_FIELD) return [];
+    const volume = this.manifest.volume;
+    const from = axisToDepth(volume, state.depthFrom);
+    const to = axisToDepth(volume, state.depthTo);
+    return state.anomalies
+      .map((feature, index) => ({ feature, index }))
+      .filter(({ feature }) => feature.depth >= from && feature.depth <= to);
+  }
+
+  /** Where one Feature sits in world space. One place decides, as with everything else. */
+  private featurePosition(feature: AnomalyFeature, frame: ReturnType<typeof makeFrame>) {
+    return [
+      lonToX(feature.lon),
+      depthToY(frame, feature.depth),
+      latToZ(feature.lat),
+    ] as const;
+  }
+
+  private updateAnomalies(state: ViewState, frame: ReturnType<typeof makeFrame>): void {
+    const points = this.anomalyPoints;
+    if (!points) return;
+
+    const shown = this.visibleAnomalies(state);
+    // They belong to the water column, so they are meaningless on the globe.
+    points.visible = state.showAnomalies && state.morph > 0.55 && shown.length > 0;
+    if (!points.visible) return;
+
+    const key = `${state.fieldKey}|${shown.map((s) => s.index).join(",")}|${frame.boxHeight}|${state.selectedAnomaly}`;
+    if (key === this.lastAnomalyKey) return;
+    this.lastAnomalyKey = key;
+
+    const positions = new Float32Array(shown.length * 3);
+    const signs = new Float32Array(shown.length);
+    const selected = new Float32Array(shown.length);
+    shown.forEach(({ feature, index }, slot) => {
+      const [x, y, z] = this.featurePosition(feature, frame);
+      positions[slot * 3] = x;
+      positions[slot * 3 + 1] = y;
+      positions[slot * 3 + 2] = z;
+      signs[slot] = feature.sign;
+      selected[slot] = index === state.selectedAnomaly ? 1 : 0;
+    });
+
+    points.geometry.dispose();
+    const geometry = new BufferGeometry();
+    geometry.setAttribute("position", new BufferAttribute(positions, 3));
+    geometry.setAttribute("sign", new BufferAttribute(signs, 1));
+    geometry.setAttribute("selected", new BufferAttribute(selected, 1));
+    points.geometry = geometry;
+  }
+
+  /** Nearest Anomaly Feature to a screen point, as an index into this Timestep's list. */
+  pickAnomaly(clientX: number, clientY: number, radiusPixels = 20): number | null {
+    const state = this.state;
+    if (!state?.showAnomalies || state.morph <= 0.55) return null;
+    const frame = makeFrame(this.manifest.volume, state.exaggeration);
+    const rect = this.canvas.getBoundingClientRect();
+    const target = new Vector2(clientX - rect.left, clientY - rect.top);
+
+    let best: number | null = null;
+    let bestDistance = radiusPixels;
+    this.visibleAnomalies(state).forEach(({ feature, index }) => {
+      const [x, y, z] = this.featurePosition(feature, frame);
+      const projected = new Vector3(x, y, z).project(this.camera);
+      if (projected.z < -1 || projected.z > 1) return;
+      const screenX = ((projected.x + 1) / 2) * rect.width;
+      const screenY = ((1 - projected.y) / 2) * rect.height;
+      const distance = target.distanceTo(new Vector2(screenX, screenY));
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        best = index;
+      }
+    });
+    return best;
+  }
 
   /** Nearest Float to a screen point, or null. See `morph.ts` for why this is done by hand. */
   pickFloat(clientX: number, clientY: number, radiusPixels = 22): OceanFloat | null {
@@ -796,6 +968,7 @@ export class OceanScene {
 
       this.setUniform(this.volume, "uTime", this.elapsed);
       this.setUniform(this.floatPoints, "uPulse", 0.5 + 0.5 * Math.sin(this.elapsed * 3));
+      this.setUniform(this.anomalyPoints, "uPulse", 0.5 + 0.5 * Math.sin(this.elapsed * 3));
       this.controls.update();
       this.renderer.render(this.scene, this.camera);
     };

@@ -40,6 +40,50 @@ export interface VolumeSpec {
   north: number;
 }
 
+/**
+ * One connected body of water that departed from its own average, and what is known about it.
+ *
+ * Written by `_build_anomaly_features` in bake.py. Everything here is measured: the frontend
+ * words it, but no field is an interpretation.
+ */
+export interface AnomalyFeature {
+  /** +1 warmer than its own average, -1 cooler. */
+  sign: number;
+  peakValue: number;
+  /** How unusual the peak is for its own cell, in standard deviations across the series. */
+  peakZ: number;
+  /** The middle of the body, where the ring is drawn and where every fact below is read. */
+  lat: number;
+  lon: number;
+  depth: number;
+  topMetres: number;
+  bottomMetres: number;
+  south: number;
+  north: number;
+  west: number;
+  east: number;
+  cells: number;
+  /** Horizontal area covered, each column counted once however deep it runs. */
+  footprintKm2: number;
+  /** Depth of the isotherm at this cell now, and against its own average over the series. */
+  isothermDepth: number | null;
+  isothermDeparture: number | null;
+  /** Whether the isotherm actually swept through this water. Only then is it the cause. */
+  isothermExplains: boolean;
+  salinityDeparture: number | null;
+  densityDeparture: number | null;
+  /** Argo casts standing behind this water. Zero means the model is interpolating here. */
+  casts: number | null;
+}
+
+export interface AnomalyFeatureSpec {
+  field: string;
+  zThreshold: number;
+  valueThreshold: number;
+  minCells: number;
+  isothermValue: number;
+}
+
 export interface SourceSpec {
   name: string;
   attribution: string;
@@ -56,6 +100,7 @@ export interface Manifest {
   palettes: Record<string, number[][]>;
   floatCount: number;
   coverage?: CoverageSpec;
+  anomalyFeatures?: AnomalyFeatureSpec;
 }
 
 export interface FloatFix {
