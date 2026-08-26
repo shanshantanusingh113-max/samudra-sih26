@@ -4,9 +4,10 @@ Every item below was found by reading the code and checking it against the baked
 running app, and every one was re-verified against the current tree on 2026-08-25. File and line
 numbers are live at that commit.
 
-**Line numbers in Tier 1 predate the derived-fields work of 2026-08-25** (ADR 0010), which moved
-code in `ProfilePanel.tsx`. The defects themselves were re-checked and all remain open unless
-listed as closed below.
+**Every item below was re-checked against the tree on 2026-08-25**, after the derived-Fields work
+and the Anomaly Feature work. All fourteen remain open; anything fixed since has been moved to
+the closed table at the bottom rather than left here marked done. Line numbers moved during those
+changes and are indicative, not exact - the file and the symbol are the reliable pointers.
 
 Ordered by how much damage each would do if a judge found it first.
 
@@ -19,14 +20,19 @@ than asserted.
 
 ### 1. The salinity verdict has its sign backwards
 
-`web/src/ui/ProfilePanel.tsx:255-262`
+`web/src/ui/ProfilePanel.tsx`, the `SENSE` table
 
 `residual = observed - modelled` (`pipeline/samudra/collocation.py:71`), so `bias > 0` means the
 float measured **more** than the model, i.e. the model is **fresher**.
 
-The temperature branch gets this right (`bias > 0` maps to `"cooler than"`). The salinity branch
-does the opposite (`bias > 0` maps to `"more saline than"`). Two contradictory conventions inside
-one ternary, and salinity is the wrong one.
+The table reads `[what the model is when bias > 0, what it is when bias < 0]`. Temperature is
+right - `["cooler than", "warmer than"]` - and density, added later, is right too:
+`["lighter than", "denser than"]`. Salinity is `["more saline than", "fresher than"]`, which is
+the pair the wrong way round.
+
+It was a two-branch ternary when this was first logged and became a lookup table when density
+arrived; the bug was deliberately carried across unchanged rather than quietly fixed inside an
+unrelated change. **It is now a one-word fix**: swap the two strings on the salinity row.
 
 The sentence renders as *"The model reads on average 0.31 PSU more saline than the instrument
 measured"* at the exact moment the model is 0.31 PSU fresher.
@@ -105,7 +111,8 @@ saying "Reporting" with a full chart underneath.
 
 `pipeline/samudra/bake.py` - `_build_observations` collocates only `casts[-1]`.
 
-Measured: **82 of 88 collocations sit at timestep index 10 or 11 of 12.** At any earlier step,
+Measured on the current bake: **81 of 88 collocations sit at timestep index 10 or 11 of 12**, and
+79 of them at index 11 alone. At any earlier step,
 every profile chart is against an analysis the timeline is not showing.
 
 Partly mitigated at `ProfilePanel.tsx:96-99`, which prints "(not the step above)". But that note
@@ -200,7 +207,7 @@ shallowest data is 5 m. Small, but it is a measurement claim.
 ### 13. The western edge of Observation Coverage is genuinely sparse, and looks like a bug
 Not a defect - recorded because it will be asked about. After the halo fix the eastern rim
 recovered but the western one did not, because the western Arabian Sea really is less sampled:
-**9 floats between 55-60 E against 27 between 80-90 E** in the current bake. The red rim there is
+**9 floats between 55-60 E against 27 between 80-90 E** in the current bake, re-counted 2026-08-25. The red rim there is
 signal, not artefact. Worth saying out loud in the demo rather than being asked.
 
 ### 14. Depth ruler labels tuck under the left panel

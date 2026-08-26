@@ -102,13 +102,16 @@ _Avoid_: blob, hotspot, event, detection
 ### Presentation
 
 **Transfer Function**:
-The full rule turning a physical value into a screen colour and an opacity: a Palette, a
-value range, and a linear-or-log scale. What the colourbar editor edits.
+The full rule turning a physical value into a screen colour and an opacity: a Palette and a
+value range. The range is the user's; the Palette is the Field's. There is no log scale - it
+warped the water while the colourbar stayed linear, so the legend became a lie.
 _Avoid_: colormap, LUT, color scale, styling
 
 **Palette**:
-An ordered list of colours only, with no notion of physical units. Defaults are `cmocean`
-palettes, which are perceptually uniform and are the convention in oceanography.
+An ordered list of colours only, with no notion of physical units. `cmocean` palettes, which
+are perceptually uniform and are the convention in oceanography. A Palette belongs to a Field
+and is named in its `FieldSpec`; it is never chosen separately, because a chooser let a user put
+an oxygen scale on temperature. ADR 0010.
 _Avoid_: colormap, gradient, theme, ramp
 
 **Globe View**:

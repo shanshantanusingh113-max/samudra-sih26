@@ -1,49 +1,50 @@
-# The two features not built yet
+# The features not built yet
 
-Three were scoped. **Observation Coverage shipped** (`pipeline/samudra/coverage.py`, and a third
-entry in the Variable selector). These two did not, and this is what a new session needs to build
-them without re-deriving the reasoning.
+Assessed against what the data can actually support. Both have a version that is honest and a
+version that is not, and the difference is recorded here because it is the part that gets lost.
 
-Both were assessed against what the data can actually support. Neither is blocked; both have a
-version that is honest and a version that is not, and the difference is recorded here because it
-is the part that gets lost.
+Last reconciled against the tree: 2026-08-25.
 
 ---
 
-## 1. Automatic anomaly scan
+## 1. Rank the Residuals, so the disagreement is findable
+
+**Half of this shipped.** The automatic anomaly scan was scoped as one feature covering two
+different questions, and only one of them is built:
+
+| Question | Status |
+| --- | --- |
+| Where did the *field* depart from its own average? | **Done.** `find_anomaly_features()` labels every connected departure, `bake.py` attaches why it is there and what stands behind it, and the frontend rings each one and explains it on click. 111 features across the twelve Timesteps |
+| Where does the *model* most disagree with the *floats*? | **Not built.** Every number it needs is already in `collocations.json` |
+| Fronts and sharp gradients | Not built. Already computed as the gradient channel in every Volume, so it is free |
+| Unusual currents | Not possible. No current data exists in the project, and deriving it was measured and rejected - ADR 0010 |
 
 **Do not call it AI.** This is the single most puncturable claim available. A z-score is not a
 model, and "Confidence: 91%" is a fabricated number unless it derives from something real. An
-INCOIS judge will ask "trained on what?" and there is no answer. `CONTEXT.md` already records
-machine learning as an extension point, not an implementation, and that should stay true.
+INCOIS judge will ask "trained on what?" and there is no answer. `CONTEXT.md` records machine
+learning as an extension point, not an implementation, and that should stay true. The shipped
+half already follows this: it reports a z-score with the threshold it had to clear, never a
+confidence.
 
-Call it an **automatic anomaly scan**, and make the number a percentile or a z-score with its
-supporting sample size - "3.1σ, 119 depths matched" - rather than a confidence.
+### What the remaining half looks like
 
-### What is computable from data already held
+The residual ranking is the strongest item left, because it *is* the project's thesis. Float
+2902306 at -2.16 degC across 119 depths would be item one on that list today, and it is a real
+upwelling signal rather than a curiosity.
 
-| Anomaly | Source | Effort |
-| --- | --- | --- |
-| Model-vs-observation outliers | `collocations.json`, per-depth residuals | **Already computed. Just rank them.** |
-| Fronts and sharp gradients | The gradient channel in every Volume | **Already computed. Free.** |
-| Temporal warm/cold anomalies | Departure from the 12-timestep mean | A few lines of numpy |
-| Zonal anomalies | Departure from the along-latitude mean at each depth | Same |
-| Unusual currents | Nothing. No current data exists in the project | **Not possible** |
-
-The residual one is strongest because it *is* the project's thesis. Float 2902306 at -2.16 °C
-across 119 depths would be item one on that list today, and it is a real upwelling signal rather
-than a curiosity.
-
-### Shape
-
-- **Pipeline:** compute in `bake.py`, write `anomalies.json` alongside the collocations. Ranked,
-  capped at maybe 20 entries, each with location, depth range, field, value, z-score and the
-  supporting count.
-- **Frontend:** a list panel. Clicking an entry sets `fieldKey`, `depthFrom`/`depthTo` and calls
-  `focusOn(lon, lat)` - all of which already exist and are store-driven.
+- **Pipeline:** rank the entries already in `collocations.json` by RMS or by mean residual,
+  capped at maybe 20, and write the ranking alongside them.
+- **Frontend:** a list panel. Clicking an entry sets `selectedFloatId`, `timestepIndex` and calls
+  `focusOn(lon, lat)` - all of which already exist and are store-driven. The Collocation panel
+  then does the rest of the work unchanged.
 - **Guide entry required.** An unexplained control is worse than no control.
 
-**Cost:** 4-5 hours. **Risk:** low technically, high rhetorically if the word "AI" survives.
+**One thing to fix first.** The verdict thresholds are temperature thresholds applied to every
+Field, so salinity and density both read "Close agreement" for 82 of 85 floats. Ranking a list by
+a number whose verdict is a constant would put a meaningless column next to it. See
+`docs/BUGS.md` item 2.
+
+**Cost:** 2-3 hours. **Risk:** low technically, high rhetorically if the word "AI" survives.
 
 ---
 
@@ -104,26 +105,33 @@ the actual physical quantity that governs rapid intensification, and INCOIS publ
 operational product. A derived field, not a simulation. **2-3 hours**, and it makes the cyclone
 argument physical rather than rhetorical. If anything is built next, build this.
 
-**Ocean currents: two routes.**
+**Ocean currents: settled, and the answer is no.** Both routes were assessed and the derived one
+was actually built before being rejected. Thermal wind from the density field gives 0.16 m/s for
+the Somali Current at the height of the southwest monsoon against a real 1.5-2.5 m/s, and puts
+the fastest water in the block on the equator, where geostrophy does not hold. Finite, plausible
+and inverted, which is worse than absent. INCOIS's own `GEO_U`/`GEO_V` are properly derived but
+stop at 2019-03 and cannot share this timeline. Full numbers in ADR 0010.
 
-- *Cheap and awkward:* `incois_valueadded_products_datasets` has `GEO_U`/`GEO_V` ready, but the
-  series **ends 2019-03** and cannot share a timeline with the 2026 temperature field without a
-  caveat on screen. 2-3 hours.
-- *Harder and better:* derive geostrophic currents from the density field via thermal wind from T
-  and S. Real oceanography, shares the timeline, no stale-data caveat. Needs TEOS-10 density and
-  a reference-level assumption. About a day.
+**Direction, as opposed to speed, is a weaker claim and may survive** - smoothing a density field
+barely rotates its gradient even where it flattens the magnitude - but it would have to be
+validated against the Argo parking-depth drift before anything is drawn. That drift is already on
+screen as the Track of every Float, and it is a direct measurement of the current at 1000 m,
+which is worth saying out loud in the demo whether or not arrows are ever added.
 
-2D arrows on a depth slice are straightforward once U and V exist. **3D streamlines remain cut** -
-they are a project in themselves, and `CONTEXT.md` says so.
+**3D streamlines remain cut** - a project in themselves, and `CONTEXT.md` says so.
 
 ---
 
 ## If there is one day
 
-1. **TCHP / D26 field** (3 h) - makes the cyclone story real, uses data already held
-2. **Anomaly scan, honestly named** (5 h) - ranks what is already computed
-3. **Fix the Tier 1 items in [`docs/BUGS.md`](../BUGS.md)** (2 h) - all four are in one file and
-   all four say something false in plain English
+1. **Fix the Tier 1 items in [`docs/BUGS.md`](../BUGS.md)** (2 h) - five defects that say
+   something false in plain English, four of them in a single file. Two are one line each. Do
+   this before adding anything, because a new feature sitting next to a sentence with its sign
+   backwards costs more than it earns
+2. **TCHP / D26 field** (3 h) - makes the cyclone story physical, uses data already held, and
+   half of it exists in `samudra/thermocline.py`
+3. **Rank the Residuals** (2-3 h) - the other half of the anomaly scan, over numbers already
+   computed
 
 "Ask the Ocean" is the most impressive-sounding and the most likely to misfire live. Build it
 last, or not this cycle.

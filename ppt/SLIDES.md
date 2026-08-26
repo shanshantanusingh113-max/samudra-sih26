@@ -209,7 +209,7 @@ One muted line beneath:
 
 > **Working prototype, running on real INCOIS data.**
 > Ingestion, 3D rendering, instrument overlay and model-versus-observation comparison are all
-> built and tested. **67 tests passing.** What is left is deployment and more variables, not core
+> built and tested. **127 tests passing.** What is left is deployment and more variables, not core
 > capability.
 
 *(Set "Working prototype" in green `#5FD68A`. This is the line a judge remembers.)*
