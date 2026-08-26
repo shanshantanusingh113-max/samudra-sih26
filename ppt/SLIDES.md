@@ -86,7 +86,7 @@ VIABILITY, IMPACT AND BENEFITS, RESEARCH AND REFERENCES.
 **Layout:** three boxes across the top, one image across the bottom.
 
 **Image:** `images/03-globe-full.png`
-Caption: *India's EEZ with INCOIS temperature and 93 Argo floats. Click any float to compare.*
+Caption: *India's EEZ with INCOIS temperature and 221 Argo floats. Click any float to compare.*
 
 ---
 
@@ -115,7 +115,7 @@ Caption: *India's EEZ with INCOIS temperature and 93 Argo floats. Click any floa
 - **Still water becomes invisible.** We fade out water that is not changing, so the layers show
   through. *Without this you see a warm lid and a black void underneath.*
 - **It shows where the evidence is, not just the model.** A third view counts how many Argo casts
-  were actually taken near each point. *About a fifth of the block has none, so the analysis there
+  were actually taken near each point. *Six per cent of the block has none, so the analysis there
   is interpolation - and the tool says so instead of hiding it.*
 - **The comparison is the product.** Model volume and instrument profile in one view is the exact
   gap PS 26067 names.
@@ -209,7 +209,7 @@ One muted line beneath:
 
 > **Working prototype, running on real INCOIS data.**
 > Ingestion, 3D rendering, instrument overlay and model-versus-observation comparison are all
-> built and tested. **127 tests passing.** What is left is deployment and more variables, not core
+> built and tested. **146 tests passing.** What is left is deployment and more variables, not core
 > capability.
 
 *(Set "Working prototype" in green `#5FD68A`. This is the line a judge remembers.)*
@@ -240,7 +240,7 @@ One muted line beneath:
 
 - **Some data hosts were unreachable.** *HYCOM and NOAA CoastWatch both timed out from our
   network, so the obvious plan died on day one.*
-- **Real instruments fail.** *One float in this region reports 20 PSU, fresher than the Baltic
+- **Real instruments fail.** *Argo's own quality flags are read per channel, and a float in this region whose salinity sensor failed keeps its good temperature. Beyond that, a regional floor catches what the global one lets through - 20 PSU, fresher than the Baltic
   and impossible here.*
 - **Weak graphics chips.** *Ray-marching every pixel is heavy, and a forecasting desk is not a
   gaming PC.*

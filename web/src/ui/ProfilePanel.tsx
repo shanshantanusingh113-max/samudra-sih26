@@ -1,3 +1,4 @@
+import { positionAt } from "../floatTime";
 import { depthToAxis } from "../scene/geography";
 import { useStore } from "../store";
 import type { CollocationSeries, VolumeSpec } from "../types";
@@ -11,6 +12,7 @@ const DEPTH_TICKS = [0, 50, 100, 200, 500, 1000, 2000];
 export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) => void }) {
   const { selectedFloatId, floats, collocations, fieldKey, field, set, manifest, timestepIndex } =
     useStore();
+  const timeMs = new Date(manifest?.timesteps[timestepIndex] ?? 0).getTime();
   const spec = field();
 
   if (!selectedFloatId || !spec) return null;
@@ -31,15 +33,24 @@ export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) 
   const substituted = shownKey !== undefined && shownKey !== fieldKey;
   const volume = manifest?.volume;
 
-  // Five of the current 93 floats sit just past the southern or western edge of the loaded
+  // Where this Float actually was at the moment on screen, which is where its marker is drawn.
+  // The header used to read `chosen.latest` instead - its newest report, whatever the timeline
+  // said. At the first Timestep that described a position a median 247 km from the dot the user
+  // had just clicked, and 1157 km away at worst. Same family as the frozen-float bug: the marker
+  // was corrected and the readout was left behind.
+  const here = positionAt(chosen, timeMs);
+  const reporting = here !== null;
+  const shown = here ?? chosen.latest;
+
+  // Nine of the current 221 floats sit just past the southern or western edge of the loaded
   // Grid. "No usable data" would be misleading about those: the observations are fine, the
   // model simply does not extend that far, and saying so is a different and truer sentence.
   const outsideGrid =
     volume !== undefined &&
-    (chosen.latest.lat < volume.south ||
-      chosen.latest.lat > volume.north ||
-      chosen.latest.lon < volume.west ||
-      chosen.latest.lon > volume.east);
+    (shown.lat < volume.south ||
+      shown.lat > volume.north ||
+      shown.lon < volume.west ||
+      shown.lon > volume.east);
 
   // Scrubbing the timeline moves the header's analysis date, but a baked Collocation is pinned
   // to the analysis step nearest its own cast. Name the step this chart is actually against -
@@ -51,12 +62,15 @@ export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) 
   const analysisDrifted =
     collocation !== undefined && collocation.timestepIndex !== timestepIndex;
 
+
   return (
     <aside className="panel panel-right">
       <div className="profile-head">
         <p className="profile-id">Argo {chosen.id}</p>
         <div className="profile-actions">
-          <span className="pill live">Reporting</span>
+          <span className={`pill ${reporting ? "live" : "stale"}`}>
+            {reporting ? "Reporting" : "Not reporting"}
+          </span>
           <button className="ghost" onClick={() => set("selectedFloatId", null)} aria-label="Close">
             ✕
           </button>
@@ -68,16 +82,24 @@ export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) 
       <dl className="kv">
         <dt>Position</dt>
         <dd>
-          {Math.abs(chosen.latest.lat).toFixed(2)}&deg;{chosen.latest.lat >= 0 ? "N" : "S"}{" "}
-          {chosen.latest.lon.toFixed(2)}&deg;E
+          {Math.abs(shown.lat).toFixed(2)}&deg;{shown.lat >= 0 ? "N" : "S"}{" "}
+          {shown.lon.toFixed(2)}&deg;E
         </dd>
-        <dt>Last surfaced</dt>
-        <dd>{chosen.latest.time.slice(0, 10)}</dd>
+        <dt>{reporting ? "Surfaced" : "Last surfaced"}</dt>
+        <dd>{shown.time.slice(0, 10)}</dd>
         <dt>Profiles</dt>
         <dd>{chosen.profileCount}</dd>
-        <dt>Deepest</dt>
-        <dd>{chosen.latest.depthMax.toFixed(0)} m</dd>
+        <dt>That cast reached</dt>
+        <dd>{shown.depthMax.toFixed(0)} m</dd>
       </dl>
+
+      {!reporting && (
+        <p className="note substituted">
+          This float was not surfacing anywhere near {analysisDate}, so its marker is not on the
+          water at this step. The figures above are its nearest report,{" "}
+          {chosen.latest.time.slice(0, 10)}.
+        </p>
+      )}
 
       {series && volume ? (
         <>
@@ -88,13 +110,30 @@ export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) 
               Showing {shownSpec.label.replace("Sea Water ", "").toLowerCase()} instead.
             </p>
           )}
-          <Chart series={series} spec={shownSpec} volume={volume} />
-          <Verdict series={series} units={shownSpec.units} label={shownSpec.label} />
-          <Stats series={series} units={shownSpec.units} />
-          <p className={`analysis-note${analysisDrifted ? " drifted" : ""}`}>
-            cast {collocation?.time.slice(0, 10)} vs {analysisDate} analysis
-            {analysisDrifted ? " (not the step above)" : ""}
+          <p className={`analysis-note lead${analysisDrifted ? " drifted" : ""}`}>
+            {analysisDrifted
+              ? `Comparing the ${collocation?.time.slice(0, 10)} cast against the ${analysisDate}` +
+                ` analysis - not the step on the timeline. Scrubbing does not move this chart.`
+              : `Comparing the ${collocation?.time.slice(0, 10)} cast against the ${analysisDate}` +
+                ` analysis, the step you are looking at.`}
           </p>
+          <Chart series={series} spec={shownSpec} volume={volume} />
+          <Verdict
+            series={series}
+            units={shownSpec.units}
+            label={shownSpec.label}
+            range={shownSpec.range}
+          />
+          <Stats series={series} units={shownSpec.units} />
+          {series.aboveModel > 0 && (
+            <p className="note">
+              The model's shallowest level is {volume.surfaceMetres} m, so the top{" "}
+              {series.aboveModel} measurement{series.aboveModel === 1 ? "" : "s"} of this cast
+              have nothing to compare against. They are left out rather than extrapolated into -
+              the very surface is the number people most want, and inventing it would be the
+              worst place to start.
+            </p>
+          )}
         </>
       ) : (
         <p className="empty">
@@ -107,7 +146,7 @@ export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) 
         </p>
       )}
 
-      <button className="ghost wide" onClick={() => onFocus(chosen.latest.lon, chosen.latest.lat)}>
+      <button className="ghost wide" onClick={() => onFocus(shown.lon, shown.lat)}>
         Centre the view on this float
       </button>
     </aside>
@@ -252,10 +291,13 @@ function Verdict({
   series,
   units,
   label,
+  range,
 }: {
   series: CollocationSeries;
   units: string;
   label: string;
+  /** The Field's encoded range, which is what the thresholds are a fraction of. */
+  range: [number, number];
 }) {
   const rms = series.rmsResidual;
   const bias = series.meanResidual;
@@ -269,12 +311,17 @@ function Verdict({
   const words = SENSE[fieldKeyOf(label)];
   const sense = words ? (bias > 0 ? words[0] : words[1]) : bias > 0 ? "below" : "above";
 
-  const tone = rms < 0.6 ? "good" : rms < 1.5 ? "fair" : "poor";
+  const [close, large] = thresholds(range);
+  const tone = rms < close ? "good" : rms < large ? "fair" : "poor";
   const headline =
-    rms < 0.6 ? "Close agreement." : rms < 1.5 ? "Moderate disagreement." : "Large disagreement.";
+    rms < close
+      ? "Close agreement."
+      : rms < large
+        ? "Moderate disagreement."
+        : "Large disagreement.";
 
   const detail =
-    rms < 0.6
+    rms < close
       ? `The analysis reproduced this float's ${quantity} well through the water column.`
       : `The model reads on average ${Math.abs(bias).toFixed(2)} ${units} ${sense} the` +
         ` instrument measured. Worth a look.`;
@@ -292,9 +339,32 @@ function Verdict({
  * `residual = observed - modelled`, so a positive bias means the float measured MORE than the
  * model did. Read the pairs as [what the model is when bias > 0, what it is when bias < 0].
  */
+/**
+ * Where "close" and "large" sit, as a fraction of the Field's own encoded range.
+ *
+ * These were 0.6 and 1.5 flat, which are degrees Celsius wearing no units. Applied to salinity
+ * they made the verdict a constant: 0.6 PSU is a sixth of the entire range the field occupies,
+ * so 82 of 85 floats read "Close agreement" and the headline stopped carrying information.
+ * Density, added later, landed in exactly the same place.
+ *
+ * The fractions are the ones temperature already implied - 0.6 and 1.5 against its 27.4 degC
+ * range - so temperature's verdicts are unchanged and every other Field is judged on the same
+ * terms rather than on temperature's. There is no per-Field constant to keep in step: a new
+ * collocated Field is scaled correctly the moment it has a range.
+ *
+ * They are a judgement about wording, not a measurement, and they are stated rather than buried.
+ */
+const CLOSE_FRACTION = 0.6 / 27.42;
+const LARGE_FRACTION = 1.5 / 27.42;
+
+function thresholds(range: [number, number]): [number, number] {
+  const span = Math.abs(range[1] - range[0]);
+  return [span * CLOSE_FRACTION, span * LARGE_FRACTION];
+}
+
 const SENSE: Record<string, [string, string]> = {
   temperature: ["cooler than", "warmer than"],
-  salinity: ["more saline than", "fresher than"],
+  salinity: ["fresher than", "more saline than"],
   density: ["lighter than", "denser than"],
 };
 
@@ -312,19 +382,44 @@ function Stats({ series, units }: { series: CollocationSeries; units: string }) 
         <span className="stat-label">depths compared</span>
       </div>
       <div>
-        <span className={`stat-value ${bias !== null && bias < 0 ? "cool" : "warm"}`}>
-          {bias === null ? "-" : `${bias > 0 ? "+" : ""}${bias.toFixed(2)}`}
-        </span>
+        {/*
+          * The class says which way the *model* read, which is what the number underneath it
+          * means. It used to be `cool` when `bias < 0`, and `bias < 0` is the model reading
+          * high - so the name encoded the opposite of the physics, and meant nothing at all on
+          * salinity or density.
+          */}
+        <span className={`stat-value ${modelReads(bias)}`}>{signed(bias)}</span>
         <span className="stat-label">average gap {units}</span>
       </div>
       <div>
         <span className="stat-value">
           {series.rmsResidual === null ? "-" : series.rmsResidual.toFixed(2)}
         </span>
-        <span className="stat-label">typical gap {units}</span>
+        {/* Not "typical": RMS is the quadratic mean and is always at least the mean absolute
+            deviation, so a statistician reading "typical" would be reading the wrong quantity. */}
+        <span className="stat-label">RMS gap {units}</span>
       </div>
     </div>
   );
+}
+
+/** Which way the model read, from `residual = observed - modelled`. */
+function modelReads(bias: number | null): string {
+  if (bias === null || Math.abs(bias) < 0.005) return "";
+  return bias > 0 ? "model-low" : "model-high";
+}
+
+/**
+ * A signed number that never prints a negative zero.
+ *
+ * `(-0.001).toFixed(2)` is "-0.00", which reads as a bug to anyone looking carefully. Rounding
+ * before formatting means a value that rounds to nothing prints as nothing signed.
+ */
+function signed(value: number | null): string {
+  if (value === null) return "-";
+  const rounded = Number(value.toFixed(2));
+  if (rounded === 0) return "0.00";
+  return `${rounded > 0 ? "+" : ""}${rounded.toFixed(2)}`;
 }
 
 /**

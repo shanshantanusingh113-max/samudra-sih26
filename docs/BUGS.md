@@ -1,218 +1,32 @@
 # Known defects
 
-Every item below was found by reading the code and checking it against the baked data or the
-running app, and every one was re-verified against the current tree on 2026-08-25. File and line
-numbers are live at that commit.
+Every item was found by reading the code and checking it against the baked data or the running
+app, and every claim here is measured rather than asserted.
 
-**Every item below was re-checked against the tree on 2026-08-25**, after the derived-Fields work
-and the Anomaly Feature work. All fourteen remain open; anything fixed since has been moved to
-the closed table at the bottom rather than left here marked done. Line numbers moved during those
-changes and are indicative, not exact - the file and the symbol are the reliable pointers.
+**All fourteen are fixed.** They were worked through in order on 2026-08-27: each was first
+re-verified against the tree, then fixed, then checked in the running app or under test, and only
+then moved to the closed table below. Two of them changed the data the platform ships - honouring
+Argo's quality flags, and fetching the raw columns the fallback chain had always declared and
+never asked for - and the figures they invalidated were corrected across the README, the landing
+page, the guide panel and the deck.
 
-Ordered by how much damage each would do if a judge found it first.
-
-**Nothing here is speculative.** Where a claim could not be verified it is marked as such rather
-than asserted.
+The three tier headings are kept empty rather than deleted, because the ordering they encode -
+*tells a user something false* above *data quietly discarded* above *labels and presentation* - is
+the thing to sort the next batch by.
 
 ---
 
 ## Tier 1 - tells a user something false
 
-### 1. The salinity verdict has its sign backwards
-
-`web/src/ui/ProfilePanel.tsx`, the `SENSE` table
-
-`residual = observed - modelled` (`pipeline/samudra/collocation.py:71`), so `bias > 0` means the
-float measured **more** than the model, i.e. the model is **fresher**.
-
-The table reads `[what the model is when bias > 0, what it is when bias < 0]`. Temperature is
-right - `["cooler than", "warmer than"]` - and density, added later, is right too:
-`["lighter than", "denser than"]`. Salinity is `["more saline than", "fresher than"]`, which is
-the pair the wrong way round.
-
-It was a two-branch ternary when this was first logged and became a lookup table when density
-arrived; the bug was deliberately carried across unchanged rather than quietly fixed inside an
-unrelated change. **It is now a one-word fix**: swap the two strings on the salinity row.
-
-The sentence renders as *"The model reads on average 0.31 PSU more saline than the instrument
-measured"* at the exact moment the model is 0.31 PSU fresher.
-
-**Why it matters:** salinity bias sign is the whole point of a Bay of Bengal freshwater story. An
-oceanographer reads that sentence and stops trusting the panel.
-
-**Fix:** swap the salinity arms. One line.
-
----
-
-### 2. Verdict thresholds are temperature thresholds applied to every field
-
-`web/src/ui/ProfilePanel.tsx:271-273`
-
-`rms < 0.6` = "Close agreement", `< 1.5` = "Moderate". Hard-coded, field-independent.
-
-Measured over the baked collocations:
-
-| Field | n | Median RMS | "Close" | "Moderate" | "Large" |
-| --- | --- | --- | --- | --- | --- |
-| temperature | 87 | 0.513 °C | 56 | 28 | 3 |
-| salinity | 85 | 0.066 PSU | **82** | 1 | 2 |
-| density | 85 | 0.141 kg/m³ | **82** | 1 | 2 |
-
-0.6 PSU is 16% of the entire encoded salinity range (32.86-36.56). The salinity verdict is a
-constant that says "Close agreement" 96% of the time. It is not a verdict, it is decoration, and
-it sits on the screen the project calls its scientific core.
-
-**Now two fields out of three.** Density was added as a collocated Field on 2026-08-25 and lands
-in exactly the same place: 82 of 85 floats read "Close agreement" against a threshold set for
-degrees Celsius. Adding a Field made this worse, and the *wording* half of the same function was
-fixed at the time - it used to say the model read "cooler than" the instrument for density, which
-is a sentence about density that means nothing - but the threshold half was left, because it is
-this logged defect rather than part of that change.
-
-**Fix:** per-field thresholds in the `FieldSpec`, which already carries optional hints.
-
----
-
-### 3. The profile header describes a different place and time from the dot you clicked
-
-`web/src/ui/ProfilePanel.tsx:69-77`
-
-Position, Last surfaced and Deepest all read `chosen.latest` - the float's most recent fix. But
-the marker is drawn at `positionAt(item, timeMs)`, the fix nearest the timestep on screen.
-
-Baked tracks span 2026-04-06 to 2026-07-30 with ~13 fixes each. Scrub to April, click the dot,
-and the panel confidently reports a July position several degrees away.
-
-`ProfilePanel.tsx:107` compounds it: "Centre the view on this float" calls
-`onFocus(chosen.latest.lon, chosen.latest.lat)`, so the button flies the camera **away** from the
-marker just clicked.
-
-**This is the same family as the frozen-float bug** that was already fixed once: the marker was
-corrected and the readout was left behind.
-
-**Fix:** resolve the fix at the current timestep and read from that; fall back to `latest` only
-when the float is not reporting.
-
----
-
-### 4. "Reporting" is a hard-coded string
-
-`web/src/ui/ProfilePanel.tsx:57`
-
-Every float, always. Select a float, scrub to a timestep where `positionAt` returns null: the
-marker is parked off-screen by the vertex shader, the dot vanishes, and the panel stays open
-saying "Reporting" with a full chart underneath.
-
-**Fix:** derive it from the same `positionAt` call the scene uses.
-
----
-
-### 5. The collocation is pinned to a timestep the user is usually not looking at
-
-`pipeline/samudra/bake.py` - `_build_observations` collocates only `casts[-1]`.
-
-Measured on the current bake: **81 of 88 collocations sit at timestep index 10 or 11 of 12**, and
-79 of them at index 11 alone. At any earlier step,
-every profile chart is against an analysis the timeline is not showing.
-
-Partly mitigated at `ProfilePanel.tsx:96-99`, which prints "(not the step above)". But that note
-is the smallest text in the panel and sits *below* the headline verdict and the three large
-statistics, none of which change. A judge scrubbing the timeline with the panel open sees a
-static comparison presented as though it responded.
-
-**Fix, cheap:** move the note above the numbers and grey them when drifted.
-**Fix, real:** collocate every cast, not just the last, and select by timestep at render time.
-Costs bake time and file size.
-
----
+**Empty.** All five are fixed and listed in the closed table at the bottom.
 
 ## Tier 2 - data quietly discarded
 
-### 6. Argo QC flags are never read
-
-`pipeline/samudra/sources/argo.py:113`
-
-The request asks for `platform_number,time,latitude,longitude,pres_adjusted,temp_adjusted,
-psal_adjusted`. No `*_qc` columns, no `data_mode`. The only quality control in the system is a
-plausible-range check on values.
-
-ADR 0008 frames the salinity floor as **stricter** than the Argo standard. True for gross range
-test 4, and it quietly implies the other tests are running. They are not.
-
-**Why it matters:** "do you honour the QC flags" is a question an INCOIS oceanographer will ask,
-and the honest answer today is no.
-
-**Measured evidence, 2026-08-25.** Two floats in the current bake carry a broken salinity sensor
-and pass the range check because they sit just above the deliberate 25 PSU regional floor:
-
-| Float | Salinity RMS | Observed salinity range | Density RMS |
-| --- | --- | --- | --- |
-| 1902198 | 7.75 PSU | 25.19-27.67 | 6.16 kg/m³ |
-| 1902194 | 5.83 PSU | - | 4.56 kg/m³ |
-
-Open Indian Ocean water is 33-37 PSU. Adding the density Field made this visible in two places
-instead of one, which is the field working rather than failing - it propagates a bad instrument
-faithfully. But it means the "click a float" story on Density can land on a broken sensor, and
-these two are the only floats out of 85 whose density RMS exceeds 1 kg/m³. Reading the Argo QC
-flags would almost certainly catch both.
-
-**Fix:** add the `_qc` columns to the request and reject flags 3 and 4. Cheap.
-
----
-
-### 7. The adapter's fallback chain cannot fire for the provider it protects
-
-`pipeline/samudra/sources/argo.py:85-87` declares `pressure=("pres_adjusted", "pres")` and the
-parser takes the first variant carrying a number. But `requested` never asks Ifremer for the raw
-columns, so the fallback list has exactly one entry.
-
-Any Ifremer profile in real-time mode with an empty `TEMP_ADJUSTED` is dropped whole. This is the
-same failure mode ADR 0009 describes happening to INCOIS, now happening to the provider the demo
-actually reads.
-
-**Not quantified** - measuring it needs a live fetch with the raw columns included.
-
----
-
-### 8. The shallowest Argo bin is never compared
-
-`pipeline/samudra/collocation.py:84` returns NaN for any depth below `levels[0]` = 5 m.
-
-Correct refusal to extrapolate, but it means the surface point - the one a fisheries or cyclone
-judge cares most about - is systematically absent from every comparison.
-
-**Fix:** say so on screen, or interpolate the model's 5 m value and label it.
-
----
+**Empty.** All three are fixed and listed in the closed table at the bottom.
 
 ## Tier 3 - labels and presentation
 
-### 9. `-0.00` renders as a negative zero
-`ProfilePanel.tsx:299`. A mean residual that rounds to zero from below prints "-0.00", which
-reads as a bug to anyone looking carefully.
-
-### 10. The bias chip's colour class inverts the physics
-`ProfilePanel.tsx:297` takes class `cool` when `bias < 0`. But `bias < 0` means the model is too
-**warm**. Whichever way the CSS paints it, the class name encodes the opposite, and it is
-meaningless for salinity.
-
-### 11. "Typical gap" is RMS
-`ProfilePanel.tsx:305`. RMS is the quadratic mean and is always at least the mean absolute
-deviation. Defensible as plain language, but it is not what "typical" means to a statistician.
-
-### 12. The depth ruler labels the top of the box "0 m"
-`geography.ts:54` returns axis 0 for anything at or above 5 m, and `depthTicks` starts at 0. The
-shallowest data is 5 m. Small, but it is a measurement claim.
-
-### 13. The western edge of Observation Coverage is genuinely sparse, and looks like a bug
-Not a defect - recorded because it will be asked about. After the halo fix the eastern rim
-recovered but the western one did not, because the western Arabian Sea really is less sampled:
-**9 floats between 55-60 E against 27 between 80-90 E** in the current bake, re-counted 2026-08-25. The red rim there is
-signal, not artefact. Worth saying out loud in the demo rather than being asked.
-
-### 14. Depth ruler labels tuck under the left panel
-Cosmetic. The ruler is anchored to the box's near-left edge, which sits behind the control panel
-at the default camera. Scene geometry, not CSS.
+**Empty.** All six are fixed and listed in the closed table below.
 
 ---
 
@@ -220,6 +34,19 @@ at the default camera. Scene geometry, not CSS.
 
 | Was | Now |
 | --- | --- |
+| `-0.00` rendered as a negative zero | 46 field/float pairs in the current bake have a bias between -0.005 and 0, and every one printed "-0.00". The value is rounded before it is formatted, so anything that rounds to nothing prints "0.00" unsigned |
+| The bias chip's colour class inverted the physics | It took class `cool` when `bias < 0`, and `bias < 0` is the model reading *high*. The classes are `model-high` and `model-low` now, which is what the number underneath them means and is not a claim about temperature on a salinity or density comparison. A bias under 0.005 takes no class at all |
+| "Typical gap" was RMS | RMS is the quadratic mean and is always at least the mean absolute deviation, so "typical" named the wrong quantity to anyone who would check. The label reads "RMS gap" |
+| The depth ruler labelled the top of the box "0 m" | The tick filter allowed anything within 5 m of the surface and the shallowest Level is 5 m. The first figure is now the model's own top Level, because a ruler is a measurement claim |
+| Depth ruler labels tucked under the left panel | Not cosmetic once measured: nine of the ten figures were behind the panel at 1500 px, because the Volume is wider than the gap between the two panels and both of its vertical edges are covered. The figures sit in the clear strip past the panel now - only their horizontal position moved, the depth each marks is unchanged - and the map key was moved clear of them. Verified at 1180, 1280, 1500, 1920 and 2560 px |
+| The shallowest Argo measurements were dropped without saying so | The model's top Level is 5 m and 88% of casts report above it, so on most comparisons the very surface had nothing behind it and the panel did not mention it. `above_model_count` is computed in the Collocation and the panel now names how many points were skipped and why they are not extrapolated into. 174 of 212 collocations report some, median 2 and up to 8 |
+| Argo's own QC flags were never read | The request asked for values and never for the `_qc` column beside them, so a sensor the Argo programme had already condemned arrived looking like a good one. Flags 3, 4 and 9 are now refused per channel and per variant. The two floats with failed salinity sensors lost their salinity and density series and kept their temperature, and the worst density RMS in the bake fell from 6.16 to 0.73 kg/m3 |
+| The adapter's fallback chain could not fire for the provider it protects | `ProfileColumns` declared `pressure=("pres_adjusted", "pres")` while a hand-written `requested` string asked only for the adjusted columns, so the chain had one link. It is derived from the layout now, which is what "the column layout is data, not code" was supposed to mean. **This more than doubled the observations: 93 floats and 1,154 casts became 221 floats and 2,955 casts**, because every real-time profile with an empty `*_ADJUSTED` column had been dropped whole. Ocean voxels with no cast behind them fell from ~20% to 6% |
+| The profile header described a different place and time from the dot you clicked | It read the Float's newest report whatever the timeline said. At the first Timestep that was a position a median 247 km from the marker just clicked and 1157 km at worst, and "Centre the view on this float" flew the camera to it. Header, dive depth and the focus button all resolve at the moment on screen now; `floats.json` carries a `depthMax` per Fix so "that cast reached" is the cast being described |
+| The "Reporting" pill was a hard-coded string | Derived from the same `positionAt` the scene uses. A Float that was not surfacing near this step reads "Not reporting", and the panel says which report the figures come from instead |
+| A drifted collocation was disclosed in the smallest text on the panel, below the verdict and the statistics | 81 of 88 collocations sit at step 10 or 11 of 12, so a user scrubbing the timeline saw a static comparison presented as though it had responded. The disclosure now leads the section, above the chart, and says "Scrubbing does not move this chart" in as many words when the step does not match |
+| The verdict thresholds were degrees Celsius applied to every field | 0.6 PSU is a sixth of the whole salinity range, so 82 of 85 floats read "Close agreement" and the headline carried no information; density landed in the same place. They are now the fraction of each Field's own encoded range that temperature's numbers always implied, so temperature is unchanged (56/28/3) and salinity reads 48/28/11 and density 56/23/8. One formula, no per-Field constant to keep in step |
+| The salinity verdict had its sign backwards | `residual = observed - modelled`, so a positive bias means the float read more salt and the model is *fresher*. The panel said "more saline". Verified against float 5907083 - float 34.44 PSU, model 34.68 - which now reads "0.24 PSU more saline than the instrument measured", and against 1901898, where the model is fresher and the sentence now says so |
 | Log scale warped the water while the colourbar stayed linear, making the legend disagree with the water | Removed end to end - control, store field, uniform, both shader branches, guide entry |
 | The palette selector offered nine cmocean palettes with no hint eight were designed for other quantities | **Deleted entirely.** The derivable ones became Variables (density, temperature anomaly); `delta`, `algae`, `oxy`, `deep` and `speed` were removed. Every Field now carries its own palette in its `FieldSpec`, so there is no pairing left to get wrong. ADR 0010 |
 | The guide panel was hidden entirely on the globe | Appears once a control is touched, taking the cue card's slot |
@@ -246,6 +73,13 @@ at the default camera. Scene geometry, not CSS.
 
 ## Known and stated, not a defect
 
+**The western edge of Observation Coverage is sparser, and it is geography.** Recorded because it
+will be asked about. Re-measured 2026-08-27, after honouring Argo's QC flags more than doubled the
+float count: 20 floats between 55-60 E against 64 between 80-90 E, and mean surface coverage of
+2.53 casts at the western edge against 4.05 in the interior. But the *eastern* edge is 1.73, lower
+still - so this is not a western problem. Both edges run into land and shelf, Somalia at 51 E and
+Sumatra at 100 E, and Argo floats do not drift onto continents. Signal, not artefact.
+
 **Most vivid anomaly colour carries no ring, and that is correct.** The anomaly Field is painted
 in degrees and the Feature detector selects on a z-score, so the two disagree by construction.
 Measured on the last step: of 163 cells past 3 degC of departure, 99 carry no ring, and those
@@ -259,24 +93,27 @@ that genuinely are borderline. Explaining the rule beats blurring it.
 
 ## Open question, not a bug
 
-**The default water opacity hides the feature the project is proudest of.**
+**How dense should the water be by default?**
 
-`web/src/store.ts` ships `opacity: 0.05`. Measured pixel difference between emphasis 0% and 85%
-inside the volume:
+`web/src/store.ts` ships `opacity: 0.05`. `volumeShader.ts` accumulates
+`uOpacity * coverage * inWindow * emphasis` and breaks once alpha passes 0.995, so a high opacity
+saturates the ray in the first slab of water it meets and the Feature emphasis weighting - the
+thing that makes the thermocline the solid object in the picture - stops mattering.
+
+Re-measured 2026-08-27 against the current build, as pixel difference between emphasis 0% and
+85% inside the Volume:
 
 | Water opacity | Mean pixel difference | Pixels visibly changed |
 | --- | --- | --- |
-| **0.050 (default)** | 0.91 | **2.2%** |
-| 0.012 | 4.26 | 21.2% |
-| 0.005 | 5.48 | 28.0% |
+| 0.005 | 13.63 | 77.0% |
+| 0.012 | 10.76 | 76.1% |
+| 0.030 | 4.07 | 35.6% |
+| **0.050 (default)** | 2.10 | **17.4%** |
 
-`volumeShader.ts:162` accumulates `uOpacity * coverage * inWindow * emphasis` and breaks once
-alpha passes 0.995. At 0.05 the ray saturates after roughly twenty steps, so the picture is
-decided by the first slab of water it meets and the emphasis weighting never matters.
+An earlier version of this table reported 2.2% at the default and 21.2% at 0.012. Those figures
+predate the derived Fields and the render changes that came with them; the effect at the shipped
+default is now roughly eight times stronger than it was, and is genuinely visible.
 
-The shader's own fallback uniform is 0.012, which suggests the default was raised later and the
-emphasis demo was never re-checked against it.
-
-**Decision needed:** change the default to ~0.012 so a judge exploring alone can see the effect,
-or leave it and drag the opacity slider down during the demo. This is a judgement call about the
-opening picture, not a defect.
+**Recommendation: 0.03.** It doubles the visible effect against the default while keeping the
+water solid enough to read as a body rather than a mist. But this is a judgement about the
+opening picture of a demo, so it is the author's call and not a defect to be fixed unilaterally.

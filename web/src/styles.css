@@ -918,9 +918,13 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* On the globe the left panel is short, so the key sits under it. In the volume view the panel
-   runs long, so the key moves clear of it rather than overlapping. */
+   runs long, so the key moves clear of it rather than overlapping.
+   
+   Clear of the depth ruler too. The ruler is clamped just past the panel because the Volume is
+   wider than the gap between the two panels and its own left edge is hidden - so the strip at
+   about 374-450 px belongs to the depth figures, and the key starts after it. */
 .mapkey.in-volume {
-  left: 372px;
+  left: 466px;
 }
 
 .mapkey-label {
@@ -1037,6 +1041,23 @@ input[type="range"]::-moz-range-thumb {
   border-radius: 50%;
   background: var(--primary);
   animation: breathe 2.4s ease-in-out infinite;
+}
+
+/* A Float that was not surfacing near this Timestep. Its marker is off the water, so the pill
+   must not keep claiming it is reporting. */
+.pill.stale {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-style: dashed;
+}
+
+.pill.stale::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--on-surface-faint);
 }
 
 .ghost {
@@ -1261,8 +1282,9 @@ input[type="range"]::-moz-range-thumb {
   font-variant-numeric: tabular-nums;
 }
 
-.stat-value.warm { color: var(--tertiary); }
-.stat-value.cool { color: var(--primary); }
+/* Named for what the model did, not for a temperature the number may not be about. */
+.stat-value.model-high { color: var(--tertiary); }
+.stat-value.model-low { color: var(--primary); }
 
 .stat-label {
   font-family: var(--mono);
@@ -1281,6 +1303,29 @@ input[type="range"]::-moz-range-thumb {
   letter-spacing: 0.06em;
   color: var(--on-surface-faint);
   text-align: center;
+}
+
+/*
+ * What the chart is actually comparing, said above it rather than beneath the numbers.
+ *
+ * A baked Collocation is pinned to the analysis step nearest its own cast, and 81 of 88 of them
+ * sit at step 10 or 11 of 12. So a user scrubbing the timeline with this panel open was watching
+ * a static comparison presented as though it had responded - and the only thing saying otherwise
+ * was the smallest text on the panel, below the headline verdict and three large statistics.
+ */
+.analysis-note.lead {
+  margin: 0 0 12px;
+  padding: 8px 11px;
+  border-left: 2px solid var(--outline-variant);
+  background: var(--surface-low);
+  font-size: 10px;
+  line-height: 1.55;
+  text-align: left;
+}
+
+.analysis-note.lead.drifted {
+  border-left-color: var(--secondary);
+  color: var(--on-surface-variant);
 }
 
 .analysis-note.drifted {
@@ -1534,7 +1579,7 @@ input[type="range"]::-moz-range-thumb {
 @media (max-width: 1180px) {
   .panel-left { width: 300px; }
   .panel-right { width: 312px; }
-  .mapkey.in-volume { left: 336px; }
+  .mapkey.in-volume { left: 420px; }
   .timeline-track { width: 260px; }
 }
 

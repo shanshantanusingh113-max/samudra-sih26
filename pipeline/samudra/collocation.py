@@ -8,9 +8,15 @@ Two deliberate choices, both about not flattering the model:
 - The comparison happens on the *observation's* depths, not the model's Levels. The float
   measured where it measured; resampling its data to suit the model would smooth away exactly
   the fine vertical structure that makes the comparison interesting.
-- Observations the model cannot reach - below its deepest Level, or over a Mask - are kept
-  and shown as unmatched rather than dropped. A Collocation that silently discarded every
-  point the model got wrong would be worse than no Collocation.
+- Observations the model cannot reach - below its deepest Level, above its shallowest one, or
+  over a Mask - are kept and shown as unmatched rather than dropped. A Collocation that
+  silently discarded every point the model got wrong would be worse than no Collocation.
+
+The shallow end is counted separately, because it is not a curiosity. INCOIS's top Level is 5 m
+and 88% of Argo casts report something above it, so on most comparisons the very surface - the
+part a fisheries or cyclone reader looks at first - has nothing to compare against. Extrapolating
+the model up to meet it would be inventing the one number people most want, so instead
+`above_model_count` lets the panel say how many points were skipped and why.
 """
 
 from __future__ import annotations
@@ -32,6 +38,8 @@ class Collocation:
     observed: np.ndarray
     modelled: np.ndarray
     residual: np.ndarray
+    # Observations shallower than the model's top Level. Reported, never extrapolated into.
+    above_model_count: int = 0
 
     @property
     def matched_count(self) -> int:
@@ -69,6 +77,7 @@ def collocate(grid: Grid, latitude: float, longitude: float, depths, observed) -
         observed=observed,
         modelled=modelled,
         residual=observed - modelled,
+        above_model_count=int((depths < grid.levels[0]).sum()),
     )
 
 

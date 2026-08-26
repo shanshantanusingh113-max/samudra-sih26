@@ -32,6 +32,9 @@ export function useCoverageWindow(days: number): void {
 export interface FloatFix {
   lon: number;
   lat: number;
+  /** When this report was made, and how deep that cast went. */
+  time: string;
+  depthMax: number;
   /** How far the nearest report is from the requested moment, in days. */
   ageDays: number;
 }
@@ -43,7 +46,13 @@ export function positionAt(item: OceanFloat, whenMs: number): FloatFix | null {
   for (const fix of item.track) {
     const gapDays = Math.abs(new Date(fix.time).getTime() - whenMs) / DAY_MS;
     if (!best || gapDays < best.ageDays) {
-      best = { lon: fix.lon, lat: fix.lat, ageDays: gapDays };
+      best = {
+        lon: fix.lon,
+        lat: fix.lat,
+        time: fix.time,
+        depthMax: fix.depthMax,
+        ageDays: gapDays,
+      };
     }
   }
 

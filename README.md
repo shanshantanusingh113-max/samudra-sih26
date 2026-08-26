@@ -12,7 +12,7 @@ and what the instruments in the water actually measured.**
 [![SIH 2026](https://img.shields.io/badge/Smart%20India%20Hackathon-2026-ff9933)](https://sih.gov.in/)
 [![PS 26067](https://img.shields.io/badge/Problem%20Statement-26067-138808)](https://sih.gov.in/)
 [![MoES / INCOIS](https://img.shields.io/badge/MoES-INCOIS-000080)](https://incois.gov.in/)
-![Tests](https://img.shields.io/badge/tests-127%20passing-2ea043)
+![Tests](https://img.shields.io/badge/tests-146%20passing-2ea043)
 ![Network calls at demo time](https://img.shields.io/badge/network%20calls%20at%20demo%20time-0-2ea043)
 
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
@@ -47,7 +47,7 @@ Built for **Smart India Hackathon 2026**, Problem Statement **26067**
 | <img src="docs/images/density.jpg" alt="The ocean block drawn in the density palette."> | <img src="docs/images/anomaly.jpg" alt="The ocean block drawn as a temperature anomaly, with rings marking each departure and a panel explaining one of them."> |
 | **Density**, computed here from temperature and salinity via TEOS-10. The Bay of Bengal is 0.8 °C *warmer* than the Arabian Sea and still 3.0 kg/m³ *lighter*, because the rivers make it fresher. | **Anomaly features.** Every body of water that departed from its own average gets a ring. Click one and it tells you why it is there, and whether anything measured it. |
 | <img src="docs/images/coverage.jpg" alt="The ocean block drawn as observation coverage, in four flat colour bands."> | <img src="docs/images/isosurface.jpg" alt="A shaded three-dimensional surface showing the undulating 20 degree Celsius isotherm."> |
-| **Observation coverage.** Not the model - the *evidence* for it. About a fifth of the block has no Argo cast behind it at all, and the picture says so. | **Isosurface.** The 20 °C isotherm, the conventional thermocline proxy, visibly doming. Its depth drives cyclone-intensity forecasts. |
+| **Observation coverage.** Not the model - the *evidence* for it. Only 6% of the block has no Argo cast behind it, and the picture shows exactly where. | **Isosurface.** The 20 °C isotherm, the conventional thermocline proxy, visibly doming. Its depth drives cyclone-intensity forecasts. |
 
 ---
 
@@ -102,11 +102,11 @@ That third step is the thing that does not exist today.
 5. **You switch to Temperature Anomaly, and click a blob.** Every body of water that departed
    from its own average is ringed. Click one and the panel tells you where it is, how unusual it
    is, *why* it is there - usually because the 20 °C line swept up or down through that water -
-   what salinity and density did, and how many Argo casts stand behind it. About a fifth of them
-   have none.
+   what salinity and density did, and how many Argo casts stand behind it. Three of the 111 have
+   nothing behind them at all.
 
 6. **You switch to Observation Coverage.** The model disappears and the evidence takes its
-   place: how many Argo casts were actually taken near each point. About a fifth of the block
+   place: how many Argo casts were actually taken near each point. Six per cent of the block
    turns out to have none at all, which means the analysis there is interpolation rather than
    observation. A model has a value everywhere whether or not anyone measured; this separates
    the two.
@@ -132,9 +132,10 @@ This is not a mock-up with invented numbers. It reads:
 - **INCOIS's own public data server** for the model field - their 10-day gridded Argo analysis,
   temperature and salinity on 24 depth levels, updated continuously. Our demo data goes up to
   **30 July 2026**.
-- **The global Argo float network** for the real measurements - 93 floats and 1,154 casts
-  across the Arabian Sea, Bay of Bengal and equatorial Indian Ocean, of which 88 floats carry a
-  full model-versus-instrument comparison.
+- **The global Argo float network** for the real measurements - 221 floats and 2,955 casts
+  across the Arabian Sea, Bay of Bengal and equatorial Indian Ocean, of which 212 floats carry a
+  full model-versus-instrument comparison. Argo's own quality flags are honoured per channel, so
+  a float whose salinity sensor has failed still contributes its good temperature.
 
 ## 3. Requirement coverage, clause by clause
 
@@ -231,7 +232,7 @@ cd web && npm run dev            # then open http://localhost:5173
 
 If you skip step 2, the data is already committed, so the website still works.
 
-**Tests:** `cd pipeline && ../.venv/Scripts/python -m pytest` - 127 tests covering the depth
+**Tests:** `cd pipeline && ../.venv/Scripts/python -m pytest` - 146 tests covering the depth
 warp, volume encoding, grid interpolation, collocation maths, the Argo parser, observation
 coverage, the TEOS-10 density chain, the anomaly baseline and the features found in it, the
 isotherm depth, and the adapter seam that lets two providers with incompatible column layouts

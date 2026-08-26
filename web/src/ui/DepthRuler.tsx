@@ -21,7 +21,21 @@ interface Tick {
  * signal that the axis is stretched.
  *
  * Drawn as HTML rather than 3D text so the type stays crisp and matches the rest of the console.
+ *
+ * It used to be anchored to the Volume's near-left edge, and at the default camera that edge is
+ * *behind* the control panel - the box is wider than the gap between the two panels, so both of
+ * its vertical edges are covered. Measured at 1500 px wide, nine of the ten figures were hidden.
+ *
+ * So the figures sit in the clear strip just past the panel instead. Only the horizontal
+ * position moves: each tick's `y` is still the projection of that depth on the box's edge, which
+ * is the whole content of a depth ruler, and the uneven spacing it exists to show is untouched.
+ * The column is placed rather than clamped so that it lands in the same strip at every viewport
+ * width - the map key is positioned against it, and a ruler that drifted with the camera would
+ * collide with the key on wide screens and not on narrow ones.
  */
+
+/** The label sits 58 px to the left of its tick and is 44 px wide; this clears both. */
+const LABEL_GUTTER = 70;
 export function DepthRuler({ scene }: { scene: OceanScene | null }) {
   const { manifest, exaggeration, morph } = useStore();
   const [ticks, setTicks] = useState<Tick[]>([]);
@@ -37,8 +51,16 @@ export function DepthRuler({ scene }: { scene: OceanScene | null }) {
     const marks = depthTicks(manifest.volume);
 
     const update = () => {
+      // Read the panel rather than hardcoding its width, so this cannot drift out of step with
+      // the stylesheet the way a magic number would.
+      const panel = document.querySelector("aside.panel-left")?.getBoundingClientRect();
+      const clear = panel ? panel.right + LABEL_GUTTER : 0;
+
       setTicks(
-        marks.map((metres) => ({ metres, ...scene.rulerAnchor(exaggeration, metres) })),
+        marks.map((metres) => {
+          const anchor = scene.rulerAnchor(exaggeration, metres);
+          return { metres, ...anchor, x: clear };
+        }),
       );
       frame.current = requestAnimationFrame(update);
     };

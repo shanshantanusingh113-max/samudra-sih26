@@ -97,7 +97,7 @@ export const GUIDE: Record<string, GuideEntry> = {
       "A model has a value in every cell whether or not anyone measured there. That is a" +
       " property of the grid, not of the evidence. This field separates the two. Grey water is" +
       " where the analysis is interpolating between distant floats; green is where several" +
-      " instruments actually went. In the current bake about a fifth of the block is grey.",
+      " instruments actually went. In the current bake 6% of the block is grey - the Argo array is dense here, and the gaps that remain are near coasts and at the corners of the region.",
     look:
       "Look at the middle of the Arabian Sea against the water close to the coasts and the" +
       " Andamans. Then press play: the pattern shifts as the floats drift, because coverage is" +
@@ -124,7 +124,7 @@ export const GUIDE: Record<string, GuideEntry> = {
     look:
       "Click one. The panel names its depth and size, then says whether the 20 °C line swept" +
       " through it, what salinity and density did there, and how many Argo casts stand behind" +
-      " it. In the current bake about a fifth of these have none at all - the model departed" +
+      " it. Three of the 111 in this bake have none at all - the model departed" +
       " and no instrument checked it. Plenty of vivid colour carries no ring: most of the bright" +
       " band at 50-100 m is the thermocline doing what it does every step, which is large in" +
       " degrees and not unusual for that water.",

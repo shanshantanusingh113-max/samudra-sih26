@@ -308,6 +308,6 @@ credentials we do not have, and the adapter is exactly where it would attach."
 | "What resolution is the data?" | One degree, because that is what INCOIS publishes. We do not upsample. That would invent structure the instruments never measured. |
 | "Does it work offline?" | Yes. That is why it is baked. |
 | "Did you generate or simulate any of this?" | No. Every number comes from INCOIS's server or the Argo programme. |
-| "What is the accuracy?" | Across 88 floats the median typical gap between model and instrument is 0.48 °C. That is the analysis's own accuracy, which is what we are measuring. |
+| "What is the accuracy?" | Across 206 floats the median typical gap between model and instrument is 0.46 °C. That is the analysis's own accuracy, which is what we are measuring. |
 | "Has nobody built this before?" | Say it narrowly: we have not found a browser tool that renders a 3D model volume and lets you click an in-situ float to get a quantified comparison. Do not say "nobody has done this" - Argovis, Copernicus MyOcean and the EU Digital Twin Ocean are close neighbours and we have not finished checking them. |
 | "How long did this take?" | Built for this hackathon. Fifty-four automated tests on the scientific logic, nine architecture decision records. |

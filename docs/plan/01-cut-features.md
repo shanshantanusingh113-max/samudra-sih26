@@ -50,10 +50,12 @@ Recorded in `CONTEXT.md` as out of scope, with reasons.
 What is imperfect in what we *did* build. Defects live in `docs/BUGS.md`; these are accepted
 trade-offs rather than mistakes.
 
-- **`collocations.json` is 4.8 MB**, up from 3.1 MB when density joined temperature and salinity
-  as a third collocated Field. It carries every matched depth for all 88 floats. Fine over a
-  local network, worth trimming before a bandwidth-limited deployment. `anomalies.json`, by
-  contrast, is 40 KB.
+- **`collocations.json` is 8.6 MB.** It was 3.1 MB, went to 4.8 when density joined temperature
+  and salinity as a third collocated Field, and reached 8.6 when honouring Argo's quality flags
+  meant also fetching the raw columns and the float count went from 93 to 221. It carries every
+  matched depth for all 212 floats. It gzips to roughly a fifth of that over the wire, so this is
+  a load-time cost rather than a demo risk, but it is the first thing to trim - see the capped
+  series note in `02-next-features.md`. `anomalies.json`, by contrast, is 40 KB.
 - The region boundary on the globe is feathered over 3.5 degrees, so the study area still reads
   slightly rectangular at its southern edge.
 - Software-rendered WebGL - a machine with no GPU driver - runs the ray march at a few frames per

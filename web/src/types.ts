@@ -107,12 +107,14 @@ export interface FloatFix {
   lat: number;
   lon: number;
   time: string;
+  /** How deep this cast went. Per Fix, so the panel can describe the moment on screen. */
+  depthMax: number;
 }
 
 export interface OceanFloat {
   id: string;
   track: FloatFix[];
-  latest: FloatFix & { depthMax: number };
+  latest: FloatFix;
   profileCount: number;
 }
 
@@ -122,6 +124,8 @@ export interface CollocationSeries {
   modelled: (number | null)[];
   residual: (number | null)[];
   matched: number;
+  /** Observations shallower than the model's top Level, which have nothing to compare against. */
+  aboveModel: number;
   meanResidual: number | null;
   rmsResidual: number | null;
 }

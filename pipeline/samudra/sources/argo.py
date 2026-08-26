@@ -19,11 +19,17 @@ numerically close enough that people are casual about it, but they are not the s
 and the platform's whole premise is putting an observation at the right depth inside a model.
 So we convert properly rather than pretending 1 dbar == 1 m.
 
-Floats go wrong. Real GDAC data contains sensors that have drifted or failed - this region
-currently has a float reporting ~20 PSU at the surface, which is fresher than the Baltic and
-impossible in the open Bay of Bengal. Left alone it renders as a wild spike on the
-Collocation chart and looks like our bug. Implausible values are dropped per channel, so a
-cast with a failed salinity sensor still contributes its perfectly good temperature.
+Floats go wrong, and quality control runs in two layers.
+
+Argo's own flags come first. Every value is fetched with the `_qc` column beside it, and a
+measurement the programme has already condemned - flag 3, 4 or 9 - is refused. This is checked
+per variant, so a delayed-mode value that was flagged bad falls through to the raw one rather
+than taking the level with it.
+
+A regional plausible-range check comes second, for what the global standard lets through: this
+region has had a float reporting ~20 PSU at the surface, fresher than the Baltic and impossible
+in the open Bay of Bengal. Both layers work per channel, so a cast with a failed salinity sensor
+still contributes its perfectly good temperature.
 """
 
 from __future__ import annotations
@@ -43,7 +49,8 @@ from .base import BoundingBox, Profile
 
 _TIMEOUT = 180
 
-# Temperature uses Argo's global gross range check (QC Manual, test 4).
+# The second layer, after Argo's own flags. Temperature uses Argo's global gross range check
+# (QC Manual, test 4).
 #
 # Salinity does NOT. Argo's global floor is 2 PSU, which is meant to pass brackish marginal
 # seas, and the failed float in this region reports ~20 PSU - comfortably inside it. So this
@@ -63,6 +70,13 @@ _PLAUSIBLE = {
 _MIN_POINTS = 5
 
 
+# Argo's quality flags, from the QC Manual. 1 is good, 2 probably good, 5 a value the
+# delayed-mode operator changed, 8 interpolated - all usable. These three are not: 3 is probably
+# bad, 4 is bad, 9 is missing. A measurement the Argo programme has already condemned must not
+# arrive here looking like a good one.
+_REJECTED_QC = frozenset({"3", "4", "9"})
+
+
 @dataclass(frozen=True)
 class ProfileColumns:
     """What one provider calls each quantity, and which variant to trust first."""
@@ -74,6 +88,28 @@ class ProfileColumns:
     pressure: tuple[str, ...]
     temperature: tuple[str, ...]
     salinity: tuple[str, ...]
+    # How this provider spells the quality flag beside a value: `temp_adjusted` + `_qc`. None
+    # says the provider serves no flags, which is a fact about the provider rather than a
+    # licence to ignore them.
+    qc_suffix: str | None = "_qc"
+
+    def request(self) -> str:
+        """Every column this layout can use, as an ERDDAP selector.
+
+        Derived rather than hand-written. It used to be a literal string listing only the
+        adjusted columns, so `pressure=("pres_adjusted", "pres")` declared a fallback whose
+        second entry was never fetched - the chain had one link and could not fire for the
+        provider the demo actually reads.
+        """
+        names = [self.platform, self.time, self.latitude, self.longitude]
+        for variants in (self.pressure, self.temperature, self.salinity):
+            for name in variants:
+                names.append(name)
+                if self.qc_suffix:
+                    names.append(f"{name}{self.qc_suffix}")
+
+        seen: set[str] = set()
+        return ",".join(n for n in names if not (n in seen or seen.add(n)))
 
 
 # Ifremer/Coriolis: delayed-mode adjusted values are present and are the better science.
@@ -96,6 +132,7 @@ INCOIS_COLUMNS = ProfileColumns(
     pressure=("PRES_ADJUSTED", "PRES"),
     temperature=("TEMP_ADJUSTED", "TEMP"),
     salinity=("PSAL_ADJUSTED", "PSAL"),
+    qc_suffix="_QC",
 )
 
 
@@ -110,9 +147,10 @@ class ArgoErddapSource:
     )
     columns = GDAC_COLUMNS
     endpoint = "https://erddap.ifremer.fr/erddap/tabledap/ArgoFloats.csv"
-    requested = (
-        "platform_number,time,latitude,longitude,pres_adjusted,temp_adjusted,psal_adjusted"
-    )
+
+    @property
+    def requested(self) -> str:
+        return self.columns.request()
 
     def certificates(self) -> str | bool:
         return True
@@ -154,10 +192,6 @@ class IncoisArgoSource(ArgoErddapSource):
     )
     columns = INCOIS_COLUMNS
     endpoint = "https://erddap.incois.gov.in/erddap/tabledap/Indian_ARGO_Floats.csv"
-    requested = (
-        "PLATFORM_NUMBER,time,latitude,longitude,PRES,TEMP,PSAL,"
-        "PRES_ADJUSTED,TEMP_ADJUSTED,PSAL_ADJUSTED"
-    )
     coverage_ends = datetime(2025, 4, 23, tzinfo=timezone.utc)
 
     def certificates(self) -> str | bool:
@@ -186,10 +220,11 @@ def parse_profiles(csv_text: str, columns: ProfileColumns = GDAC_COLUMNS) -> lis
     except KeyError:
         return []  # not a layout this adapter understands
 
-    # Only the variants this provider actually served, in the order we trust them.
-    pressure_at = [index[name] for name in columns.pressure if name in index]
-    temperature_at = [index[name] for name in columns.temperature if name in index]
-    salinity_at = [index[name] for name in columns.salinity if name in index]
+    # Only the variants this provider actually served, in the order we trust them, each paired
+    # with its quality flag where one was served.
+    pressure_at = _variants(index, columns.pressure, columns.qc_suffix)
+    temperature_at = _variants(index, columns.temperature, columns.qc_suffix)
+    salinity_at = _variants(index, columns.salinity, columns.qc_suffix)
     if not pressure_at:
         return []
 
@@ -202,9 +237,9 @@ def parse_profiles(csv_text: str, columns: ProfileColumns = GDAC_COLUMNS) -> lis
             latitude = float(row[latitude_at])
             longitude = float(row[longitude_at])
             measurement = (
-                _first_present(row, pressure_at),
-                _first_present(row, temperature_at),
-                _first_present(row, salinity_at),
+                _first_usable(row, pressure_at),
+                _first_usable(row, temperature_at),
+                _first_usable(row, salinity_at),
             )
         except (IndexError, ValueError):
             continue  # a malformed row is not a reason to lose the whole download
@@ -249,9 +284,27 @@ def parse_profiles(csv_text: str, columns: ProfileColumns = GDAC_COLUMNS) -> lis
     return profiles
 
 
-def _first_present(row: list[str], candidates: list[int]) -> float:
-    """The first variant that actually carries a number - adjusted if served, else raw."""
-    for position in candidates:
+def _variants(index: dict[str, int], names: tuple[str, ...], qc_suffix: str | None):
+    """Column positions for the variants this provider served, each with its flag if there is one."""
+    found = []
+    for name in names:
+        if name not in index:
+            continue
+        qc = index.get(f"{name}{qc_suffix}") if qc_suffix else None
+        found.append((index[name], qc))
+    return found
+
+
+def _first_usable(row: list[str], candidates) -> float:
+    """The first variant carrying a number Argo stands behind - adjusted if served, else raw.
+
+    A condemned adjusted value falls through to the raw column rather than taking the level with
+    it, which is the whole point of the chain. A raw value that is also condemned does not
+    rescue it.
+    """
+    for position, qc_at in candidates:
+        if qc_at is not None and row[qc_at].strip() in _REJECTED_QC:
+            continue
         value = _to_float(row[position])
         if np.isfinite(value):
             return value

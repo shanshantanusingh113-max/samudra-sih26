@@ -19,4 +19,4 @@ See the root [`CLAUDE.md`](../CLAUDE.md) for the rules that govern this code, an
 | `samudra/thermocline.py` | `isotherm_depth()` and `swept_through()`. Where the 20 degC line sits, and whether it moved through a body of water - which is what lets an Anomaly Feature say why it is there. |
 | `samudra/palettes.py` | cmocean palettes as 256-entry lookup tables, one per Field. `banded_table()` for Observation Coverage. |
 | `samudra/tls.py` | Supplies the intermediate certificate INCOIS's server omits. Do not replace with `verify=False`. |
-| `tests/` | 127 tests, one file per module under test. |
+| `tests/` | 146 tests, one file per module under test. |

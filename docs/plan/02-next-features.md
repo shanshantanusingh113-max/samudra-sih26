@@ -46,6 +46,25 @@ a number whose verdict is a constant would put a meaningless column next to it. 
 
 **Cost:** 2-3 hours. **Risk:** low technically, high rhetorically if the word "AI" survives.
 
+### While you are in there: a Collocation per Timestep
+
+Every Float's chart is currently the comparison for its **latest** cast, and 81 of 88 of those
+sit at step 10 or 11 of 12. The panel now says so plainly rather than letting a scrubbed timeline
+imply a chart that moved, so it is no longer a defect - but it is still a missing feature.
+
+Doing it properly was measured rather than estimated, and it is not cheap:
+
+| Approach | Size of `collocations.json` |
+| --- | --- |
+| Today: the latest cast only | 4.8 MB |
+| Every cast, chart series capped at 150 depths | **14.1 MB** |
+| Every cast, full resolution | **63.6 MB** |
+
+The float median is 511 levels and the ninetieth percentile is 1000, so the full-resolution
+version is dominated by depth arrays no chart can draw. If this is built, cap the *plotted*
+series and keep the statistics at full resolution - the residual numbers must not be computed
+from a decimated profile.
+
 ---
 
 ## 2. "Ask the Ocean" natural-language query

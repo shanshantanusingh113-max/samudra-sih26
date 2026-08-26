@@ -149,7 +149,7 @@ nothing saying what they were. `src/ui/MapKey.tsx` is where that lives.
 ## Testing
 
 TDD applies to the science: depth warp, volume encoding, grid interpolation, collocation, the
-Argo parser, the adapter seam, and every derived Field. Not to glue, UI or shaders. 127 tests
+Argo parser, the adapter seam, and every derived Field. Not to glue, UI or shaders. 146 tests
 currently.
 
 When a test and the code disagree, work out which is wrong before changing either. Three times
@@ -173,7 +173,11 @@ real reason. **No em dashes** anywhere - plain hyphens only.
   does not. `pipeline/samudra/tls.py` supplies the missing intermediate.
 - **`tds.hycom.org` and `coastwatch.pfeg.noaa.gov` are unreachable from this network.** Do not
   retry; see `docs/plan/00-data-sources-verified.md`.
-- **Real Argo floats fail.** One in this region reports ~20 PSU, which passes Argo's global QC.
-  Our salinity floor is regional and deliberately stricter - ADR 0008.
+- **Real Argo floats fail, and quality control is two layers.** Argo's own `_qc` flags are
+  fetched beside every value and 3/4/9 are refused per channel; on top of that a regional
+  salinity floor catches what the global standard passes, because one float here reported
+  ~20 PSU - ADR 0008. Reading the flags more than doubled the usable observations, because
+  asking for them meant also asking for the raw columns the fallback chain had always declared
+  and never fetched: 93 floats became 221.
 - **INCOIS's own Argo archive ends 2025-04-23**, fifteen months before their analysis. That is
   why the demo reads Ifremer - ADR 0009.

@@ -89,7 +89,11 @@ export function boxBounds(frame: Frame) {
 
 /** Depth figures worth putting on the ruler, skipping any the current slice has hidden. */
 export function depthTicks(volume: VolumeSpec): number[] {
-  return [0, 50, 100, 200, 300, 500, 750, 1000, 1500, 2000].filter(
-    (d) => d >= volume.surfaceMetres - 5 && d <= volume.floorMetres,
+  // The first figure is the model's own shallowest Level, not zero. The axis had a "0 m" label
+  // because the filter allowed anything within 5 m of the surface, and the top of this box is
+  // 5 m - there is no data above it, and a ruler is a measurement claim.
+  const round = [50, 100, 200, 300, 500, 750, 1000, 1500, 2000].filter(
+    (d) => d > volume.surfaceMetres && d <= volume.floorMetres,
   );
+  return [volume.surfaceMetres, ...round];
 }

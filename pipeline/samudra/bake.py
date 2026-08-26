@@ -534,11 +534,15 @@ def _build_observations(profiles, grids, timesteps, fields):
         floats.append(
             {
                 "id": platform_id,
+                # Every Fix carries how deep that cast went, not just the latest one. The panel
+                # describes the Float at the moment on screen, so reading the newest cast's
+                # depth against an April marker would report a dive that had not happened yet.
                 "track": [
                     {
                         "lat": round(c.latitude, 4),
                         "lon": round(c.longitude, 4),
                         "time": c.time.isoformat(),
+                        "depthMax": round(float(c.depths.max()), 1),
                     }
                     for c in casts
                 ],
@@ -578,6 +582,9 @@ def _build_observations(profiles, grids, timesteps, fields):
                 "modelled": _json_numbers(result.modelled),
                 "residual": _json_numbers(result.residual),
                 "matched": result.matched_count,
+                # Measurements above the model's shallowest Level. The panel says so rather
+                # than letting a reader assume the cast began where the model does.
+                "aboveModel": result.above_model_count,
                 "meanResidual": _json_number(result.mean_residual),
                 "rmsResidual": _json_number(result.rms_residual),
             }
