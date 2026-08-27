@@ -55,7 +55,6 @@ The scene lives in `src/scene/OceanScene.ts`; every control is explained in `src
 | `docs/plan/01-cut-features.md` | What was cut, what is worth adding back, known rough edges. |
 | `ppt/SLIDES.md`, `ppt/PROMPT.md` | SIH deck content and a generation prompt. |
 | `design/STITCH.md` | Per-screen prompts for Google Stitch. |
-| `docs/REVIEW-PROMPT.md` | A brief for a fresh agent to review the whole project. |
 
 ---
 
