@@ -58,6 +58,41 @@ class Collocation:
         return float(np.sqrt(np.nanmean(np.square(self.residual))))
 
 
+# How many matched depths a cast needs before it is worth putting on the chart.
+#
+# A Profile needs five points to exist at all (see `sources/argo.py`), but a *comparison* needs
+# enough of the water column to show whether the model has the shape of it. Ten is a judgement
+# rather than a standard, and it is stated rather than hidden: it is roughly the point below
+# which the chart is a few dots instead of two curves.
+MIN_USEFUL_MATCHES = 10
+
+
+def choose_cast(casts, matched_depths) -> int:
+    """Which of a Float's casts to bake a Collocation for. Returns an index into `casts`.
+
+    The newest one, unless the newest one does not actually compare against anything.
+
+    Recency matters: ADR 0009 refuses observations fifteen months older than the analysis, and
+    the same argument applies inside a single Float's record. But the newest cast is sometimes a
+    fragment. Measured on the shipped bake, 24 of 212 Floats had a newest cast more than 500 m
+    shallower than their own deepest, 10 gave a chart with 20 compared depths or fewer, and 6
+    gave a chart with nothing on it - float 6990611 has 13 casts and its newest reported only
+    from 1300 m down, so the panel showed a single line and no verdict.
+
+    So: walk backwards from the newest and take the first cast that clears
+    `MIN_USEFUL_MATCHES`. If none of them do, return the newest anyway - a Float whose every
+    cast is unusable has a real reason, usually that it is sitting next to a Masked node, and
+    the panel says which rather than silently showing an older cast that fails the same way.
+
+    `matched_depths` is a callable rather than a Grid because the caller already holds the
+    Grids, and because it keeps this rule testable without one.
+    """
+    for index in range(len(casts) - 1, -1, -1):
+        if matched_depths(casts[index]) >= MIN_USEFUL_MATCHES:
+            return index
+    return len(casts) - 1
+
+
 def collocate(grid: Grid, latitude: float, longitude: float, depths, observed) -> Collocation:
     depths = np.asarray(depths, dtype=float)
     observed = np.asarray(observed, dtype=float)

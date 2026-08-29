@@ -66,6 +66,15 @@ class Profile:
     time: datetime
     depths: np.ndarray
     values: dict[str, np.ndarray] = dataclass_field(default_factory=dict)
+    # What kind of instrument took this cast. `CONTEXT.md` says a mooring is a Float where it
+    # does not matter that it moves differently - and there are two places where it does matter,
+    # so the fact is carried rather than inferred. A mooring is anchored, so a drift track is
+    # not just absent but wrong, and because it never moves it can be compared against the model
+    # at *every* Timestep rather than only the one nearest its cast.
+    kind: str = "float"
+    # Who operates it, where the provider says. Argo does not; the GTS feed does, and "INDIA"
+    # on an OMNI buoy is worth putting on screen.
+    country: str | None = None
 
     def __len__(self) -> int:
         return len(self.depths)

@@ -33,7 +33,13 @@ from .anomaly import (
     find_anomaly_features,
     symmetric_encoding_range,
 )
-from .collocation import collocate
+from .collocation import choose_cast, collocate
+from .currents import (
+    ATTRIBUTION as CURRENTS_ATTRIBUTION,
+    LAYER as CURRENTS_LAYER,
+    fetch_legend,
+    fetch_overlay,
+)
 from .coverage import (
     BANDS,
     BAND_LABELS,
@@ -46,9 +52,10 @@ from .depth_warp import DepthWarp
 from .grid import Grid
 from .palettes import all_tables, banded_table
 from .thermocline import isotherm_depth, swept_through
-from .sources.argo import ArgoErddapSource
+from .sources.argo import ArgoErddapSource, BgcArgoSource
 from .sources.base import BoundingBox, FieldSpec
 from .sources.incois import IncoisErddapSource
+from .sources.osmc import OsmcSource
 from .volume import encode_volume
 
 # India's EEZ and the surrounding seas a forecaster actually works in: the Arabian Sea, the
@@ -145,6 +152,32 @@ ISOTHERM_VALUE = 20.0
 COVERAGE_WINDOW_DAYS = 5.0
 
 
+# Channels an instrument measures that the model has no counterpart for, so they are shown on
+# their own rather than as half of a comparison. Chlorophyll is the only one today.
+#
+# PS 26067 names chlorophyll in the same clause as Argo and glider profiles. It is reachable -
+# 532 casts from 49 BGC floats over this region and window, measured - and there is no gridded
+# chlorophyll on this timeline to hold it against: INCOIS's own ocean colour products end
+# 2006-03-21 and 2020-05-01. So it is an observation with no model side, which is the same thing
+# Observation Coverage says one quantity further on.
+OBSERVED_ONLY_CHANNELS = (("chlorophyll", "Chlorophyll a", "mg/m3"),)
+
+# How far a BGC cast may be from the cast being charted and still describe the same float's
+# water. Measured across the 50 chlorophyll-carrying floats in this bake, the gap is bimodal:
+# 22 of them have a BGC cast at the same instant, and the rest sit 9 to 10 days away - exactly
+# one Argo cycle, because the synthetic BGC product is assembled a cycle behind the core one.
+#
+# At one day, 28 floats' chlorophyll was silently thrown away. Twelve days - one cycle plus the
+# coverage window - keeps 41 of the 50 and reaches only the adjacent dive of the same float.
+# Past that a float has surfaced twice and drifted, and it is honestly a different piece of
+# water, so the remaining nine are dropped rather than stretched to fit.
+#
+# Nothing is being compared against the model at an instant here - chlorophyll has no model side
+# - so a neighbouring cast costs nothing as long as the panel says which cast it is, which
+# `sameDive` below is for.
+BGC_MATCH_DAYS = 12.0
+
+
 def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | None = None) -> None:
     if timesteps < 1:
         raise ValueError(f"need at least one timestep, got {timesteps}")
@@ -161,6 +194,11 @@ def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | N
 
     model = IncoisErddapSource()
     observations = ArgoErddapSource()
+    # Two more instrument feeds, each one class behind the same ProfileSource protocol. Neither
+    # is allowed to be fatal: the demo's spine is the Argo comparison, and a provider in Brest or
+    # Miami being down at bake time must not cost us the bake.
+    biogeochemical = BgcArgoSource()
+    moored = OsmcSource()
     warp = DepthWarp(top=SURFACE_METRES, bottom=FLOOR_METRES)
 
     wanted = list(model.timesteps())[-timesteps:]
@@ -253,6 +291,22 @@ def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | N
         f"from {len(set(p.platform_id for p in in_region))} floats"
     )
 
+    bgc = _try_fetch("BGC-Argo", biogeochemical, DEMO_REGION, start, end)
+    with_chlorophyll = [
+        p for p in bgc if np.isfinite(p.values.get("chlorophyll", np.array([np.nan]))).any()
+    ]
+    print(
+        f"[bake] {len(bgc)} BGC profiles, {len(with_chlorophyll)} carrying chlorophyll, "
+        f"from {len(set(p.platform_id for p in with_chlorophyll))} floats"
+    )
+
+    moorings = _try_fetch("moorings", moored, DEMO_REGION, start, end)
+    print(
+        f"[bake] {len(moorings)} moored-buoy profiles from "
+        f"{len(set(p.platform_id for p in moorings))} buoys "
+        f"({', '.join(sorted(set(p.country or '?' for p in moorings)))})"
+    )
+
     sample = grids[(model.fields()[0].key, 0)]
     volume_files: dict[str, list[str]] = {}
 
@@ -267,6 +321,8 @@ def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | N
             paths.append(name)
         volume_files[field.key] = paths
         print(f"[bake] {field.key}: {len(paths)} volumes, range {vmin:.2f}..{vmax:.2f}")
+
+    currents = _bake_currents(output_dir, wanted)
 
     coverage_paths, coverage_range, coverage_fields = _bake_coverage(
         output_dir, profiles, grids, wanted, model.fields()[0].key, warp
@@ -285,7 +341,9 @@ def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | N
         f"{sum(len(f) for f in features) / len(features):.1f} per step"
     )
 
-    floats, collocations = _build_observations(in_region, grids, wanted, collocated)
+    floats, collocations = _build_observations(
+        in_region, grids, wanted, collocated, extra=with_chlorophyll, moorings=moorings
+    )
     (output_dir / "floats.json").write_text(json.dumps(floats), encoding="utf-8")
     (output_dir / "collocations.json").write_text(json.dumps(collocations), encoding="utf-8")
 
@@ -308,10 +366,62 @@ def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | N
     manifest = {
         "generated": datetime.now(timezone.utc).isoformat(),
         "region": asdict(DEMO_REGION),
+        # Each source carries its own role and endpoint, so the provenance page can list them
+        # without a hardcoded table beside it. That page's whole claim is that every figure on it
+        # comes out of this manifest; a two-entry array in its script would have quietly made
+        # that false the moment a third source arrived.
         "sources": [
-            {"name": model.name, "attribution": model.attribution},
-            {"name": observations.name, "attribution": observations.attribution},
-        ],
+            {
+                "name": model.name,
+                "attribution": model.attribution,
+                "role": "Gridded model field",
+                "endpoint": "erddap.incois.gov.in/erddap/griddap/incois_argo_10d_VAM",
+            },
+            {
+                "name": observations.name,
+                "attribution": observations.attribution,
+                "role": "In-situ profiles",
+                "endpoint": "erddap.ifremer.fr/erddap/tabledap/ArgoFloats",
+            },
+        ]
+        # Only listed when they actually contributed. A provenance line naming a source that
+        # returned nothing is the same class of claim as a legend for a band nothing lands in.
+        + (
+            [
+                {
+                    "name": biogeochemical.name,
+                    "attribution": biogeochemical.attribution,
+                    "role": "Chlorophyll profiles",
+                    "endpoint": "erddap.ifremer.fr/erddap/tabledap/ArgoFloats-synthetic-BGC",
+                }
+            ]
+            if with_chlorophyll
+            else []
+        )
+        + (
+            [
+                {
+                    "name": moored.name,
+                    "attribution": moored.attribution,
+                    "role": "Moored buoy profiles",
+                    "endpoint": "erddap.aoml.noaa.gov/gdp/erddap/tabledap/OSMC_RealTime",
+                }
+            ]
+            if moorings
+            else []
+        )
+        + (
+            [
+                {
+                    "name": "Copernicus Marine (WMTS)",
+                    "attribution": CURRENTS_ATTRIBUTION,
+                    "role": "Surface current image",
+                    "endpoint": "wmts.marine.copernicus.eu/teroWmts",
+                }
+            ]
+            if currents
+            else []
+        ),
         "fields": [
             asdict(f) | {"range": list(ranges[f.key])}
             for f in (*volume_fields, COVERAGE_FIELD)
@@ -351,9 +461,87 @@ def bake(output_dir: Path, timesteps: int, profile_days: int, grid_dir: Path | N
             "coverage": banded_table(BANDS, *ranges[COVERAGE_FIELD.key])
         },
         "floatCount": len(floats),
+        # Absent entirely when the bake could not fetch them, so the frontend has one thing to
+        # check rather than a block full of empty lists.
+        **({"currents": currents} if currents else {}),
+        # What the Instruments panel and the map key need to name what is on the water.
+        "instruments": {
+            "floats": sum(1 for f in floats if f.get("kind", "float") == "float"),
+            "moorings": sum(1 for f in floats if f.get("kind") == "mooring"),
+            "withChlorophyll": sum(1 for f in floats if f.get("bgc")),
+        },
+        "observedOnly": [
+            {"key": key, "label": label, "units": units}
+            for key, label, units in OBSERVED_ONLY_CHANNELS
+        ],
     }
     (output_dir / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
     print(f"[bake] wrote manifest to {output_dir}")
+
+
+def _bake_currents(output_dir, timesteps):
+    """One Copernicus current overlay per Timestep, or nothing at all.
+
+    A picture, deliberately. See `samudra/currents.py` for why the numbers behind it are not
+    available to us and why that is the right trade rather than a compromise.
+
+    Not fatal. Currents are an addition; the demo's spine is the comparison, and if Copernicus
+    is unreachable at bake time the manifest simply carries no currents block and the frontend
+    does not offer the layer.
+    """
+    directory = output_dir / "currents"
+    directory.mkdir(exist_ok=True)
+    for stale in directory.glob("*.png"):
+        stale.unlink()
+
+    paths = []
+    try:
+        legend = fetch_legend()
+        for index, stamp in enumerate(timesteps):
+            overlay = fetch_overlay(
+                DEMO_REGION.west, DEMO_REGION.east, DEMO_REGION.south, DEMO_REGION.north, stamp
+            )
+            name = f"currents/{index:03d}.png"
+            overlay.save(output_dir / name, optimize=True)
+            paths.append(name)
+            print(f"[bake]   currents {stamp:%Y-%m-%d}: {overlay.size[0]}x{overlay.size[1]}")
+    except Exception as error:  # noqa: BLE001 - one upstream, many ways to be down
+        print(f"[bake] WARNING: currents unavailable ({error}); continuing without them")
+        for stale in directory.glob("*.png"):
+            stale.unlink()
+        return None
+
+    total = sum((output_dir / p).stat().st_size for p in paths)
+    print(f"[bake] currents: {len(paths)} overlays, {total / 1e6:.1f} MB")
+    return {
+        "files": paths,
+        "layer": CURRENTS_LAYER,
+        "attribution": CURRENTS_ATTRIBUTION,
+        "legend": legend,
+        # The box the images cover, which is the region exactly - the crop in currents.py
+        # exists to make this true, because a half-degree error here draws the Somali Current
+        # over Somalia.
+        "west": DEMO_REGION.west,
+        "east": DEMO_REGION.east,
+        "south": DEMO_REGION.south,
+        "north": DEMO_REGION.north,
+        "depthMetres": 0.5,
+    }
+
+
+def _try_fetch(what, source, bbox, start, end):
+    """Fetch from one instrument provider, and survive it being down.
+
+    The demo's spine is the Argo comparison and the model field behind it. Chlorophyll and the
+    moored buoys are additions, and a server in Brest or Miami being unreachable at bake time
+    must cost us those additions rather than the whole bake. What is missing is printed rather
+    than swallowed, because a silently short bake is worse than a loud one.
+    """
+    try:
+        return list(source.fetch_profiles(bbox, start, end))
+    except Exception as error:  # noqa: BLE001 - upstream fails in many ways, all the same to us
+        print(f"[bake] WARNING: {what} unavailable ({error}); continuing without it")
+        return []
 
 
 def _bake_coverage(output_dir, profiles, grids, timesteps, mask_field_key, warp):
@@ -521,11 +709,93 @@ def _build_anomaly_features(anomalies, grids, timesteps, coverage_counts, warp):
     return out
 
 
-def _build_observations(profiles, grids, timesteps, fields):
-    """Group Profiles into Floats, and pre-compute a Collocation for each latest cast."""
+def _collocate_cast(cast, grids, index, fields):
+    """One cast against one analysis step, as the `fields` dict the frontend reads.
+
+    Pulled out of `_build_observations` because a mooring needs it twelve times - once per
+    Timestep - and a Float needs it once. Returns {} when nothing compared, which the caller
+    treats as "no entry" rather than writing an empty chart.
+    """
+    observed_for = dict(cast.values)
+    observed_for[DENSITY_FIELD.key] = _observed_density(cast)
+
+    out: dict[str, dict] = {}
+    for field in fields:
+        observed = observed_for.get(field.key)
+        if observed is None or not np.isfinite(observed).any():
+            continue
+        try:
+            result = collocate(
+                grids[(field.key, index)],
+                latitude=cast.latitude,
+                longitude=cast.longitude,
+                depths=cast.depths,
+                observed=observed,
+            )
+        except ValueError:
+            continue  # outside the baked region
+        out[field.key] = {
+            "depths": [round(float(d), 1) for d in result.depths],
+            "observed": _json_numbers(result.observed),
+            "modelled": _json_numbers(result.modelled),
+            "residual": _json_numbers(result.residual),
+            "matched": result.matched_count,
+            # Measurements above the model's shallowest Level. The panel says so rather than
+            # letting a reader assume the cast began where the model does.
+            "aboveModel": result.above_model_count,
+            "meanResidual": _json_number(result.mean_residual),
+            "rmsResidual": _json_number(result.rms_residual),
+        }
+    return out
+
+
+def _observed_only(cast) -> dict:
+    """Channels a Float measured that the model has no counterpart for.
+
+    Chlorophyll is the one that exists today. There is no gridded chlorophyll on this timeline -
+    INCOIS's own ocean colour stops at 2020-05-01 - so it is an observation with nothing to be
+    held against, and it is written somewhere the Collocation panel cannot mistake for a
+    comparison. Drawing a second curve out of nowhere is the failure this shape prevents.
+    """
+    out: dict[str, dict] = {}
+    for key, label, units in OBSERVED_ONLY_CHANNELS:
+        values = cast.values.get(key)
+        if values is None or not np.isfinite(values).any():
+            continue
+        keep = np.isfinite(values)
+        out[key] = {
+            "label": label,
+            "units": units,
+            "depths": [round(float(d), 1) for d in cast.depths[keep]],
+            "observed": _json_numbers(values[keep]),
+        }
+    return out
+
+
+def _build_observations(profiles, grids, timesteps, fields, extra=(), moorings=()):
+    """Group Profiles into instruments, and pre-compute a Collocation for each.
+
+    Which cast a Float's Collocation uses is a decision, not a default - see
+    `collocation.choose_cast`. The Fixes drawn on screen come from every cast; only the chart
+    comes from one.
+
+    A mooring is different in the one way that matters: it does not move. So it gets a
+    Collocation at **every** Timestep rather than one at the step nearest its cast, and the panel
+    can follow the timeline. An Argo float cannot do that - by the next analysis it is somewhere
+    else, and comparing its April cast against the July grid would be comparing two different
+    pieces of water.
+    """
     by_float: dict[str, list] = {}
     for profile in profiles:
         by_float.setdefault(profile.platform_id, []).append(profile)
+
+    # BGC casts, indexed for lookup. They come from a sister dataset covering the same floats,
+    # so they are matched by platform and time rather than merged blindly.
+    by_bgc: dict[str, list] = {}
+    for profile in extra:
+        by_bgc.setdefault(profile.platform_id, []).append(profile)
+    for casts in by_bgc.values():
+        casts.sort(key=lambda p: p.time)
 
     floats = []
     collocations = {}
@@ -534,6 +804,7 @@ def _build_observations(profiles, grids, timesteps, fields):
         floats.append(
             {
                 "id": platform_id,
+                "kind": "float",
                 # Every Fix carries how deep that cast went, not just the latest one. The panel
                 # describes the Float at the moment on screen, so reading the newest cast's
                 # depth against an April marker would report a dive that had not happened yet.
@@ -556,40 +827,115 @@ def _build_observations(profiles, grids, timesteps, fields):
             }
         )
 
-        latest = casts[-1]
-        index = _nearest_timestep(latest.time, timesteps)
-        entry = {"timestepIndex": index, "time": latest.time.isoformat(), "fields": {}}
-        observed_for = dict(latest.values)
-        observed_for[DENSITY_FIELD.key] = _observed_density(latest)
-        for field in fields:
-            grid = grids[(field.key, index)]
-            observed = observed_for.get(field.key)
+        # Which cast to compare. The newest, unless the newest one compares against nothing -
+        # see collocation.choose_cast for the measurement that made this a rule rather than
+        # `casts[-1]`.
+        primary = fields[0].key
+
+        def matched_depths(cast, _id=platform_id) -> int:
+            observed = cast.values.get(primary)
             if observed is None or not np.isfinite(observed).any():
-                continue
+                return 0
             try:
-                result = collocate(
-                    grid,
-                    latitude=latest.latitude,
-                    longitude=latest.longitude,
-                    depths=latest.depths,
+                return collocate(
+                    grids[(primary, _nearest_timestep(cast.time, timesteps))],
+                    latitude=cast.latitude,
+                    longitude=cast.longitude,
+                    depths=cast.depths,
                     observed=observed,
-                )
+                ).matched_count
             except ValueError:
-                continue  # the Float has drifted outside the baked region
-            entry["fields"][field.key] = {
-                "depths": [round(float(d), 1) for d in result.depths],
-                "observed": _json_numbers(result.observed),
-                "modelled": _json_numbers(result.modelled),
-                "residual": _json_numbers(result.residual),
-                "matched": result.matched_count,
-                # Measurements above the model's shallowest Level. The panel says so rather
-                # than letting a reader assume the cast began where the model does.
-                "aboveModel": result.above_model_count,
-                "meanResidual": _json_number(result.mean_residual),
-                "rmsResidual": _json_number(result.rms_residual),
-            }
-        if entry["fields"]:
+                return 0  # drifted outside the baked region
+
+        chosen = casts[choose_cast(casts, matched_depths)]
+        index = _nearest_timestep(chosen.time, timesteps)
+        entry = {
+            "kind": "float",
+            "timestepIndex": index,
+            "time": chosen.time.isoformat(),
+            "fields": _collocate_cast(chosen, grids, index, fields),
+        }
+
+        # Chlorophyll, where this float carries a fluorometer. Taken from the BGC cast nearest
+        # the one being charted rather than from the newest, so the two describe the same dive.
+        bgc = by_bgc.get(platform_id)
+        if bgc:
+            nearest = min(bgc, key=lambda c: abs((c.time - chosen.time).total_seconds()))
+            apart = abs((nearest.time - chosen.time).total_seconds())
+            if apart <= BGC_MATCH_DAYS * 86400:
+                observed_only = _observed_only(nearest)
+                if observed_only:
+                    entry["observedOnly"] = observed_only
+                    entry["observedOnlyTime"] = nearest.time.isoformat()
+                    # Under half a day is the same surfacing. Anything else is this float's
+                    # neighbouring dive, and the panel says so rather than letting a reader
+                    # assume both curves came off one cast.
+                    entry["observedOnlySameDive"] = apart <= 43200
+                    floats[-1]["bgc"] = True
+
+        if entry["fields"] or entry.get("observedOnly"):
             collocations[platform_id] = entry
+
+    # ---- moorings ----------------------------------------------------------------------
+    #
+    # Anchored, so there is no Track to draw and no reason to settle for one Timestep. Each one
+    # gets a Collocation at every step, from the report nearest that step's analysis date.
+    by_mooring: dict[str, list] = {}
+    for profile in moorings:
+        by_mooring.setdefault(profile.platform_id, []).append(profile)
+
+    for platform_id, reports in sorted(by_mooring.items()):
+        reports.sort(key=lambda p: p.time)
+        anchor = reports[-1]
+
+        steps: dict[str, dict] = {}
+        for index, stamp in enumerate(timesteps):
+            near = min(reports, key=lambda r: abs((r.time - stamp).total_seconds()))
+            if abs((near.time - stamp).total_seconds()) > COVERAGE_WINDOW_DAYS * 86400:
+                continue  # it was not reporting anywhere near this analysis
+            got = _collocate_cast(near, grids, index, fields)
+            if got:
+                steps[str(index)] = {"time": near.time.isoformat(), "fields": got}
+        if not steps:
+            continue
+
+        newest = max(int(k) for k in steps)
+        floats.append(
+            {
+                "id": platform_id,
+                "kind": "mooring",
+                "country": anchor.country,
+                # A mooring's "track" is one point repeated, which is the honest shape: it is
+                # where the instrument is at every Timestep. The renderer uses it to place the
+                # marker and draws no line, because a drift track for an anchored buoy would be
+                # a measurement claim about a current that was never measured.
+                "track": [
+                    {
+                        "lat": round(r.latitude, 4),
+                        "lon": round(r.longitude, 4),
+                        "time": r.time.isoformat(),
+                        "depthMax": round(float(r.depths.max()), 1),
+                    }
+                    for r in reports
+                ],
+                "latest": {
+                    "lat": round(anchor.latitude, 4),
+                    "lon": round(anchor.longitude, 4),
+                    "time": anchor.time.isoformat(),
+                    "depthMax": round(float(anchor.depths.max()), 1),
+                },
+                "profileCount": len(reports),
+            }
+        )
+        collocations[platform_id] = {
+            "kind": "mooring",
+            "timestepIndex": newest,
+            "time": steps[str(newest)]["time"],
+            "fields": steps[str(newest)]["fields"],
+            # The part a Float cannot have: the same water column against every analysis in the
+            # bake, from an instrument that never moved.
+            "steps": steps,
+        }
 
     return floats, collocations
 

@@ -63,11 +63,26 @@ def all_tables() -> dict[str, list[list[int]]]:
 #
 # Colours run grey (no evidence) through red and amber to green, which is the one ordering a
 # non-specialist reads correctly without a legend.
+#
+# But hue cannot be the only thing carrying that order, and it used to be. Grey, red, amber,
+# green had luminances of 0.055, 0.188, 0.455, 0.338 - so even for normal vision the amber was
+# the brightest band and the ordering cue reversed at the top. Under a red-green deficiency,
+# which about 8% of men have, it got worse: the red and the green simulated to (132,132,53) and
+# (155,155,110), 66 apart in RGB against 158 for normal vision, and the perceived ranking became
+# none < one < several < a few. Backwards, on the one Field whose whole job is saying how much
+# evidence there is.
+#
+# So lightness carries the order and hue carries the meaning. Each band is measurably lighter
+# than the one below it under normal vision, deuteranopia, protanopia and tritanopia, and under
+# the dark console's display lift as well - the lift is a per-channel gamma, which is monotone
+# per channel but not in luminance across different hues, so it has to be checked rather than
+# assumed. `test_palettes.py` holds all of that as an assertion; the tightest step the palette
+# currently manages is 0.046 in relative luminance, under protanopia.
 COVERAGE_BANDS = (
-    (0x3A, 0x44, 0x4A),  # no observations
-    (0xC7, 0x54, 0x3D),  # very sparse
-    (0xE8, 0xA8, 0x38),  # moderate
-    (0x4F, 0xB0, 0x6B),  # good
+    (0x35, 0x40, 0x46),  # no observations
+    (0xB4, 0x43, 0x2D),  # very sparse
+    (0xCC, 0x8C, 0x1E),  # moderate
+    (0x8F, 0xD6, 0xA9),  # good
 )
 
 

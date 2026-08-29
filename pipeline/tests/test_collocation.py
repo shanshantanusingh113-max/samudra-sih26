@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from samudra.collocation import collocate
+from samudra.collocation import MIN_USEFUL_MATCHES, choose_cast, collocate
 from samudra.grid import Grid
 
 LEVELS = np.array([0.0, 100.0, 200.0])
@@ -128,3 +128,48 @@ def test_a_measurement_below_the_deepest_level_is_not_counted_as_above_the_top()
     )
     assert result.above_model_count == 1
     assert result.matched_count == 1
+
+
+# ---------------------------------------------------------------- choosing which cast to bake
+#
+# The static bundle carries one Collocation per Float, so something has to choose which cast.
+# It used to be "the newest", full stop, and on the shipped bake that gave 6 of 212 Floats a
+# chart with nothing on it and 24 a cast more than 500 m shallower than their own deepest.
+
+
+def test_the_newest_cast_wins_when_it_actually_compares():
+    casts = ["april", "may", "june"]
+    matched = {"april": 400, "may": 380, "june": 120}
+    assert choose_cast(casts, matched.__getitem__) == 2
+
+
+def test_a_newest_cast_that_compares_against_nothing_falls_back_to_the_one_before():
+    """Float 6990611: 13 casts, and the newest reported only from 1300 m down."""
+    casts = ["april", "may", "fragment"]
+    matched = {"april": 400, "may": 380, "fragment": 0}
+    assert choose_cast(casts, matched.__getitem__) == 1
+
+
+def test_it_keeps_walking_back_past_more_than_one_bad_cast():
+    casts = ["good", "bad", "worse", "worst"]
+    matched = {"good": 300, "bad": 4, "worse": 0, "worst": 2}
+    assert choose_cast(casts, matched.__getitem__) == 0
+
+
+def test_a_cast_just_over_the_threshold_is_preferred_to_an_older_richer_one():
+    """Recency is the rule; usefulness is only a floor. ADR 0009's argument, inside one Float."""
+    casts = ["old", "new"]
+    matched = {"old": 900, "new": MIN_USEFUL_MATCHES}
+    assert choose_cast(casts, matched.__getitem__) == 1
+
+
+def test_when_no_cast_compares_it_returns_the_newest_rather_than_pretending():
+    """Usually the Float is beside a Masked node, and the panel says so. An older cast from the
+    same position would fail in exactly the same way, so showing one would only hide the reason."""
+    casts = ["a", "b", "c"]
+    assert choose_cast(casts, lambda _: 0) == 2
+
+
+def test_a_float_with_one_cast_uses_it_whatever_it_looks_like():
+    assert choose_cast(["only"], lambda _: 0) == 0
+    assert choose_cast(["only"], lambda _: 500) == 0

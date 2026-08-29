@@ -61,9 +61,18 @@ _TIMEOUT = 180
 # is that fresh: the Ganges-Brahmaputra discharge drives monsoon surface salinity down to
 # roughly 28 PSU, and clamping at, say, 33 would delete one of the most scientifically
 # interesting features in India's own EEZ as though it were instrument error.
+#
+# Chlorophyll has no Argo gross-range test at all, so both ends of its range are ours. A
+# fluorometer that has failed high reports tens of mg/m3; open Indian Ocean water runs about
+# 0.05 in the oligotrophic gyre and reaches 2-3 in a coastal bloom, so 20 is generous by an
+# order of magnitude and still catches a dead sensor. Negative values are routine and physical
+# in raw BGC data - the factory dark count is subtracted, so clean deep water goes slightly
+# below zero - and are kept rather than clipped, because clipping them to zero would fabricate
+# a floor that the delayed-mode adjustment is there to remove properly.
 _PLAUSIBLE = {
     "temperature": (-2.5, 40.0),
     "salinity": (25.0, 41.0),
+    "chlorophyll": (-1.0, 20.0),
 }
 
 # A cast with fewer points than this is not worth drawing as a Profile.
@@ -88,10 +97,33 @@ class ProfileColumns:
     pressure: tuple[str, ...]
     temperature: tuple[str, ...]
     salinity: tuple[str, ...]
+    # Empty for a provider that does not serve it, which is most of them. A BGC float does, and
+    # adding the channel here is the whole cost of reading one - the parser below loops over
+    # `measurements` rather than naming three quantities.
+    chlorophyll: tuple[str, ...] = ()
     # How this provider spells the quality flag beside a value: `temp_adjusted` + `_qc`. None
     # says the provider serves no flags, which is a fact about the provider rather than a
     # licence to ignore them.
     qc_suffix: str | None = "_qc"
+
+    @property
+    def measurements(self) -> tuple[tuple[str, tuple[str, ...]], ...]:
+        """Every quantity this layout carries besides pressure, as (name, variants).
+
+        Named quantities rather than a free-form dict, because each one has a plausible range
+        and a meaning downstream. A provider that serves none of a quantity simply leaves its
+        variants empty and it never appears on a Profile - absence is a fact about the provider,
+        not a NaN column.
+        """
+        return tuple(
+            (name, variants)
+            for name, variants in (
+                ("temperature", self.temperature),
+                ("salinity", self.salinity),
+                ("chlorophyll", self.chlorophyll),
+            )
+            if variants
+        )
 
     def request(self) -> str:
         """Every column this layout can use, as an ERDDAP selector.
@@ -102,7 +134,7 @@ class ProfileColumns:
         provider the demo actually reads.
         """
         names = [self.platform, self.time, self.latitude, self.longitude]
-        for variants in (self.pressure, self.temperature, self.salinity):
+        for variants in (self.pressure, *(v for _, v in self.measurements)):
             for name in variants:
                 names.append(name)
                 if self.qc_suffix:
@@ -133,6 +165,27 @@ INCOIS_COLUMNS = ProfileColumns(
     temperature=("TEMP_ADJUSTED", "TEMP"),
     salinity=("PSAL_ADJUSTED", "PSAL"),
     qc_suffix="_QC",
+)
+
+
+# Ifremer's synthetic BGC product: the same floats, merged onto one pressure axis, carrying the
+# biogeochemical channels the core dataset does not. Same host, same tabledap protocol, same
+# lower-case adjusted-first convention - so it costs a column layout and four attributes.
+#
+# Only chlorophyll is read. Measured over the demo region across the bake's window, this dataset
+# returns 635 casts from 59 floats; applying the QC rules already in this module, 532 casts from
+# 49 floats carry usable chlorophyll, 21 casts from 2 floats carry nitrate, and *no* cast
+# carries usable oxygen. Declaring channels nothing serves would be declaring a capability the
+# data does not have.
+BGC_COLUMNS = ProfileColumns(
+    platform="platform_number",
+    time="time",
+    latitude="latitude",
+    longitude="longitude",
+    pressure=("pres_adjusted", "pres"),
+    temperature=("temp_adjusted", "temp"),
+    salinity=("psal_adjusted", "psal"),
+    chlorophyll=("chla_adjusted", "chla"),
 )
 
 
@@ -170,6 +223,31 @@ class ArgoErddapSource:
         )
         response.raise_for_status()
         return parse_profiles(response.text, self.columns)
+
+
+class BgcArgoSource(ArgoErddapSource):
+    """Chlorophyll, from the Argo floats that carry a fluorometer.
+
+    PS 26067 asks for chlorophyll in the same clause as Argo and glider profiles, and this is
+    where it actually exists on a timeline the demo can share. INCOIS publish ocean colour
+    themselves - `IRS_chlorophyll_datasets` and `incois_oceansat2_datasets` - but those series
+    end 2006-03-21 and 2020-05-01, so neither can sit beside a 2026 analysis.
+
+    Unlike temperature, salinity and density, chlorophyll has **no model side**. There is no
+    gridded chlorophyll field on this timeline, so it is an observation with nothing to be held
+    against, and everything downstream says so rather than drawing a second curve out of
+    nowhere. That is the same argument Observation Coverage makes, one quantity further on.
+    """
+
+    name = "Argo BGC (Coriolis/Ifremer ERDDAP)"
+    attribution = (
+        "Argo float data collected and made freely available by the International Argo "
+        "Program and the national programmes that contribute to it (https://argo.ucsd.edu). "
+        "The Argo Program is part of the Global Ocean Observing System. Biogeochemical "
+        "channels from the synthetic BGC product."
+    )
+    columns = BGC_COLUMNS
+    endpoint = "https://erddap.ifremer.fr/erddap/tabledap/ArgoFloats-synthetic-BGC.csv"
 
 
 class IncoisArgoSource(ArgoErddapSource):
@@ -223,12 +301,19 @@ def parse_profiles(csv_text: str, columns: ProfileColumns = GDAC_COLUMNS) -> lis
     # Only the variants this provider actually served, in the order we trust them, each paired
     # with its quality flag where one was served.
     pressure_at = _variants(index, columns.pressure, columns.qc_suffix)
-    temperature_at = _variants(index, columns.temperature, columns.qc_suffix)
-    salinity_at = _variants(index, columns.salinity, columns.qc_suffix)
     if not pressure_at:
         return []
 
-    casts: dict[tuple[str, str], list[tuple[float, float, float]]] = defaultdict(list)
+    # Every other quantity this layout carries, in the order it declares them. A loop rather
+    # than three named locals, so a provider that serves a fourth channel - a fluorometer, an
+    # oxygen optode - costs a line in `ProfileColumns` and nothing here.
+    served = [
+        (name, _variants(index, variants, columns.qc_suffix))
+        for name, variants in columns.measurements
+    ]
+    served = [(name, at) for name, at in served if at]
+
+    casts: dict[tuple[str, str], list[tuple[float, ...]]] = defaultdict(list)
     positions: dict[tuple[str, str], tuple[float, float]] = {}
 
     for row in reader:
@@ -238,8 +323,7 @@ def parse_profiles(csv_text: str, columns: ProfileColumns = GDAC_COLUMNS) -> lis
             longitude = float(row[longitude_at])
             measurement = (
                 _first_usable(row, pressure_at),
-                _first_usable(row, temperature_at),
-                _first_usable(row, salinity_at),
+                *(_first_usable(row, at) for _, at in served),
             )
         except (IndexError, ValueError):
             continue  # a malformed row is not a reason to lose the whole download
@@ -253,15 +337,24 @@ def parse_profiles(csv_text: str, columns: ProfileColumns = GDAC_COLUMNS) -> lis
 
     profiles: list[Profile] = []
     for (platform_id, stamp), rows in casts.items():
-        pressure, temperature, salinity = (np.array(c, dtype=float) for c in zip(*rows))
+        columns_out = [np.array(c, dtype=float) for c in zip(*rows)]
+        pressure, channels = columns_out[0], columns_out[1:]
 
         latitude, longitude = positions[(platform_id, stamp)]
         depths = pressure_to_depth(pressure, latitude)
 
-        temperature = _reject_implausible(temperature, "temperature")
-        salinity = _reject_implausible(salinity, "salinity")
+        values = {
+            name: _reject_implausible(channel, name)
+            for (name, _), channel in zip(served, channels)
+        }
 
-        usable = np.isfinite(depths) & (np.isfinite(temperature) | np.isfinite(salinity))
+        # A level is usable when it has a depth and at least one quantity that survived QC.
+        # Chlorophyll counts here like anything else: a BGC cast whose fluorometer worked and
+        # whose thermistor did not is still a measurement of this water.
+        any_value = np.zeros(len(depths), dtype=bool)
+        for channel in values.values():
+            any_value |= np.isfinite(channel)
+        usable = np.isfinite(depths) & any_value
         if usable.sum() < _MIN_POINTS:
             continue
 
@@ -273,10 +366,7 @@ def parse_profiles(csv_text: str, columns: ProfileColumns = GDAC_COLUMNS) -> lis
                 longitude=longitude,
                 time=datetime.strptime(stamp, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc),
                 depths=depths[usable][order],
-                values={
-                    "temperature": temperature[usable][order],
-                    "salinity": salinity[usable][order],
-                },
+                values={name: channel[usable][order] for name, channel in values.items()},
             )
         )
 

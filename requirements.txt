@@ -13,3 +13,11 @@ requests==2.34.2
 scipy==1.15.3
 uvicorn==0.52.4
 xarray==2025.6.1
+
+# The reference DAP2 client. Not used to serve anything - api/dap.py is hand-written, because
+# xpublish needs Python 3.11 and xpublish-wms would install forty packages including Cartopy and
+# dask to draw five one-degree fields. pydap is here so `test_dap.py` can check our OPeNDAP
+# endpoint the only way that means anything: by opening it with somebody else's client and
+# comparing the numbers against the Grid they came from. It is also how a user consumes it -
+# xarray.open_dataset(url, engine="pydap").
+pydap==3.5.9
