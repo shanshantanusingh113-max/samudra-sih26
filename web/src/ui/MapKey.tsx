@@ -9,8 +9,9 @@ import { useStore } from "../store";
  * everything next to it.
  */
 export function MapKey() {
-  const { manifest, morph, showFloats, showTracks, timestepIndex } = useStore();
+  const { manifest, morph, showFloats, showTracks, timestepIndex, currentsOpacity } = useStore();
   if (!manifest) return null;
+  const moorings = manifest.instruments?.moorings ?? 0;
 
   const stamp = manifest.timesteps[timestepIndex];
   const when = stamp ? new Date(stamp).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
@@ -26,10 +27,28 @@ export function MapKey() {
         </span>
       )}
 
+      {showFloats && moorings > 0 && (
+        <span className="mapkey-item">
+          <span className="swatch mooring" aria-hidden="true" />
+          Moored buoy, anchored in one place
+        </span>
+      )}
+
       {showTracks && (
         <span className="mapkey-item">
           <span className="swatch track" aria-hidden="true" />
-          Its drift since April
+          A float&apos;s drift since April
+        </span>
+      )}
+
+      {/* Only on the globe and the map. In the Volume View the sea surface is cut away over the
+          region so you can see into the water, and the current arrows are composited into that
+          surface - so they are correctly absent, and naming them here would be a key for
+          something not on screen. */}
+      {currentsOpacity > 0 && manifest.currents && morph < 0.5 && (
+        <span className="mapkey-item">
+          <span className="swatch currents" aria-hidden="true" />
+          Surface current, drawn by Copernicus
         </span>
       )}
 

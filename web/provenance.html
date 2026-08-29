@@ -7,9 +7,8 @@
 <meta name="description" content="Every figure on this page is read live from the build's own manifest, and every source is a public INCOIS or Argo endpoint you can query yourself.">
 <link rel="icon" type="image/png" href="./icon.png">
 <link rel="apple-touch-icon" href="./icon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<!-- Served from this build, not from fonts.googleapis.com. -->
+<link rel="stylesheet" href="./fonts.css">
 <script>
   // Shared with the platform: one key, so a choice made on either side holds on both.
   (function () {
@@ -589,10 +588,17 @@ python -m samudra.bake</pre>
       : "single step";
 
     var cellSize = (volume.east - volume.west) / (volume.width - 1);
-    var casts = floats.reduce(function (sum, item) { return sum + item.profileCount; }, 0);
+    // Argo floats only. `floats` now carries moored buoys too, and a buoy reports several
+    // times a day - lumping them in put 641 mooring reports inside a figure labelled "casts"
+    // beside the Argo float count.
+    var drifting = floats.filter(function (item) { return item.kind !== "mooring"; });
+    var casts = drifting.reduce(function (sum, item) { return sum + item.profileCount; }, 0);
+    var buoyReports = floats.reduce(function (sum, item) {
+      return sum + (item.kind === "mooring" ? item.profileCount : 0);
+    }, 0);
 
     var fixes = [];
-    floats.forEach(function (item) {
+    drifting.forEach(function (item) {
       item.track.forEach(function (fix) { fixes.push(new Date(fix.time)); });
     });
     fixes.sort(function (a, b) { return a - b; });
@@ -624,11 +630,29 @@ python -m samudra.bake</pre>
       volume.surfaceMetres + " m to " + volume.floorMetres + " m",
       volume.depth + " resampled slabs, packed close to the surface where the thermocline sits"
     ));
+    var kinds = manifest.instruments || {};
     facts.appendChild(fact(
       "Argo floats",
-      String(manifest.floatCount),
-      casts + " casts, " + fixes.length + " surface fixes"
+      String(kinds.floats != null ? kinds.floats : manifest.floatCount),
+      casts + " casts, " + fixes.length + " surface fixes" +
+        (kinds.withChlorophyll ? ", " + kinds.withChlorophyll + " carrying chlorophyll" : "")
     ));
+    if (kinds.moorings) {
+      facts.appendChild(fact(
+        "Moored buoys",
+        String(kinds.moorings),
+        buoyReports + " reports. Anchored, through the global weather network. " +
+          "Four are India's own OMNI array"
+      ));
+    }
+    if (manifest.currents) {
+      facts.appendChild(fact(
+        "Surface currents",
+        manifest.currents.files.length + " images",
+        "Copernicus Marine's own rendering, at " + manifest.currents.depthMetres +
+          " m. An image, not a field: nothing here can be queried for a speed"
+      ));
+    }
     if (fixes.length) {
       facts.appendChild(fact(
         "Observations span",
@@ -670,28 +694,30 @@ python -m samudra.bake</pre>
       "curl -sL \"https://erddap.incois.gov.in/erddap/griddap/incois_argo_10d_VAM.nc?" +
       selector + "\" -o step.nc";
 
-    var endpoints = [
-      "erddap.incois.gov.in/erddap/griddap/incois_argo_10d_VAM",
-      "erddap.ifremer.fr/erddap/tabledap/ArgoFloats"
-    ];
+    // Role and endpoint come out of the manifest with the source, not from a table beside it.
+    // They used to be a two-entry array here and a "first one is the model, the rest are
+    // profiles" guess, which stopped being true the moment a third source arrived - on a page
+    // whose entire claim is that every figure on it is read from the build.
     rows(
       el("obs"),
       ["Source", "Role", "Endpoint"],
-      manifest.sources.map(function (source, index) {
-        return [
-          source.name,
-          index === 0 ? "Gridded model field" : "In-situ profiles",
-          endpoints[index] || "-"
-        ];
+      manifest.sources.map(function (source) {
+        return [source.name, source.role || "-", source.endpoint || "-"];
       })
     );
 
 
     // ---- one real cast, straight out of the collocations ----------------
+    // Drifting floats only. A moored buoy carries ten levels against a float's several hundred,
+    // so ranking the two together would pick the shallowest instrument in the build and call it
+    // the largest disagreement.
     var worst = null, worstRms = -1;
     Object.keys(collocations).forEach(function (id) {
+      if (collocations[id].kind === "mooring") return;
       var t = collocations[id].fields.temperature;
-      if (t && t.rmsResidual != null && t.rmsResidual > worstRms) { worstRms = t.rmsResidual; worst = id; }
+      if (t && t.rmsResidual != null && t.matched > 40 && t.rmsResidual > worstRms) {
+        worstRms = t.rmsResidual; worst = id;
+      }
     });
     if (worst) {
       var t = collocations[worst].fields.temperature;

@@ -73,6 +73,7 @@ export function GuidePanel() {
           <h2 className="guide-title">What you are looking at</h2>
           <p className="guide-lede">
             {describeView({
+              fieldKey: spec.key,
               fieldLabel: spec.label.replace("Sea Water ", ""),
               units: spec.units,
               date: formatDate(manifest.timesteps[store.timestepIndex]),
@@ -81,7 +82,8 @@ export function GuidePanel() {
               exaggeration: store.exaggeration,
               isoEnabled: store.isoEnabled,
               isoValue: `${store.toValue(store.isoValue).toFixed(1)} ${spec.units}`,
-              floatCount: store.floats.length,
+              floatsDrawn: store.reportingByKind().floats,
+              mooringsDrawn: store.reportingByKind().moorings,
             })}
           </p>
           <p className="guide-hint">

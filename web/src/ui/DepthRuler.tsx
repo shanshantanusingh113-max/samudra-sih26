@@ -32,13 +32,25 @@ interface Tick {
  * The column is placed rather than clamped so that it lands in the same strip at every viewport
  * width - the map key is positioned against it, and a ruler that drifted with the camera would
  * collide with the key on wide screens and not on narrow ones.
+ *
+ * The caption sits at the **foot of the column**, under the deepest figure. It used to be
+ * centred at the bottom of the viewport, where the map key covered its first third at every
+ * window size measured - 1600x900, 1366x768 and 1280x720 - so a reader saw "...xis stretched -
+ * see the uneven spacing". The head of the column was tried next and is worse: that is the top
+ * face of the Volume, the brightest surface in the picture, and a hairline caption over it
+ * cannot be read at all. Under the column is background at every viewport size, and it still
+ * sits beside the thing it describes.
  */
 
 /** The label sits 58 px to the left of its tick and is 44 px wide; this clears both. */
 const LABEL_GUTTER = 70;
+/** How far below the deepest figure the caption sits. */
+const CAPTION_DROP = 20;
+
 export function DepthRuler({ scene }: { scene: OceanScene | null }) {
   const { manifest, exaggeration, morph } = useStore();
   const [ticks, setTicks] = useState<Tick[]>([]);
+  const [caption, setCaption] = useState<{ x: number; y: number } | null>(null);
   const frame = useRef(0);
 
   const active = morph > 0.55 && !!scene && !!manifest;
@@ -46,6 +58,7 @@ export function DepthRuler({ scene }: { scene: OceanScene | null }) {
   useEffect(() => {
     if (!active || !scene || !manifest) {
       setTicks([]);
+      setCaption(null);
       return;
     }
     const marks = depthTicks(manifest.volume);
@@ -56,12 +69,20 @@ export function DepthRuler({ scene }: { scene: OceanScene | null }) {
       const panel = document.querySelector("aside.panel-left")?.getBoundingClientRect();
       const clear = panel ? panel.right + LABEL_GUTTER : 0;
 
-      setTicks(
-        marks.map((metres) => {
-          const anchor = scene.rulerAnchor(exaggeration, metres);
-          return { metres, ...anchor, x: clear };
-        }),
-      );
+      const next = marks.map((metres) => {
+        const anchor = scene.rulerAnchor(exaggeration, metres);
+        return { metres, ...anchor, x: clear };
+      });
+      setTicks(next);
+
+      // Anchored under the *deepest* figure on screen, so the caption follows the column when
+      // Vertical Exaggeration moves it. Below rather than above: above the column is the top
+      // face of the Volume, which is the brightest surface in the picture, and a hairline
+      // caption laid over it cannot be read at all. Below the column is background.
+      const visible = next.filter((t) => t.visible);
+      const foot = visible[visible.length - 1];
+      setCaption(foot ? { x: clear - 58, y: foot.y + CAPTION_DROP } : null);
+
       frame.current = requestAnimationFrame(update);
     };
     frame.current = requestAnimationFrame(update);
@@ -72,6 +93,11 @@ export function DepthRuler({ scene }: { scene: OceanScene | null }) {
 
   return (
     <div className="ruler" aria-hidden="true">
+      {caption && (
+        <p className="ruler-note" style={{ transform: `translate(${caption.x}px, ${caption.y}px)` }}>
+          Depth axis is stretched, not linear
+        </p>
+      )}
       {ticks.map(
         (tick) =>
           tick.visible && (
@@ -85,7 +111,6 @@ export function DepthRuler({ scene }: { scene: OceanScene | null }) {
             </div>
           ),
       )}
-      <p className="ruler-note">depth axis stretched - see the uneven spacing</p>
     </div>
   );
 }

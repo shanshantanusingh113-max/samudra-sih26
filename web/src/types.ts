@@ -87,6 +87,9 @@ export interface AnomalyFeatureSpec {
 export interface SourceSpec {
   name: string;
   attribution: string;
+  /** What this source contributed, and where from. Read by the provenance page. */
+  role?: string;
+  endpoint?: string;
 }
 
 export interface Manifest {
@@ -101,6 +104,12 @@ export interface Manifest {
   floatCount: number;
   coverage?: CoverageSpec;
   anomalyFeatures?: AnomalyFeatureSpec;
+  /** How many of each kind are on the water, so the panel and the key can name them. */
+  instruments?: { floats: number; moorings: number; withChlorophyll: number };
+  /** Quantities measured but not modelled, so the panel knows what to expect. */
+  observedOnly?: { key: string; label: string; units: string }[];
+  /** Absent entirely when the bake could not reach Copernicus. */
+  currents?: CurrentsSpec;
 }
 
 export interface FloatFix {
@@ -113,9 +122,30 @@ export interface FloatFix {
 
 export interface OceanFloat {
   id: string;
+  /**
+   * What kind of instrument this is.
+   *
+   * `CONTEXT.md` says a mooring is a Float where it does not matter that it moves differently,
+   * and there are exactly two places where it does: an anchored buoy has no drift track to
+   * draw, and because it never moves it can be compared against the model at every Timestep
+   * rather than only the one nearest its cast.
+   */
+  kind?: "float" | "mooring";
+  /** Who operates it, where the provider says. The GTS feed does; Argo does not. */
+  country?: string | null;
+  /** True when this float carries a fluorometer, so its panel has a chlorophyll profile. */
+  bgc?: boolean;
   track: FloatFix[];
   latest: FloatFix;
   profileCount: number;
+}
+
+/** A quantity an instrument measured that the model has no counterpart for. */
+export interface ObservedOnlySeries {
+  label: string;
+  units: string;
+  depths: number[];
+  observed: (number | null)[];
 }
 
 export interface CollocationSeries {
@@ -131,7 +161,40 @@ export interface CollocationSeries {
 }
 
 export interface Collocation {
+  kind?: "float" | "mooring";
   timestepIndex: number;
   time: string;
   fields: Record<string, CollocationSeries>;
+  /**
+   * A mooring's comparison at every Timestep, keyed by index.
+   *
+   * The thing an Argo float cannot give you: the same water column against every analysis in
+   * the bake, from an instrument that never moved. A float has drifted somewhere else by the
+   * next step, so its chart is pinned to one date and says so.
+   */
+  steps?: Record<string, { time: string; fields: Record<string, CollocationSeries> }>;
+  /** Chlorophyll, where this float carries a fluorometer. No model side exists for it. */
+  observedOnly?: Record<string, ObservedOnlySeries>;
+  observedOnlyTime?: string;
+  /** False when it came from this float's neighbouring dive rather than the charted one. */
+  observedOnlySameDive?: boolean;
+}
+
+/**
+ * The Copernicus surface-current overlay.
+ *
+ * A rendered image and nothing else - see `pipeline/samudra/currents.py`. It is never a Field,
+ * never collocated, and carries no number anyone can read off it, which is exactly why a
+ * picture is the safe way to carry a field this platform cannot verify itself.
+ */
+export interface CurrentsSpec {
+  files: string[];
+  layer: string;
+  attribution: string;
+  legend: { min: number; max: number; units: string; quantity: string };
+  west: number;
+  east: number;
+  south: number;
+  north: number;
+  depthMetres: number;
 }

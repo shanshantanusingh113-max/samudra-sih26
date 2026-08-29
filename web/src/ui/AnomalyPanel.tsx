@@ -11,8 +11,18 @@ import { useStore } from "../store";
  * does not know, it says so, and the loudest line on the panel is the one about water with no
  * observation behind it.
  */
-export function AnomalyPanel() {
-  const { manifest, selectedAnomaly, features, set } = useStore();
+/**
+ * Isolating a Feature pans onto it; it does not zoom to it.
+ *
+ * Zooming was tried first, with `focusOn`, which swings to a fixed 18-unit radius. That is right
+ * for a Float - a point you want to get close to - and wrong for a body of water five degrees
+ * across: the block frame collapsed to a single diagonal and the isolated water went off the top
+ * of the screen. Panning keeps the distance and angle the user already chose and only
+ * re-centres, which is what a Feature at the western edge needs - otherwise half of it sits
+ * behind the control panel and the button reads as having done nothing.
+ */
+export function AnomalyPanel({ onPan }: { onPan?: (lon: number, lat: number) => void }) {
+  const { manifest, selectedAnomaly, features, isolateAnomaly, set } = useStore();
   const spec = manifest?.anomalyFeatures;
   const feature = selectedAnomaly === null ? undefined : features()[selectedAnomaly];
   if (!feature || !spec) return null;
@@ -53,6 +63,34 @@ export function AnomalyPanel() {
         <dt>What kind of water</dt>
         <dd>{whatKind(feature)}</dd>
       </dl>
+
+      {/*
+        * The control this panel most needed.
+        *
+        * Every sentence above is measured over one box of water, and until you can see that box
+        * on its own you are reading numbers about a blob you cannot pick out of a solid block.
+        * Turning the rest of the water off is the difference between being told a body of water
+        * departed and looking at it.
+        */}
+      <button
+        type="button"
+        className={`isolate${isolateAnomaly ? " on" : ""}`}
+        onClick={() => {
+          const next = !isolateAnomaly;
+          set("isolateAnomaly", next);
+          if (next) onPan?.(feature.lon, feature.lat);
+        }}
+      >
+        {isolateAnomaly ? "Show the whole block again" : "Show only this body of water"}
+      </button>
+      {isolateAnomaly && (
+        <p className="note">
+          Everything outside this feature is hidden. What is left is the {feature.cells} cells
+          the detector actually selected, between {feature.topMetres.toFixed(0)} and{" "}
+          {feature.bottomMetres.toFixed(0)} m - the same water every figure on this panel is
+          measured over. The box frame stays drawn so you can see where in the block it sits.
+        </p>
+      )}
 
       <p className={`verdict ${evidenceTone(feature)}`}>
         <b>{feature.casts === 0 ? "Nothing measured this." : "Evidence behind it."}</b>{" "}

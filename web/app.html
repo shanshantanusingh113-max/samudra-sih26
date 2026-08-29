@@ -6,12 +6,9 @@
     <title>Samudra 3D - INCOIS Ocean Visualisation</title>
     <link rel="icon" type="image/png" href="./icon.png" />
     <link rel="apple-touch-icon" href="./icon.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap"
-    />
+    <!-- Served from this build, not from fonts.googleapis.com. Three network requests on
+         every page load contradicted the one property the bake exists to protect. -->
+    <link rel="stylesheet" href="./fonts.css" />
   </head>
   <body>
     <div id="root"></div>

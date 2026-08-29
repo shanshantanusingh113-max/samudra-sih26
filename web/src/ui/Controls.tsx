@@ -2,7 +2,7 @@ import { axisToDepth } from "../scene/geography";
 
 /** The Field the Anomaly Features were found in. They mean nothing drawn over any other. */
 const ANOMALY_FIELD = "temperature_anomaly";
-import { GUIDE, ISOSURFACES, PALETTES } from "../guide";
+import { GUIDE, ISOSURFACES, PALETTES, RANGE_NOTE } from "../guide";
 import { liftedPalette, paletteGradient } from "../palette";
 import { useStore } from "../store";
 
@@ -25,6 +25,56 @@ function bandColour(table: number[][], index: number): string {
   }
   const [r, g, b] = distinct[index] ?? [128, 128, 128];
   return `rgb(${r},${g},${b})`;
+}
+
+/**
+ * One collapsible group of the control panel.
+ *
+ * The panel carries 1089 px of controls and a 1366x768 laptop can show 616 px of it, so 43% of
+ * it sat below the fold - the whole Rendering group, the Isosurface, and the Instruments
+ * toggles - with nothing on screen saying there was more. A scroll cue tells a reader that
+ * something is missing; it does not tell them *what*. Collapsing puts every group's name on
+ * screen at once, which is what actually makes a control discoverable, and lets a user keep
+ * open only what they are working with.
+ *
+ * `id` doubles as the guide key, so opening a group also explains it.
+ */
+function Group({
+  id,
+  title,
+  readout,
+  readoutMuted,
+  children,
+}: {
+  id: string;
+  title: string;
+  readout?: string;
+  readoutMuted?: boolean;
+  children: React.ReactNode;
+}) {
+  const { openGroups, toggleGroup, set } = useStore();
+  const open = openGroups[id] ?? true;
+
+  return (
+    <section className={`control-group${open ? " open" : ""}`}>
+      <button
+        type="button"
+        className="control-head"
+        aria-expanded={open}
+        onClick={() => {
+          toggleGroup(id);
+          if (GUIDE[id]) set("touched", id);
+        }}
+      >
+        <span className="disclosure" aria-hidden="true" />
+        <label>{title}</label>
+        {readout !== undefined && (
+          <span className={readoutMuted ? "readout muted" : "readout"}>{readout}</span>
+        )}
+      </button>
+      {open && <div className="control-body">{children}</div>}
+    </section>
+  );
 }
 
 /**
@@ -51,30 +101,39 @@ function Colourbar() {
   const explain = () => set("touched", "palette");
 
   return (
-    <div className="control-group">
-      <div className="control-head">
-        <label>Colourbar</label>
-        <span className="readout muted">{spec.palette}</span>
-      </div>
-
-      <button
-        type="button"
-        className="colourbar"
-        style={{ background: `linear-gradient(90deg, ${stops})` }}
-        onPointerDown={explain}
-        onFocus={explain}
-        aria-label={`${note?.designedFor ?? short} colour scale - explain`}
-      />
+    <Group id="palette" title="Colourbar" readout={spec.palette} readoutMuted>
+      {/*
+        * A banded Field gets no gradient bar.
+        *
+        * The bar is drawn across the encoded range, and Observation Coverage's bands sit at 0.5,
+        * 1.5 and 3.5 casts out of a range running to 14 - so three quarters of the swatch was a
+        * single flat green, and the palette read as "mostly green" when the block plainly is
+        * not. The proportions are honest about the *range* and dishonest about the *bands*, and
+        * the bands are what a reader is looking for. The key underneath does that job properly,
+        * so it becomes the control.
+        */}
+      {!bands && (
+        <button
+          type="button"
+          className="colourbar"
+          style={{ background: `linear-gradient(90deg, ${stops})` }}
+          onPointerDown={explain}
+          onFocus={explain}
+          aria-label={`${note?.designedFor ?? short} colour scale - explain`}
+        />
+      )}
+      {/* Written per palette, not assembled from a template. The template claimed "the
+          conventional oceanographic scale for observation coverage", and no such convention
+          exists - that palette was built here. See PaletteNote.caption. */}
       <p className="palette-note">
-        {note?.designedFor ?? "This scale"}, {note?.form ?? "sequential"}. The conventional
-        oceanographic scale for {short.toLowerCase()}.
+        {note?.caption ?? `The colour scale for ${short.toLowerCase()}.`}
       </p>
 
       {bands ? (
         <>
-          <ul className="band-key">
+          <button type="button" className="band-key" onPointerDown={explain} onFocus={explain}>
             {bands.labels.map((label, index) => (
-              <li key={label}>
+              <span className="band" key={label}>
                 <span
                   className="band-swatch"
                   style={{
@@ -85,9 +144,9 @@ function Colourbar() {
                   }}
                 />
                 {label}
-              </li>
+              </span>
             ))}
-          </ul>
+          </button>
           <p className="note">
             Argo casts within {bands.radiusKm} km that dived through this depth, in the{" "}
             {bands.windowDays * 2} days around this step. A float drawn on a one-cast patch is
@@ -123,13 +182,23 @@ function Colourbar() {
         onChange={(v) => set("windowMax", v)}
       />
 
+      {/* Per Field. There is no water mass in a count of casts, and none in a departure. */}
       <p className="note">
-        Narrowing the range hides water outside it, which is how you isolate a single water mass.
+        {RANGE_NOTE[spec.key] ?? "Narrowing the range hides water outside it."}
       </p>
-    </div>
+    </Group>
   );
 }
 
+/**
+ * One labelled slider.
+ *
+ * The visible label sits in a sibling element, so the input needs its own accessible name -
+ * without `aria-label` every one of these was announced as an unnamed slider, and there are
+ * nine of them. `aria-valuetext` carries the formatted figure for the same reason: the raw
+ * value is a window fraction or an axis position on most of these, so the number a screen
+ * reader would otherwise read out is not the number on the screen.
+ */
 function Slider({
   label,
   value,
@@ -163,6 +232,8 @@ function Slider({
         max={max}
         step={step}
         value={value}
+        aria-label={label}
+        aria-valuetext={format(value)}
         onChange={(e) => onChange(Number(e.target.value))}
       />
     </div>
@@ -183,10 +254,7 @@ export function Controls() {
 
   return (
     <aside className="panel panel-left">
-      <div className="control-group">
-        <div className="control-head">
-          <label>Variable</label>
-        </div>
+      <Group id="field" title="Variable">
         <div className="segmented">
           {manifest.fields.map((f) => (
             <button
@@ -203,19 +271,13 @@ export function Controls() {
             </button>
           ))}
         </div>
-      </div>
+      </Group>
 
       <Colourbar />
 
       {inVolume && (
         <>
-          <div className="control-group">
-            <div className="control-head">
-              <label>Depth slice</label>
-              <span className="readout">
-                {fromDepth.toFixed(0)}-{toDepth.toFixed(0)} m
-              </span>
-            </div>
+          <Group id="depthSlice" title="Depth slice" readout={`${fromDepth.toFixed(0)}-${toDepth.toFixed(0)} m`}>
             <Slider
               guide="depthSlice"
               label="From surface"
@@ -236,12 +298,9 @@ export function Controls() {
               format={() => `${toDepth.toFixed(0)} m`}
               onChange={(v) => set("depthTo", v)}
             />
-          </div>
+          </Group>
 
-          <div className="control-group">
-            <div className="control-head">
-              <label>Rendering</label>
-            </div>
+          <Group id="rendering" title="Rendering">
             <Slider
               guide="opacity"
               label="Water opacity"
@@ -293,29 +352,23 @@ export function Controls() {
               />
               <span>Show volume</span>
             </label>
-          </div>
+          </Group>
 
           {spec.isosurface === false ? (
-            <div className="control-group">
-              <div className="control-head">
-                <label>Isosurface</label>
-                <span className="readout muted">not applicable</span>
-              </div>
+            <Group id="isosurface" title="Isosurface" readout="not applicable" readoutMuted>
               <p className="note">
                 {short} counts casts in whole numbers, so it steps rather than varies smoothly.
                 An isosurface through it would trace the boundary between "1 cast" and "2 casts"
                 as a wall of flat slabs, which looks like structure and is not. Switch to
                 Temperature or Salinity to draw one.
               </p>
-            </div>
+            </Group>
           ) : (
-          <div className="control-group">
-            <div className="control-head">
-              <label>Isosurface</label>
-              <span className="readout">
-                {store.toValue(store.isoValue).toFixed(1)} {spec.units}
-              </span>
-            </div>
+          <Group
+            id="isosurface"
+            title="Isosurface"
+            readout={`${store.toValue(store.isoValue).toFixed(1)} ${spec.units}`}
+          >
             <label className="toggle">
               <input
                 type="checkbox"
@@ -342,17 +395,17 @@ export function Controls() {
             {store.isoEnabled && ISOSURFACES[spec.key] && (
               <p className="note">{ISOSURFACES[spec.key]?.hint}</p>
             )}
-          </div>
+          </Group>
           )}
         </>
       )}
 
       {!inVolume && (
-        <div className="control-group">
-          <div className="control-head">
-            <label>Sea surface level</label>
-            <span className="readout">{axisToDepth(volume, store.surfaceLevel).toFixed(0)} m</span>
-          </div>
+        <Group
+          id="surfaceLevel"
+          title="Sea surface level"
+          readout={`${axisToDepth(volume, store.surfaceLevel).toFixed(0)} m`}
+        >
           <Slider
             guide="surfaceLevel"
               label="Depth painted on the map"
@@ -363,13 +416,49 @@ export function Controls() {
             format={(v) => `${axisToDepth(volume, v).toFixed(0)} m`}
             onChange={(v) => set("surfaceLevel", v)}
           />
-        </div>
+        </Group>
       )}
 
-      <div className="control-group">
-        <div className="control-head">
-          <label>Instruments</label>
-        </div>
+      {!inVolume && manifest.currents && (
+        <Group
+          id="currents"
+          title="Surface currents"
+          readout={store.currentsOpacity > 0 ? "on" : "off"}
+          readoutMuted={store.currentsOpacity === 0}
+        >
+          <label className="toggle">
+            <input
+              type="checkbox"
+              checked={store.currentsOpacity > 0}
+              onChange={(e) => {
+                set("touched", "currents");
+                set("currentsOpacity", e.target.checked ? 0.9 : 0);
+              }}
+            />
+            <span>Show surface current arrows</span>
+          </label>
+          {store.currentsOpacity > 0 && (
+            <div className="legend legend-currents">
+              <span className="key key-slow">
+                {manifest.currents.legend.min.toFixed(1)} {manifest.currents.legend.units}
+              </span>
+              <span className="currents-ramp" aria-hidden="true" />
+              <span className="key key-fast">
+                {manifest.currents.legend.max.toFixed(2)} {manifest.currents.legend.units}
+              </span>
+            </div>
+          )}
+          {/* The one thing that must be on screen whenever this layer is: it is a picture. */}
+          <p className="note">
+            The arrows point the way the water is moving, {manifest.currents.depthMetres} m below
+            the surface. Colour is speed: pale is slow, dark green is fast. This layer is a
+            ready-made map image from Copernicus Marine, Europe&apos;s ocean service, not our own
+            data - so it is the one layer you cannot click, and there is no number to read off it.
+          </p>
+        </Group>
+      )}
+
+      <Group id="instruments" title="Instruments">
         <label className="toggle">
           <input
             type="checkbox"
@@ -379,7 +468,7 @@ export function Controls() {
               set("showFloats", e.target.checked);
             }}
           />
-          <span>Argo floats ({store.floats.length})</span>
+          <span>Instruments ({store.floats.length})</span>
         </label>
         <label className="toggle">
           <input
@@ -392,14 +481,26 @@ export function Controls() {
           />
           <span>Drift tracks</span>
         </label>
-      </div>
+        {/* Counted from the manifest rather than the array, so the sentence names what each
+            kind is instead of lumping nine anchored buoys in with the floats. */}
+        {manifest.instruments && manifest.instruments.moorings > 0 && (
+          <p className="note">
+            {manifest.instruments.moorings} of these are moored buoys, drawn as squares - they
+            are anchored, so they have no drift track and their comparison follows the timeline.
+            {manifest.instruments.withChlorophyll > 0 &&
+              ` ${manifest.instruments.withChlorophyll} of the floats also carry a fluorometer` +
+                ` and show a chlorophyll profile.`}
+          </p>
+        )}
+      </Group>
 
       {inVolume && spec.key === ANOMALY_FIELD && store.features().length > 0 && (
-        <div className="control-group">
-          <div className="control-head">
-            <label>Anomaly features</label>
-            <span className="readout muted">{store.features().length} this step</span>
-          </div>
+        <Group
+          id="anomalyFeatures"
+          title="Anomaly features"
+          readout={`${store.features().length} this step`}
+          readoutMuted
+        >
           <label className="toggle">
             <input
               type="checkbox"
@@ -417,7 +518,7 @@ export function Controls() {
             this panel is replaced by what it is, why it is there, and whether anything measured
             it.
           </p>
-        </div>
+        </Group>
       )}
     </aside>
   );

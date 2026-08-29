@@ -99,6 +99,12 @@ uniform float uRegionCutout;  // 1 = the study region is open, so you look into 
 uniform float uShadeFloor;    // how dark the unlit limb goes; higher keeps a pale globe pale
 uniform float uRimStrength;   // 0 on the light console: an additive glow on white is a smudge
 uniform vec3  uRimColour;
+// The Copernicus surface-current overlay: arrows on a transparent ground, covering exactly the
+// study region. A picture, and only ever a picture - see pipeline/samudra/currents.py. It is
+// composited here rather than drawn as its own mesh so it inherits the region mask and the
+// cutout, and so it cannot end up on the wrong side of the transparent draw order.
+uniform sampler2D uCurrents;
+uniform float uCurrentsOn;
 
 in vec2 vLonLat;
 in vec3 vNormal;
@@ -139,6 +145,25 @@ void main() {
   }
 
   vec3 colour = mix(base, fieldColour, fieldAlpha);
+
+  if (uCurrentsOn > 0.001 && inset > 0.0) {
+    // The image spans the region box exactly, and its rows run north to south while latitude
+    // runs south to north - so v is flipped. The bake crops the stitched tiles to this box for
+    // precisely this reason; half a degree of error here draws the Somali Current over Somalia.
+    vec2 uv = vec2(
+      (vLonLat.x - uRegion.x) / (uRegion.y - uRegion.x),
+      (uRegion.w - vLonLat.y) / (uRegion.w - uRegion.z)
+    );
+    vec4 arrows = texture(uCurrents, uv);
+    float strength = uCurrentsOn * regionMask;
+    // Dim the field under the arrows before compositing them. Copernicus draws slow water in
+    // pale yellow and the thermal palette draws warm water in pale yellow, so at full strength
+    // the two are the same colour and the vector field reads as texture. Dimming the ground is
+    // the ordinary cartographic answer and it costs nothing that matters: the layer underneath
+    // is still the same field, and the colourbar still describes it.
+    colour *= 1.0 - 0.42 * strength * arrows.a;
+    colour = mix(colour, arrows.rgb, arrows.a * strength);
+  }
 
   // Gentle shading so the globe reads as a sphere, fading out as it flattens into a map.
   float lambert = uShadeFloor +

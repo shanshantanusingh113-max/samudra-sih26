@@ -42,6 +42,41 @@ export const GUIDE: Record<string, GuideEntry> = {
     tryThis: "Move along the row: the same water, four different questions about it.",
   },
 
+  temperature: {
+    title: "Temperature",
+    kind: "science",
+    does: "Draws the sea temperature INCOIS published, at every depth from 5 m to 2000 m.",
+    means:
+      "This is the analysis itself, not a measurement and not a simulation: INCOIS take the" +
+      " Argo floats reporting in this ocean and fit a field to them every ten days. It is the" +
+      " thing every other view here is checked against, and the thing a cyclone forecast is" +
+      " built on - warm water is fuel, and how *deep* the warm water goes decides whether a" +
+      " storm keeps it.",
+    look:
+      "The orange band part way down is the thermocline: the boundary where the sun-warmed" +
+      " surface stops and the cold deep begins. It is not flat. Where it dips, there is a thick" +
+      " pool of warm water; where it lifts, cold water is close to the surface.",
+    tryThis:
+      "Click a float and see whether the analysis got that column right. Then try Observation" +
+      " Coverage to see how much measurement stands behind it.",
+  },
+
+  salinity: {
+    title: "Salinity",
+    kind: "science",
+    does: "Draws how salty the water is, on the same 24 depth levels as temperature.",
+    means:
+      "Salinity decides, with temperature, whether water floats or sinks - and in this ocean it" +
+      " is often the one that wins. The Ganges and the Brahmaputra pour enough fresh water into" +
+      " the Bay of Bengal to put a light lid on top of it that a storm cannot easily mix away." +
+      " PSU is a practical salinity unit; open ocean sits near 35.",
+    look:
+      "Compare the two sides of India. The Bay of Bengal is visibly fresher than the Arabian" +
+      " Sea, and the freshest water is a thin skin at the very top of the northern Bay. Then" +
+      " switch to Density and watch that freshness decide the answer.",
+    tryThis: "Set the isosurface near 33 PSU: the surface closes around the river plume.",
+  },
+
   density: {
     title: "Density",
     kind: "science",
@@ -129,8 +164,35 @@ export const GUIDE: Record<string, GuideEntry> = {
       " band at 50-100 m is the thermocline doing what it does every step, which is large in" +
       " degrees and not unusual for that water.",
     tryThis:
-      "Open the strongest one, then switch to Observation Coverage without closing it and see" +
-      " whether anything measured that water.",
+      "Click a ring, then press 'Show only this body of water'. Everything else disappears and" +
+      " you are looking at the departure itself, at its real size and depth.",
+  },
+
+  /**
+   * Not reachable from the guide panel, and that is correct: the Anomaly Feature panel takes
+   * that space whenever a Feature is open, so a reader who presses this button is already
+   * looking at the explanation. Kept here so the wording lives with every other control's, and
+   * so the sentence under the button and this entry cannot drift apart.
+   */
+  isolateAnomaly: {
+    title: "Show only this body of water",
+    kind: "rendering",
+    does:
+      "Hides every part of the block except the one feature you clicked, and swings the camera" +
+      " onto it.",
+    means:
+      "A coloured blob inside a solid block tells you that some water departed and almost" +
+      " nothing about its shape - you cannot see where it starts, how deep it runs, or whether" +
+      " it is one body or three. This clears the rest away. What is left is exactly the cells" +
+      " the detector selected, which is exactly the water every number on the panel is measured" +
+      " over: the size, the depth range, the salinity, the cast count.",
+    look:
+      "The shape and the thickness. Most of these are wide and thin - a few hundred kilometres" +
+      " across and a few tens of metres deep - because what moves over a season is the" +
+      " thermocline, and it moves up and down rather than sideways.",
+    tryThis:
+      "Isolate one, then drag Vertical exaggeration down. The body flattens into the sheet it" +
+      " really is.",
   },
 
   palette: {
@@ -277,6 +339,66 @@ export const GUIDE: Record<string, GuideEntry> = {
     tryThis: "Click a float. The panel on the right becomes the comparison.",
   },
 
+  currents: {
+    title: "Surface currents",
+    kind: "rendering",
+    does:
+      "Lays arrows over the map showing which way the surface water is moving. The colour of an" +
+      " arrow is its speed: pale is slow, dark green is fast.",
+    means:
+      "Every other layer here is our own data. This one is a picture drawn by somebody else." +
+      " Copernicus Marine, Europe's ocean service, run a global ocean model on a grid about" +
+      " nine kilometres across and publish these arrows as map images every day. We download" +
+      " the images once, when the data is baked, and draw them. We do not have the numbers" +
+      " behind them - Copernicus only give those out to account holders - so there is nothing" +
+      " to click and no speed to read off it. That is on purpose. If we cannot check a field" +
+      " ourselves, it is more honest to show it as a picture that says so than to dress it up" +
+      " as a variable like the rest.",
+    look:
+      "The Somali coast in July. That dark green ribbon running north is the Somali Current at" +
+      " the height of the monsoon, one of the fastest currents in any ocean. We tried to" +
+      " calculate this ourselves and got it wrong by a factor of ten, which is why the honest" +
+      " version is borrowed and labelled.",
+    tryThis:
+      "Turn it on and press play. The whole circulation reverses through the monsoon - that is" +
+      " the thing the Indian Ocean does that no other ocean does.",
+  },
+
+  moorings: {
+    title: "Moored buoys",
+    kind: "science",
+    does: "Shows the buoys anchored to the sea floor, drawn as squares rather than dots.",
+    means:
+      "A moored buoy is tethered in one place with sensors strung down the wire, so it measures" +
+      " the same water column every few hours for years. Four of the ones here are India's own" +
+      " OMNI network, run by NIOT with INCOIS as the data centre, and three are RAMA, the joint" +
+      " MoES-NOAA array. They reach the open feed through the same global weather network that" +
+      " carries ship and buoy reports.",
+    look:
+      "Click one and move the timeline. Because it never drifts, its comparison follows the" +
+      " dates - you are watching one patch of ocean through the whole season. An Argo float" +
+      " cannot do that: by the next analysis it is somewhere else.",
+    tryThis: "Open the buoy in the Bay of Bengal and play the timeline from April to July.",
+  },
+
+  chlorophyll: {
+    title: "Chlorophyll",
+    kind: "science",
+    does:
+      "Shows how much plant life a float measured in the water, where it carries the sensor" +
+      " for it.",
+    means:
+      "Chlorophyll marks where nutrients are reaching the sunlit layer - upwelling, river" +
+      " plumes, blooms - and it is what fisheries advisories are built on. It comes from the" +
+      " Argo floats that carry a fluorometer, and it is drawn on its own because there is" +
+      " nothing to compare it against: no gridded chlorophyll shares this timeline. INCOIS" +
+      " publish ocean colour themselves and both series stopped, in 2006 and in 2020.",
+    look:
+      "The peak is usually not at the surface. Look for the bulge between about 30 and 80" +
+      " metres - the deep chlorophyll maximum, where there is still light and the nutrients" +
+      " have not been used up.",
+  },
+
   tracks: {
     title: "Drift tracks",
     kind: "science",
@@ -288,8 +410,34 @@ export const GUIDE: Record<string, GuideEntry> = {
   },
 };
 
+/**
+ * Where each Field came from, in the words that are true of *that* Field.
+ *
+ * This used to be one clause - "as INCOIS analysed it on <date>" - written once and reused for
+ * all five. It is true of two of them. Density and the temperature anomaly are computed here,
+ * and Observation Coverage is not the model at all: it is a count of Argo casts, and separating
+ * the evidence from the model is the whole point of that Field. Crediting INCOIS with it
+ * contradicted the platform's headline idea in the platform's own words.
+ *
+ * `%d` stands for the analysis date, so a Field that does not sit on one can leave it out.
+ */
+const PROVENANCE: Record<string, string> = {
+  temperature: "as INCOIS analysed it on %d",
+  salinity: "as INCOIS analysed it on %d",
+  density:
+    "worked out here with TEOS-10 from INCOIS's temperature and salinity analyses for %d," +
+    " at each cell's own pressure",
+  temperature_anomaly:
+    "worked out here as each cell's departure from its own average across the twelve analyses" +
+    " in this bake, shown for %d",
+  coverage:
+    "counted here from the Argo casts taken around %d. This is the evidence behind the model," +
+    " not the model",
+};
+
 /** A plain-language description of the current view, for when no control is being touched. */
 export function describeView(options: {
+  fieldKey: string;
   fieldLabel: string;
   units: string;
   date: string;
@@ -298,9 +446,13 @@ export function describeView(options: {
   exaggeration: number;
   isoEnabled: boolean;
   isoValue: string;
-  floatCount: number;
+  /** Instruments actually on the water at this Timestep, not every one in the bake. */
+  floatsDrawn: number;
+  /** How many of those are anchored buoys rather than drifting floats. */
+  mooringsDrawn: number;
 }): string {
   const {
+    fieldKey,
     fieldLabel,
     date,
     fromDepth,
@@ -308,8 +460,11 @@ export function describeView(options: {
     exaggeration,
     isoEnabled,
     isoValue,
-    floatCount,
+    floatsDrawn,
+    mooringsDrawn,
   } = options;
+
+  const provenance = (PROVENANCE[fieldKey] ?? "as loaded for %d").replace("%d", date);
 
   const sliced =
     fromDepth > 10 || toDepth < 1900
@@ -322,10 +477,12 @@ export function describeView(options: {
 
   return (
     `You are looking at ${fieldLabel.toLowerCase()} across India's exclusive economic zone,` +
-    ` as INCOIS analysed it on ${date}. ${sliced}${iso}` +
+    ` ${provenance}. ${sliced}${iso}` +
     ` Depth is stretched ${exaggeration.toFixed(0)} times so the column is readable.` +
-    ` ${floatCount} Argo floats are drawn where they actually were; click one to compare it` +
-    ` against the model.`
+    ` ${floatsDrawn} Argo floats` +
+    (mooringsDrawn > 0 ? ` and ${mooringsDrawn} moored buoys` : "") +
+    ` were reporting near this date and are drawn where they actually were; click one to` +
+    ` compare it against the model.`
   );
 }
 
@@ -347,11 +504,44 @@ export interface PaletteNote {
   /** What the palette encodes, in the convention it comes from. */
   designedFor: string;
   /** Sequential runs one way; diverging is built around a meaningful midpoint. */
-  form: "sequential" | "diverging";
+  form: "sequential" | "diverging" | "banded";
   /** Field keys this is the conventional palette for. */
   suits: string[];
+  /**
+   * The one line printed under the swatch.
+   *
+   * Written per palette rather than assembled from `designedFor` and `form`. The template was
+   * "<designedFor>, <form>. The conventional oceanographic scale for <field>." - true of the
+   * three cmocean scales and false of the coverage one, which was invented here and is not
+   * continuous. It printed "The conventional oceanographic scale for observation coverage",
+   * naming a convention that does not exist, two clicks away from a guide entry saying so.
+   */
+  caption: string;
   note: string;
 }
+
+/**
+ * What narrowing the Transfer Function range actually does, per Field.
+ *
+ * "which is how you isolate a single water mass" is the right sentence for temperature,
+ * salinity and density. A water mass is a body of water with a characteristic temperature and
+ * salinity, so there is no water mass in a count of Argo casts and none in a departure from an
+ * average either - and this note was printed under all five.
+ */
+export const RANGE_NOTE: Record<string, string> = {
+  temperature:
+    "Narrowing the range hides water outside it, which is how you isolate a single water mass.",
+  salinity:
+    "Narrowing the range hides water outside it, which is how you isolate a single water mass.",
+  density:
+    "Narrowing the range hides water outside it, which is how you isolate a single water mass.",
+  temperature_anomaly:
+    "Narrowing the range hides water outside it. Lift the minimum past the middle and only" +
+    " water that warmed is left; drop the maximum and only water that cooled is left.",
+  coverage:
+    "Narrowing the range hides water outside it. Lift the minimum and only the better-observed" +
+    " water is left, which shows you the shape of the gaps.",
+};
 
 export const PALETTES: Record<string, PaletteNote> = {
   thermal: {
@@ -359,6 +549,9 @@ export const PALETTES: Record<string, PaletteNote> = {
     designedFor: "Temperature",
     form: "sequential",
     suits: ["temperature"],
+    caption:
+      "Temperature, sequential. cmocean's thermal - the conventional oceanographic scale for"
+      + " temperature.",
     note:
       "Runs cold and dark to warm and bright, which is the direction people already expect heat" +
       " to run. This is the house palette for temperature.",
@@ -368,6 +561,9 @@ export const PALETTES: Record<string, PaletteNote> = {
     designedFor: "Salinity",
     form: "sequential",
     suits: ["salinity"],
+    caption:
+      "Salinity, sequential. cmocean's haline - the conventional oceanographic scale for"
+      + " salinity.",
     note:
       "Fresh to saline, in blues and yellows chosen so river plumes separate cleanly from open" +
       " ocean water. The house palette for salinity.",
@@ -377,6 +573,9 @@ export const PALETTES: Record<string, PaletteNote> = {
     designedFor: "Density",
     form: "sequential",
     suits: ["density"],
+    caption:
+      "Density, sequential. cmocean's dense - the conventional oceanographic scale for"
+      + " seawater density.",
     note:
       "Built for seawater density, and running light to heavy in the direction people already" +
       " expect weight to run. The house palette for density.",
@@ -386,6 +585,9 @@ export const PALETTES: Record<string, PaletteNote> = {
     designedFor: "Anomalies about zero",
     form: "diverging",
     suits: ["temperature_anomaly"],
+    caption:
+      "Departure from average, diverging. cmocean's balance, with the pale middle forced onto"
+      + " zero.",
     note:
       "A diverging palette, built around a midpoint that means something: the pale middle is" +
       " water sitting at its own average, and the two dark ends are warmer and cooler than it." +
@@ -394,8 +596,11 @@ export const PALETTES: Record<string, PaletteNote> = {
   coverage: {
     title: "coverage",
     designedFor: "Observation coverage",
-    form: "sequential",
+    form: "banded",
     suits: ["coverage"],
+    caption:
+      "Cast count, in four steps. Not a cmocean scale and not a continuous one: this palette was"
+      + " built here, because twice as many casts is not twice as good.",
     note:
       "Not a cmocean palette and not a continuous scale. Four flat bands with hard edges," +
       " because twice as many casts is not twice as good and a smooth ramp invites exactly that" +

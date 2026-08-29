@@ -4,10 +4,11 @@ import {
   loadCollocations,
   loadFloats,
   loadManifest,
+  loadOverlayTexture,
   loadVolumeTexture,
   paletteTexture,
 } from "./data/load";
-import { useCoverageWindow } from "./floatTime";
+import { positionAt, useCoverageWindow } from "./floatTime";
 import { OceanScene } from "./scene/OceanScene";
 import { useStore } from "./store";
 import { Chrome, LoadingScreen } from "./ui/Chrome";
@@ -18,6 +19,7 @@ import { GuidePanel } from "./ui/GuidePanel";
 import { MapKey } from "./ui/MapKey";
 import { ProfilePanel } from "./ui/ProfilePanel";
 import { Timeline } from "./ui/Timeline";
+import { Tour } from "./ui/Tour";
 
 const DIVE_MILLISECONDS = 2600;
 
@@ -32,10 +34,12 @@ export default function App() {
     let cancelled = false;
     (async () => {
       try {
-        const [manifest, floats, collocations, anomalies, coastlines] = await Promise.all([
+        // Everything the first picture needs, and nothing else. `collocations.json` used to be
+        // in here: 2.42 MB of the 3.29 MB first load, for a panel nobody has opened yet. It
+        // follows below, off the critical path.
+        const [manifest, floats, anomalies, coastlines] = await Promise.all([
           loadManifest(),
           loadFloats(),
-          loadCollocations(),
           loadAnomalies(),
           fetch(`${import.meta.env.BASE_URL}data/coastlines.json`).then(
             (r) => r.json() as Promise<number[][][]>,
@@ -48,12 +52,27 @@ export default function App() {
         useStore.setState({
           manifest,
           floats,
-          collocations,
           anomalies,
           coastlines,
           timestepIndex: manifest.timesteps.length - 1,
           fieldKey: first?.key ?? "temperature",
         });
+
+        // The comparisons, in the background. A failure here is not fatal - the globe, the
+        // volume, every Variable and the anomaly panel all work without it, and the Collocation
+        // panel says so rather than the app refusing to start.
+        loadCollocations()
+          .then((collocations) => {
+            if (!cancelled) useStore.setState({ collocations, collocationsReady: true });
+          })
+          .catch(() => {
+            if (!cancelled) {
+              useStore.setState({
+                collocationsReady: true,
+                notice: "The float comparisons could not be loaded. Everything else is fine.",
+              });
+            }
+          });
       } catch (error) {
         if (!cancelled) {
           useStore.setState({ loadError: error instanceof Error ? error.message : String(error) });
@@ -125,6 +144,38 @@ export default function App() {
     };
   }, [ready, store.manifest, store.fieldKey, store.timestepIndex]);
 
+  // ---- the Copernicus current overlay --------------------------------------
+  //
+  // Fetched only when somebody turns it on, and per Timestep after that. Twelve images at
+  // roughly 340 KB each have no business on the critical path for a layer that is off by
+  // default, and the demo still makes no network call at demo time because they are committed.
+  useEffect(() => {
+    const scene = sceneRef.current;
+    const spec = store.manifest?.currents;
+    if (!scene || !spec) return;
+    if (store.currentsOpacity <= 0) {
+      scene.setCurrents(null);
+      return;
+    }
+    const path = spec.files[store.timestepIndex];
+    if (!path) return;
+
+    let cancelled = false;
+    loadOverlayTexture(path)
+      .then((texture) => {
+        if (cancelled) texture.dispose();
+        else scene.setCurrents(texture);
+      })
+      .catch(() =>
+        useStore.setState({
+          notice: "Could not load the current overlay for this step.",
+        }),
+      );
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, store.manifest, store.currentsOpacity, store.timestepIndex]);
+
   // ---- palette -------------------------------------------------------------
   useEffect(() => {
     const scene = sceneRef.current;
@@ -139,7 +190,9 @@ export default function App() {
   // A Feature is found within one Timestep, so the panel cannot survive the timeline moving:
   // index 3 of the next step is a different body of water in a different place.
   useEffect(() => {
-    useStore.setState({ selectedAnomaly: null });
+    // Isolation goes with the selection. Leaving it on with nothing selected would clip the
+    // water to a box the user can no longer see the reason for.
+    useStore.setState({ selectedAnomaly: null, isolateAnomaly: false });
   }, [store.timestepIndex, store.fieldKey]);
 
   // ---- push view state into the scene every render -------------------------
@@ -165,8 +218,10 @@ export default function App() {
       anomalies: store.features(),
       showAnomalies: store.showAnomalies,
       selectedAnomaly: store.selectedAnomaly,
+      isolateAnomaly: store.isolateAnomaly,
       showFloats: store.showFloats,
       showTracks: store.showTracks,
+      currentsOpacity: store.currentsOpacity,
       theme: store.theme,
     });
   });
@@ -212,11 +267,54 @@ export default function App() {
     if (!scene) return;
     const float = scene.pickFloat(event.clientX, event.clientY);
     if (float) {
-      useStore.setState({ selectedFloatId: float.id, selectedAnomaly: null });
+      useStore.setState({ selectedFloatId: float.id, selectedAnomaly: null, isolateAnomaly: false });
       return;
     }
     const feature = scene.pickAnomaly(event.clientX, event.clientY);
-    useStore.setState({ selectedFloatId: null, selectedAnomaly: feature });
+    useStore.setState({
+      selectedFloatId: null,
+      selectedAnomaly: feature,
+      // A different body of water is a different box, so isolation does not carry over.
+      isolateAnomaly: false,
+    });
+  }, []);
+
+  /**
+   * The 3D view, from the keyboard.
+   *
+   * The canvas carried `tabIndex -1`, so selecting a Float was mouse-only and the whole
+   * comparison - the thing the platform exists for - was unreachable without a pointer. For a
+   * tool meant to be deployed by a government department that is a procurement question, not a
+   * nicety.
+   *
+   * Left and right walk the Floats reporting at this Timestep from west to east, which is the
+   * order the map reads in. Enter opens the comparison, Escape closes it and hands focus back.
+   * The selection is announced through a live region rather than being left to the canvas,
+   * which a screen reader cannot describe.
+   */
+  const onCanvasKey = useCallback((event: React.KeyboardEvent<HTMLCanvasElement>) => {
+    const state = useStore.getState();
+    const reporting = state.reportingFloats();
+    if (reporting.length === 0) return;
+
+    const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+    if (step !== 0) {
+      event.preventDefault();
+      const current = reporting.findIndex((f) => f.id === state.selectedFloatId);
+      // From nothing, the first press lands on the westernmost Float rather than the second.
+      const next = current < 0 ? (step > 0 ? 0 : reporting.length - 1) : current + step;
+      const chosen = reporting[((next % reporting.length) + reporting.length) % reporting.length];
+      if (!chosen) return;
+      useStore.setState({ selectedFloatId: chosen.id, selectedAnomaly: null });
+      const at = positionAt(chosen, state.manifest ? new Date(state.manifest.timesteps[state.timestepIndex] ?? 0).getTime() : 0);
+      if (at) sceneRef.current?.focusOn(at.lon, at.lat);
+      return;
+    }
+
+    if (event.key === "Escape" && state.selectedFloatId) {
+      event.preventDefault();
+      useStore.setState({ selectedFloatId: null });
+    }
   }, []);
 
   const onCanvasMove = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -244,7 +342,24 @@ export default function App() {
   return (
     <div className="app">
       <div className="viewport">
-        <canvas ref={canvasRef} onClick={onCanvasClick} onMouseMove={onCanvasMove} />
+        <canvas
+          ref={canvasRef}
+          tabIndex={0}
+          role="application"
+          aria-label={
+            "Three-dimensional ocean view. Use the left and right arrow keys to move between" +
+            " the Argo floats reporting on this date, and Escape to close a comparison."
+          }
+          onClick={onCanvasClick}
+          onMouseMove={onCanvasMove}
+          onKeyDown={onCanvasKey}
+        />
+        {/* What the canvas cannot say for itself. */}
+        <p className="sr-only" role="status" aria-live="polite">
+          {store.selectedFloatId
+            ? `Argo float ${store.selectedFloatId} selected.`
+            : `${store.reportingCount()} Argo floats reporting on this date.`}
+        </p>
         {!store.manifest && <LoadingScreen />}
         {store.notice && (
           <div className="notice" role="status">
@@ -263,9 +378,10 @@ export default function App() {
           <MapKey />
           <Controls />
           <GuidePanel />
-          <AnomalyPanel />
+          <AnomalyPanel onPan={(lon, lat) => sceneRef.current?.panTo(lon, lat)} />
           <ProfilePanel onFocus={(lon, lat) => sceneRef.current?.focusOn(lon, lat)} />
           <Timeline />
+          <Tour onDive={dive} />
         </>
       )}
     </div>

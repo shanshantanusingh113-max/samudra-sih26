@@ -32,6 +32,8 @@
 
   --outline: #4b5859;
   --outline-variant: #2c3536;
+  /* The shadow a scrollable panel shows at an edge it has content beyond. */
+  --scroll-cue: rgba(0, 0, 0, 0.55);
 
   /* Cyan is the accent and carries interaction. Amber marks the one number that matters.
      Coral only ever marks a problem, green only ever marks something resolved. */
@@ -55,6 +57,10 @@
   --observed: #64d7e3;
   --model: #bcc9ca;
   --ribbon: rgba(255, 158, 139, 0.2);
+  /* Chlorophyll gets its own role rather than borrowing --good, which means "resolved"
+     everywhere else. It is plant life, it never shares an axis with the comparison curves,
+     and green is the one colour a non-specialist reads correctly for it without a legend. */
+  --chlorophyll: #7ddc9f;
 
   --panel-bg: rgba(15, 20, 21, 0.97);
   --panel-blur: 14px;
@@ -99,6 +105,7 @@
 
   --outline: #97a4a5;
   --outline-variant: #c8d2d2;
+  --scroll-cue: rgba(19, 26, 27, 0.22);
 
   --primary: #00666e;
   --primary-strong: #00838d;
@@ -119,6 +126,7 @@
   --observed: #00666e;
   --model: #5f6d6e;
   --ribbon: rgba(178, 58, 34, 0.18);
+  --chlorophyll: #17703f;
 
   --panel-bg: rgba(248, 252, 252, 0.98);
   --scrim: rgba(248, 252, 252, 0.96);
@@ -193,6 +201,19 @@ body {
 ::selection {
   background: var(--primary-edge);
   color: var(--on-surface);
+}
+
+/* Announced, never drawn. The canvas cannot describe itself to a screen reader. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 :focus-visible {
@@ -302,7 +323,7 @@ body {
 }
 
 .brand-sub {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--on-surface-faint);
   letter-spacing: 0.01em;
 }
@@ -326,7 +347,7 @@ body {
 
 .stamp-label {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 10.5px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--on-surface-faint);
@@ -462,7 +483,7 @@ body {
   display: flex;
   gap: 14px;
   font-family: var(--mono);
-  font-size: 9.5px;
+  font-size: 11px;
   letter-spacing: 0.08em;
   color: var(--on-surface-faint);
   pointer-events: none;
@@ -485,27 +506,66 @@ body {
   z-index: 5;
   width: 344px;
   overflow-x: hidden;
-  max-height: calc(100% - 186px);
+  /* The timeline sits 22 px off the foot and is about 58 px tall. It is also centred, and at
+     every viewport width its left end starts well to the right of the panel, so the panel only
+     has to clear the timeline in *height* by enough to look deliberate rather than by enough to
+     avoid a collision. 118 px does that and gives a 1280x720 laptop the whole panel. It was
+     186 px, which threw away 68 px of a panel that is already taller than a short screen. */
+  max-height: calc(100% - 118px);
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0;
   border: 1px solid var(--outline-variant);
   border-radius: var(--radius);
-  background: var(--panel-bg);
+
+  /*
+   * A scroll affordance, because there was none.
+   *
+   * Measured at three viewport sizes, the share of the left panel below the fold was 30% at
+   * 1600x900, 43% at 1366x768 and 48% at 1280x720 - and at 1366x768 that hid the whole
+   * Rendering group, the Isosurface control and the Instruments toggles. The content simply
+   * stopped mid-label with nothing to say there was more, so a judge on a short laptop could
+   * not see a control PS 26067 names by hand.
+   *
+   * The two `local` layers are the panel's own ground and scroll with the content; the two
+   * `scroll` shadows are pinned to the frame. Where content has scrolled past an edge the
+   * ground layer moves away and the shadow shows through, so a shadow appears at the top only
+   * when there is something above and at the bottom only when there is something below. Pure
+   * CSS, no measurement, and it cannot fall out of step with the content.
+   */
+  background:
+    linear-gradient(var(--panel-bg) 40%, rgba(0, 0, 0, 0)) top / 100% 26px no-repeat local,
+    linear-gradient(rgba(0, 0, 0, 0), var(--panel-bg) 60%) bottom / 100% 26px no-repeat local,
+    radial-gradient(farthest-side at 50% 0, var(--scroll-cue), rgba(0, 0, 0, 0)) top / 100% 13px
+      no-repeat scroll,
+    radial-gradient(farthest-side at 50% 100%, var(--scroll-cue), rgba(0, 0, 0, 0)) bottom /
+      100% 13px no-repeat scroll,
+    var(--panel-bg);
+
   backdrop-filter: blur(var(--panel-blur));
   -webkit-backdrop-filter: blur(var(--panel-blur));
   box-shadow: var(--shadow-panel);
   scrollbar-width: thin;
   scrollbar-color: var(--outline) transparent;
+  /* Keep the track's width reserved so the thumb never reflows the content when it appears. */
+  scrollbar-gutter: stable;
 }
 
 .panel::-webkit-scrollbar {
-  width: 8px;
+  width: 9px;
 }
 
 .panel::-webkit-scrollbar-thumb {
-  background: var(--outline-variant);
-  border-radius: 4px;
+  /* Was --outline-variant, which is a hairline colour and invisible against the panel. */
+  background: var(--outline);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.panel::-webkit-scrollbar-thumb:hover {
+  background: var(--on-surface-faint);
+  background-clip: content-box;
 }
 
 .panel-left {
@@ -522,8 +582,15 @@ body {
  * label is the Stitch motif and it earns its place: it gives the eye a fixed left edge to run
  * down, so a stack of six groups scans as a list rather than as a wall.
  */
+/*
+ * Collapsible groups.
+ *
+ * Every group's name is on screen at once even when its body is closed, which is the property
+ * that makes a control discoverable. Before this, 43% of the panel sat below the fold on a
+ * 1366x768 laptop with nothing saying so, and the Isosurface - a clause PS 26067 names by hand
+ * - was one of the things you could not see.
+ */
 .control-group {
-  padding: 14px 16px 16px;
   border-bottom: 1px solid var(--outline-variant);
 }
 
@@ -531,41 +598,70 @@ body {
   border-bottom: none;
 }
 
+/* The header is a button now, so it has to shed the browser's button styling. */
 .control-head {
+  appearance: none;
+  width: 100%;
+  margin: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 12px;
+  padding: 10px 16px;
   min-width: 0;
+  transition: background 0.14s var(--ease);
+}
+
+.control-head:hover {
+  background: var(--primary-wash);
+}
+
+.control-group.open > .control-head {
+  padding-bottom: 9px;
+}
+
+.control-body {
+  padding: 0 16px 13px;
+}
+
+/* A caret that points down when the group is open. */
+.disclosure {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid var(--primary);
+  border-bottom: 1.5px solid var(--primary);
+  transform: rotate(-45deg);
+  transition: transform 0.18s var(--ease);
+}
+
+.control-group.open .disclosure {
+  transform: rotate(45deg);
 }
 
 .control-head > select { flex: 1 1 auto; }
-.control-head > label { flex: 0 0 auto; }
+.control-head > label { flex: 1 1 auto; }
 
 .control-head label {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--on-surface-variant);
-}
-
-.control-head label::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  background: var(--primary);
-  flex: none;
+  cursor: pointer;
 }
 
 .readout {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--primary);
   letter-spacing: 0.04em;
 }
@@ -582,7 +678,7 @@ select {
   background: var(--surface-low);
   color: var(--on-surface);
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -617,7 +713,7 @@ select:hover {
   background: var(--surface-low);
   color: var(--on-surface-variant);
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.04em;
   cursor: pointer;
   transition: background 0.16s var(--ease), color 0.16s var(--ease);
@@ -663,7 +759,7 @@ select:hover {
   margin-top: 6px;
   margin-bottom: 12px;
   font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: 12px;
   color: var(--on-surface-variant);
 }
 
@@ -671,7 +767,7 @@ select:hover {
   color: var(--on-surface-faint);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  font-size: 9px;
+  font-size: 10.5px;
 }
 
 /*
@@ -682,7 +778,7 @@ select:hover {
  */
 .palette-note {
   margin: 8px 0 12px;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.5;
   color: var(--on-surface-faint);
 }
@@ -720,13 +816,13 @@ select:hover {
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 6px;
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: var(--on-surface-variant);
 }
 
 .slider-value {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--on-surface);
 }
 
@@ -787,7 +883,7 @@ input[type="range"]::-moz-range-thumb {
   margin: 10px 0 0;
   padding-left: 10px;
   border-left: 2px solid var(--outline-variant);
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.55;
   color: var(--on-surface-faint);
 }
@@ -819,7 +915,7 @@ input[type="range"]::-moz-range-thumb {
   align-items: center;
   gap: 7px;
   font-family: var(--mono);
-  font-size: 9.5px;
+  font-size: 10.5px;
   font-weight: 500;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -853,7 +949,7 @@ input[type="range"]::-moz-range-thumb {
 .guide-body dt {
   margin-top: 12px;
   font-family: var(--mono);
-  font-size: 9.5px;
+  font-size: 10.5px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--on-surface-faint);
@@ -894,7 +990,7 @@ input[type="range"]::-moz-range-thumb {
   margin: 14px;
   padding-top: 12px;
   border-top: 1px solid var(--outline-variant);
-  font-size: 11.5px;
+  font-size: 13px;
   color: var(--on-surface-faint);
 }
 
@@ -929,7 +1025,7 @@ input[type="range"]::-moz-range-thumb {
 
 .mapkey-label {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 10.5px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--on-surface-faint);
@@ -939,7 +1035,7 @@ input[type="range"]::-moz-range-thumb {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: var(--on-surface-variant);
 }
 
@@ -959,10 +1055,42 @@ input[type="range"]::-moz-range-thumb {
   margin: 0 2px;
 }
 
+/* A square, matching the marker shape in the scene. The shape carries the distinction, not the
+   colour, so it survives on either theme and for a viewer who cannot separate the hues. */
+.swatch.mooring {
+  width: 9px;
+  height: 9px;
+  background: var(--swatch-float);
+  box-shadow: 0 0 0 2px var(--swatch-float-ring);
+  margin: 0 2px;
+}
+
 .swatch.track {
   height: 2px;
   background: var(--swatch-track);
   border-radius: 1px;
+}
+
+/* The Copernicus speed ramp, pale to dark green, as they draw it. */
+.swatch.currents {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #fffdcd, #b9d96a, #46a36a, #14606c);
+}
+
+.legend-currents {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.currents-ramp {
+  flex: 1 1 auto;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #fffdcd, #b9d96a, #46a36a, #14606c);
+  border: 1px solid var(--outline-variant);
 }
 
 .swatch.coast {
@@ -1005,7 +1133,7 @@ input[type="range"]::-moz-range-thumb {
 
 .profile-meta {
   font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: 12px;
   color: var(--on-surface-faint);
 }
 
@@ -1020,7 +1148,7 @@ input[type="range"]::-moz-range-thumb {
   border: 1px solid var(--outline-variant);
   border-radius: 999px;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 10.5px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--on-surface-faint);
@@ -1103,7 +1231,7 @@ input[type="range"]::-moz-range-thumb {
 
 .kv dt {
   font-family: var(--mono);
-  font-size: 9.5px;
+  font-size: 10.5px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--on-surface-faint);
@@ -1126,7 +1254,7 @@ input[type="range"]::-moz-range-thumb {
 
 .chart-title {
   font-family: var(--mono);
-  font-size: 9.5px;
+  font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--on-surface-faint);
@@ -1154,7 +1282,7 @@ input[type="range"]::-moz-range-thumb {
 
 .tick {
   font-family: var(--mono);
-  font-size: 8.5px;
+  font-size: 10px;
   fill: var(--on-surface-faint);
 }
 
@@ -1168,13 +1296,13 @@ input[type="range"]::-moz-range-thumb {
 
 .axis-label {
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 9.5px;
   letter-spacing: 0.14em;
   fill: var(--on-surface-faint);
 }
 
 .axis-arrow {
-  font-size: 11px;
+  font-size: 12px;
   fill: var(--on-surface-faint);
 }
 
@@ -1213,7 +1341,7 @@ input[type="range"]::-moz-range-thumb {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 10.5px;
+  font-size: 12px;
   color: var(--on-surface-faint);
 }
 
@@ -1288,7 +1416,7 @@ input[type="range"]::-moz-range-thumb {
 
 .stat-label {
   font-family: var(--mono);
-  font-size: 8.5px;
+  font-size: 10.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--on-surface-faint);
@@ -1299,7 +1427,7 @@ input[type="range"]::-moz-range-thumb {
 .analysis-note {
   margin: 12px 14px 14px;
   font-family: var(--mono);
-  font-size: 9.5px;
+  font-size: 12px;
   letter-spacing: 0.06em;
   color: var(--on-surface-faint);
   text-align: center;
@@ -1318,7 +1446,7 @@ input[type="range"]::-moz-range-thumb {
   padding: 8px 11px;
   border-left: 2px solid var(--outline-variant);
   background: var(--surface-low);
-  font-size: 10px;
+  font-size: 12.5px;
   line-height: 1.55;
   text-align: left;
 }
@@ -1371,7 +1499,7 @@ input[type="range"]::-moz-range-thumb {
 
 .ruler-label {
   font-family: var(--mono);
-  font-size: 9.5px;
+  font-size: 11px;
   letter-spacing: 0.05em;
   color: var(--ruler-ink);
   white-space: nowrap;
@@ -1380,17 +1508,167 @@ input[type="range"]::-moz-range-thumb {
   width: 44px;
 }
 
+/* Positioned by DepthRuler, at the head of the figure column. Centred at the foot of the
+   viewport it was covered by the map key at every window size measured. */
 .ruler-note {
   position: absolute;
-  left: 50%;
-  bottom: 116px;
-  transform: translateX(-50%);
+  top: 0;
+  left: 0;
   margin: 0;
+  transform-origin: left center;
   font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  color: var(--ruler-ink-dim);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  /* The same ink as the figures it captions. It was --ruler-ink-dim, which is a hairline
+     colour chosen for a rule, and as a caption over bright surface water it disappeared. */
+  color: var(--ruler-ink);
   white-space: nowrap;
+}
+
+/* The isolate control on the Anomaly Feature panel. Full width, because it is the one action
+   this panel offers and burying it as a small link would waste it. */
+.isolate {
+  width: 100%;
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  background: none;
+  color: var(--primary);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.16s var(--ease), color 0.16s var(--ease);
+}
+
+.isolate:hover {
+  background: var(--primary-wash);
+}
+
+.isolate.on {
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: 500;
+}
+
+.isolate.on:hover {
+  background: var(--primary-hover);
+}
+
+/* A float that also carries a fluorometer. Named at the top of the panel because its chart is
+   at the bottom of it. */
+.pill.chl {
+  color: var(--chlorophyll);
+  border-color: var(--chlorophyll);
+  background: none;
+}
+
+/* ---------------------------------------------------------------- tour */
+
+/*
+ * Sits above the timeline and left of the right-hand panel, so it never covers the thing it is
+ * pointing at. It is a dialog rather than a panel: it appears on request, says one thing, and
+ * gets out of the way.
+ */
+.tour {
+  position: absolute;
+  left: 50%;
+  bottom: 104px;
+  transform: translateX(-50%);
+  z-index: 7;
+  width: min(460px, calc(100vw - 760px));
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 18px 14px;
+  border: 1px solid var(--outline-variant);
+  border-top: 2px solid var(--primary);
+  border-radius: var(--radius);
+  background: var(--panel-bg);
+  backdrop-filter: blur(var(--panel-blur));
+  -webkit-backdrop-filter: blur(var(--panel-blur));
+  box-shadow: var(--shadow-panel);
+  animation: fade-up 0.4s var(--ease) both;
+}
+
+.tour-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tour-count {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.tour-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--on-surface);
+}
+
+.tour-body {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--on-surface-variant);
+}
+
+.tour-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.tour-actions button {
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tour-actions .primary {
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: 500;
+}
+
+.tour-actions .primary:hover {
+  background: var(--primary-hover);
+}
+
+.tour-actions .ghost:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.tour-start {
+  padding: 7px 12px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 6px;
+  background: none;
+  color: var(--on-surface-variant);
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tour-start:hover {
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 /* ---------------------------------------------------------------- timeline */
@@ -1446,19 +1724,60 @@ input[type="range"]::-moz-range-thumb {
   margin-top: 5px;
 }
 
-.timeline-ticks span {
+.timeline-ticks button {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 2px 0;
   font-family: var(--mono);
-  font-size: 8.5px;
+  font-size: 10px;
+  /* The dates are fixed-width and the track is not, so they must never wrap - two-line ticks
+     read as a broken axis. */
+  white-space: nowrap;
   color: var(--on-surface-faint);
   cursor: pointer;
+  border-radius: 3px;
   transition: color 0.16s var(--ease);
 }
 
-.timeline-ticks span:hover {
+.timeline-ticks button:hover {
   color: var(--on-surface-variant);
 }
 
-.timeline-ticks span.on {
+.timeline-ticks button.on {
+  color: var(--primary);
+}
+
+/* A step with no room for its date. Still clickable, still named for a screen reader. */
+/* A second chart under the comparison, for a quantity with no model side. */
+.chart-secondary {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--outline-variant);
+}
+
+/* Chlorophyll is plant life, and green is the one colour a non-specialist reads correctly for
+   it without a legend. It never shares an axis with the comparison lines, so there is no
+   ordering to confuse. */
+.line-chlorophyll {
+  stroke: var(--chlorophyll);
+}
+
+.profile-operator {
+  margin-left: 8px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--on-surface-faint);
+}
+
+.timeline-ticks button.bare {
+  color: var(--outline);
+  letter-spacing: 0;
+}
+
+.timeline-ticks button.bare.on {
   color: var(--primary);
 }
 
@@ -1478,7 +1797,7 @@ input[type="range"]::-moz-range-thumb {
 
 .timeline-note {
   font-family: var(--mono);
-  font-size: 8.5px;
+  font-size: 10.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--on-surface-faint);
@@ -1567,7 +1886,7 @@ input[type="range"]::-moz-range-thumb {
 
 .fatal code {
   font-family: var(--mono);
-  font-size: 11.5px;
+  font-size: 12.5px;
   padding: 2px 6px;
   border-radius: 4px;
   background: var(--surface-high);
@@ -1590,26 +1909,40 @@ input[type="range"]::-moz-range-thumb {
  * with hard band edges has names rather than endpoints, and reading "0" and "8" off the ends
  * would tell you nothing about where a band starts.
  */
+/* A button now, not a list: on a banded Field this key *is* the colourbar, because the gradient
+   bar drawn across the encoded range gave three quarters of its width to one band. Clicking it
+   opens the same explanation the bar used to. */
 .band-key {
-  list-style: none;
+  appearance: none;
+  width: 100%;
   margin: 8px 0 12px;
-  padding: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  text-align: left;
   display: grid;
-  gap: 5px;
+  gap: 6px;
 }
 
-.band-key li {
+.band-key:hover {
+  border-color: var(--primary);
+}
+
+.band-key .band {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: var(--on-surface-variant);
 }
 
+/* Wider than the old swatch, so the four bands read as a scale rather than as bullet points. */
 .band-swatch {
   flex: none;
-  width: 14px;
-  height: 10px;
+  width: 34px;
+  height: 12px;
   border-radius: 2px;
   border: 1px solid var(--outline-variant);
 }

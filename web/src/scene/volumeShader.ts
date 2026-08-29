@@ -34,6 +34,13 @@ uniform float uOpacity;
 uniform float uSteps;
 uniform float uDepthFrom;     // depth-slice gate, 0 = surface, 1 = floor
 uniform float uDepthTo;
+// Isolating one Anomaly Feature: the box it occupies, in texture coordinates, and how hard to
+// hide everything else. A coloured blob inside a solid block tells you that water departed and
+// almost nothing about its shape - you cannot see where it starts, how deep it runs or whether
+// it is one body or three. Clearing the rest away is the only way to actually look at it.
+uniform vec3  uFocusMin;
+uniform vec3  uFocusMax;
+uniform float uFocusStrength; // 0 = draw everything, 1 = draw only the Feature
 uniform float uIsoValue;      // normalised; ignored unless uIsoEnabled
 uniform float uIsoEnabled;
 uniform float uVolumeEnabled;
@@ -128,9 +135,21 @@ void main() {
       if (coverage > 0.02) {
         float shaped = shape(sampled.r);
 
+        // How far inside the focused box this sample is. Smoothed over a small margin rather
+        // than a hard cut, so the isolated body has an edge you can read as a shape instead of
+        // a staircase of voxels.
+        float inside = 1.0;
+        if (uFocusStrength > 0.001) {
+          vec3 margin = vec3(0.012, 0.012, 0.010);
+          vec3 low  = smoothstep(uFocusMin - margin, uFocusMin + margin, tc);
+          vec3 high = 1.0 - smoothstep(uFocusMax - margin, uFocusMax + margin, tc);
+          float box = low.x * low.y * low.z * high.x * high.y * high.z;
+          inside = mix(1.0, box, uFocusStrength);
+        }
+
         if (uIsoEnabled > 0.5) {
           float signedDistance = sampled.r - uIsoValue;
-          if (haveIso && previousIso * signedDistance < 0.0) {
+          if (haveIso && previousIso * signedDistance < 0.0 && inside > 0.5) {
             vec3 normal = -gradientAt(tc, texel);
             float lambert = 0.35 + 0.65 * max(dot(normal, uLightDirection), 0.0);
             vec3 isoColour = texture(uPalette, vec2(shape(uIsoValue), 0.5)).rgb;
@@ -154,7 +173,12 @@ void main() {
           // Without this, a monotonic field is just an opaque warm lid over an invisible abyss.
           float emphasis = mix(1.0, 0.12 + 3.4 * sampled.b, uEmphasis);
 
-          float alpha = uOpacity * coverage * inWindow * emphasis;
+          float alpha = uOpacity * coverage * inWindow * emphasis * inside;
+
+          // Isolating one Feature removes everything the ray used to accumulate on the way
+          // through, so the body left behind has to carry the whole picture by itself. At the
+          // opacity that reads correctly for a full block it comes out as a faint smudge.
+          alpha *= 1.0 + 3.0 * uFocusStrength;
           alpha = 1.0 - pow(max(1.0 - alpha, 0.0), stepSize / reference);
 
           vec3 colour = texture(uPalette, vec2(shaped, 0.5)).rgb;

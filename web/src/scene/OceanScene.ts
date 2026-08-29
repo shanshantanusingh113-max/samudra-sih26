@@ -30,7 +30,7 @@ import {
   surfaceFragmentShader,
   surfaceVertexShader,
 } from "./earthShader";
-import { axisToDepth, boxBounds, depthToY, latToZ, lonToX, makeFrame } from "./geography";
+import { axisToDepth, boxBounds, depthToAxis, depthToY, latToZ, lonToX, makeFrame } from "./geography";
 import { freshness, positionAt, trackUpTo } from "../floatTime";
 import { morphedPosition } from "./morph";
 import { volumeFragmentShader, volumeVertexShader } from "./volumeShader";
@@ -55,12 +55,16 @@ export interface ViewState {
   selectedFloatId: string | null;
   showFloats: boolean;
   showTracks: boolean;
+  /** 0 hides the Copernicus current overlay; 1 draws it at full strength. */
+  currentsOpacity: number;
   /** Which Field is drawn. The Anomaly Features belong to one of them and to no other. */
   fieldKey: string;
   /** This Timestep's Anomaly Features, and which of them is open. */
   anomalies: AnomalyFeature[];
   showAnomalies: boolean;
   selectedAnomaly: number | null;
+  /** Hide every part of the water except the selected Anomaly Feature. */
+  isolateAnomaly: boolean;
   theme: Theme;
 }
 
@@ -124,6 +128,76 @@ const GLOBE_DISTANCE = 175;
 const REGION_VIEW = { lon: 79, lat: 8, height: 17, back: 74 };
 
 export class OceanScene {
+  /**
+   * Clip the water down to one Anomaly Feature.
+   *
+   * A coloured blob inside a solid block tells a viewer *that* water departed and almost
+   * nothing about its shape - where it starts, how deep it runs, whether it is one body or
+   * three. Clearing the rest away is the only way to actually look at the thing the ring is
+   * pointing at, and every number the panel reports is about exactly this box.
+   *
+   * The box is the Feature's own bounding box from the bake, converted into the Volume's
+   * texture coordinates. Latitude runs the opposite way in the texture from the world, and the
+   * depth axis is warped, so both are taken through `geography.ts` rather than scaled by hand -
+   * the same rule that keeps the depth ruler honest.
+   *
+   * Half a grid cell is added around the horizontal edges. The Feature's box names the *node
+   * centres* it occupies, and a node's cell reaches half a degree past its centre, so clipping
+   * exactly on the centres would shave the outermost ring of cells off the body it is meant to
+   * be showing whole.
+   */
+  private applyFocus(material: ShaderMaterial, state: ViewState): void {
+    const feature = state.selectedAnomaly === null ? undefined : state.anomalies[state.selectedAnomaly];
+    if (!feature || !state.isolateAnomaly || !this.manifest) {
+      material.uniforms.uFocusStrength!.value = 0;
+      return;
+    }
+    const volume = this.manifest.volume;
+    const spanLon = volume.east - volume.west;
+    const spanLat = volume.north - volume.south;
+    const halfCellLon = spanLon / Math.max(volume.width - 1, 1) / 2;
+    const halfCellLat = spanLat / Math.max(volume.height - 1, 1) / 2;
+
+    const u0 = (feature.west - halfCellLon - volume.west) / spanLon;
+    const u1 = (feature.east + halfCellLon - volume.west) / spanLon;
+    // Texture v is referenced to the SOUTH edge, not the north. World z is -latitude, so the
+    // shader's `(uBoxMax.z - p.z) / span.z` expands to `(lat - south) / (north - south)`.
+    // Written north-referenced this mirrored the box about the region centre: the Oman feature
+    // at 12.5-20.5N was clipped to -5.0 to 4.0N, 1800 km from the ring pointing at it.
+    const v0 = (feature.south - halfCellLat - volume.south) / spanLat;
+    const v1 = (feature.north + halfCellLat - volume.south) / spanLat;
+    // And w runs down the warped axis, which is what depthToAxis inverts.
+    const w0 = depthToAxis(volume, feature.topMetres);
+    const w1 = depthToAxis(volume, feature.bottomMetres);
+
+    (material.uniforms.uFocusMin!.value as Vector3).set(
+      Math.max(0, Math.min(u0, u1)),
+      Math.max(0, Math.min(v0, v1)),
+      Math.max(0, Math.min(w0, w1)),
+    );
+    (material.uniforms.uFocusMax!.value as Vector3).set(
+      Math.min(1, Math.max(u0, u1)),
+      Math.min(1, Math.max(v0, v1)),
+      Math.min(1, Math.max(w0, w1)),
+    );
+    material.uniforms.uFocusStrength!.value = 1;
+  }
+
+  /**
+   * The Copernicus current overlay for the Timestep on screen.
+   *
+   * Takes ownership and releases the one it replaces, the same contract `setPalette` has. Null
+   * clears it, which is what happens when the bake could not reach Copernicus at all - the
+   * manifest then carries no currents block and the control is never offered.
+   */
+  setCurrents(texture: Texture | null): void {
+    const material = this.surface?.material as ShaderMaterial | undefined;
+    const slot = material?.uniforms.uCurrents;
+    if (!slot) return;
+    (slot.value as Texture | null)?.dispose?.();
+    slot.value = texture;
+  }
+
   /** Debug hook so a screenshot harness can assert on real geometry rather than pixels. */
   debug() {
     return {
@@ -283,6 +357,8 @@ export class OceanScene {
         uShadeFloor: { value: 0.62 },
         uRimStrength: { value: 1 },
         uRimColour: { value: SCENE_COLOURS.dark.rim.clone() },
+        uCurrents: { value: null },
+        uCurrentsOn: { value: 0 },
       },
     });
 
@@ -348,6 +424,9 @@ export class OceanScene {
         uIsoEnabled: { value: 0 },
         uVolumeEnabled: { value: 1 },
         uEmphasis: { value: 0.85 },
+        uFocusMin: { value: new Vector3(0, 0, 0) },
+        uFocusMax: { value: new Vector3(1, 1, 1) },
+        uFocusStrength: { value: 0 },
         uLightDirection: { value: new Vector3(0.5, 0.8, 0.4).normalize() },
         uTime: { value: 0 },
       },
@@ -384,6 +463,16 @@ export class OceanScene {
     geometry.setAttribute("selected", new BufferAttribute(new Float32Array(this.floats.length), 1));
     // 0 means "not reporting near this moment", so the shader can drop it entirely.
     geometry.setAttribute("fresh", new BufferAttribute(new Float32Array(this.floats.length), 1));
+    // 1 for a moored buoy. It is drawn as a square rather than a disc, because it is a
+    // different kind of instrument and the difference matters: it is anchored, so it has no
+    // drift track, and its comparison follows the timeline instead of being pinned to one date.
+    // Shape rather than colour, so the distinction survives on either theme and for a viewer
+    // who cannot separate the hues.
+    const anchored = new Float32Array(this.floats.length);
+    this.floats.forEach((item, index) => {
+      anchored[index] = item.kind === "mooring" ? 1 : 0;
+    });
+    geometry.setAttribute("anchored", new BufferAttribute(anchored, 1));
 
     const material = new ShaderMaterial({
       glslVersion: GLSL3,
@@ -401,15 +490,18 @@ export class OceanScene {
         in vec2 lonLat;
         in float selected;
         in float fresh;
+        in float anchored;
         uniform float uMorph;
         uniform float uSize;
         out float vSelected;
         out float vFresh;
+        out float vAnchored;
         const float PI = 3.141592653589793;
         const float EARTH_RADIUS = ${EARTH_RADIUS.toFixed(6)};
         void main() {
           vSelected = selected;
           vFresh = fresh;
+          vAnchored = anchored;
           if (fresh <= 0.0) {
             // Not reporting near this Timestep: park it behind the camera so it never draws.
             gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
@@ -434,10 +526,14 @@ export class OceanScene {
         uniform float uPulse;
         in float vSelected;
         in float vFresh;
+        in float vAnchored;
         out vec4 fragColor;
         void main() {
           vec2 offset = gl_PointCoord - 0.5;
-          float distance = length(offset);
+          // A disc for a drifting float, a square for an anchored buoy. Chebyshev distance is
+          // the square's version of the same radius, so every threshold below reads the same
+          // way for both and only the outline changes.
+          float distance = mix(length(offset), max(abs(offset.x), abs(offset.y)), vAnchored);
           if (distance > 0.5) discard;
 
           // A bright core inside a dark ring. A single-colour marker is unreadable here: the
@@ -468,6 +564,9 @@ export class OceanScene {
   private buildTrackGeometry(whenMs: number): BufferGeometry {
     const lonLat: number[] = [];
     for (const item of this.floats) {
+      // A moored buoy is anchored. Its "track" is one position repeated, and drawing a line
+      // through it would be a measurement claim about a current nobody measured.
+      if (item.kind === "mooring") continue;
       const travelled = trackUpTo(item, whenMs);
       for (let i = 0; i < travelled.length - 1; i++) {
         const a = travelled[i];
@@ -611,6 +710,7 @@ export class OceanScene {
       material.uniforms.uIsoValue!.value = state.isoValue;
       material.uniforms.uVolumeEnabled!.value = state.volumeEnabled ? 1 : 0;
       material.uniforms.uEmphasis!.value = state.emphasis;
+      this.applyFocus(material, state);
 
       this.volume.position.set((min[0] + max[0]) / 2, (min[1] + max[1]) / 2, (min[2] + max[2]) / 2);
       this.volume.scale.set(max[0] - min[0], max[1] - min[1], max[2] - min[2]);
@@ -651,6 +751,8 @@ export class OceanScene {
     }
 
     this.updateAnomalies(state, frame);
+
+    this.setUniform(this.surface, "uCurrentsOn", state.currentsOpacity);
 
     if (this.trackLines) {
       this.trackLines.visible = state.showTracks;
@@ -946,6 +1048,22 @@ export class OceanScene {
 
     this.camera.position.lerpVectors(globe, region, eased);
     this.controls.target.lerpVectors(globeTarget, regionTarget, eased);
+    this.controls.update();
+  }
+
+  /**
+   * Slide the view sideways onto a position, keeping the camera exactly where it is otherwise.
+   *
+   * Not `focusOn`, which swings to a fixed 18-unit radius. That is right for a Float - a point
+   * you want to get close to - and wrong for a body of water five degrees across: it collapsed
+   * the block frame to a single diagonal and put the isolated water off the top of the screen.
+   * This keeps the distance and the angle the user has already chosen and only re-centres, so
+   * an isolated Feature comes out from behind a panel without the picture changing character.
+   */
+  panTo(lon: number, lat: number): void {
+    const offset = this.camera.position.clone().sub(this.controls.target);
+    this.controls.target.set(lon, this.controls.target.y, -lat);
+    this.camera.position.copy(this.controls.target).add(offset);
     this.controls.update();
   }
 
