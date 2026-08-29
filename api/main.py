@@ -29,11 +29,17 @@ from fastapi.responses import FileResponse, Response
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "pipeline"))
+# So `cf`, `dap` and `wms` resolve however uvicorn was launched - `api.main:app` from the repo
+# root does not put this directory on the path.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from samudra.collocation import collocate  # noqa: E402
 from samudra.grid import Grid  # noqa: E402
-from samudra.sources.argo import ArgoErddapSource, IncoisArgoSource  # noqa: E402
+from samudra.sources.argo import ArgoErddapSource, BgcArgoSource, IncoisArgoSource  # noqa: E402
 from samudra.sources.incois import IncoisErddapSource  # noqa: E402
+from samudra.sources.osmc import OsmcSource  # noqa: E402
+
+import standards  # noqa: E402
 
 WEB_DATA = ROOT / "web" / "public" / "data"
 GRID_DATA = ROOT / "data" / "grids"
@@ -134,7 +140,7 @@ def health() -> dict:
 # `samudra/sources/base.py` and putting it in one of these lists. Nothing else in the system -
 # renderer, API, UI - has ever heard of ERDDAP.
 GRID_SOURCES = [IncoisErddapSource()]
-PROFILE_SOURCES = [ArgoErddapSource(), IncoisArgoSource()]
+PROFILE_SOURCES = [ArgoErddapSource(), BgcArgoSource(), OsmcSource(), IncoisArgoSource()]
 
 
 @app.get("/api/sources")
@@ -162,10 +168,20 @@ def sources() -> dict:
                 "name": source.name,
                 "attribution": source.attribution,
                 "kind": "in-situ",
-                "columnStyle": {
-                    "platform": source.columns.platform,
-                    "prefers": list(source.columns.temperature),
-                },
+                # Four providers now, and the fourth does not have a ProfileColumns at all:
+                # the GTS feed reports depth rather than pressure, one row per level, the
+                # surface reading in a different column from every other level, and no quality
+                # flags. It is absorbed by its own parser behind the same protocol, which is a
+                # stronger demonstration of the seam than a second provider with the same shape.
+                "columnStyle": (
+                    {
+                        "platform": source.columns.platform,
+                        "prefers": list(source.columns.temperature),
+                        "channels": [name for name, _ in source.columns.measurements],
+                    }
+                    if hasattr(source, "columns")
+                    else {"format": "flattened GTS rows, one per level; no quality flags"}
+                ),
                 # INCOIS's Argo archive stops in April 2025 while their gridded analysis runs to
                 # July 2026. Collocating across that gap would compare two different oceans, so
                 # the demo reads the current GDAC mirror and keeps this one as proof of the seam.
@@ -340,3 +356,9 @@ def _number(value):
     """JSON has no NaN. Missing becomes null, which a client renders as a gap, not a zero."""
     value = float(value)
     return None if not np.isfinite(value) else round(value, 4)
+
+
+# The open-standards half: OPeNDAP, CF NetCDF and OGC WMS, all over the same native Grids.
+# Registered last so it can borrow this module's cached loaders rather than opening the files
+# again - and so there is one place that decides where a Grid comes from.
+standards.register(app, manifest, native_grid)
