@@ -7,7 +7,7 @@ Anything that has since been built is removed from this list rather than left he
 `CLAUDE.md` describes what exists, the ADRs record why, and `docs/BUGS.md` tracks what is wrong
 with it. This file is only for what is still missing.
 
-Last reconciled against the tree: 2026-08-25.
+Last reconciled against the tree: 2026-08-27.
 
 ## Worth adding back if there is time
 
@@ -18,7 +18,10 @@ Last reconciled against the tree: 2026-08-25.
 | 3 | **Bias map - Residual at every Float, coloured on the globe** | Time | 2-3 h | One screen showing where the analysis runs warm and where it runs cold across the whole EEZ |
 | 4 | **D20 or mixed-layer depth drawn as a surface** | `isotherm_depth()` computes it already and the bake uses it to explain Anomaly Features, but nothing draws it. INCOIS's own published version stops at 2019-03 and cannot share the timeline, so it would have to be ours | 1-2 h | Operationally the most-used INCOIS product, and strong with an oceanographer judge |
 | 5 | **Frontend reads the live API instead of the static files, with fallback** | Deliberate: a dead venue network must not be able to kill the demo | 1-2 h | Lets you show live data being pulled during the demo, with the static bundle as the safety net |
-| 6 | **Glider / CTD / mooring adapters** | No reachable public source found for Indian-Ocean gliders in the time available | unknown | The problem statement names gliders explicitly. Covered in principle by the `Float` abstraction and the adapter seam, but not demonstrated |
+
+**Moorings, chlorophyll, OPeNDAP, CF NetCDF, WMS and the guided tour have since been built.**
+`docs/plan/03-requirement-gaps.md` carries the research behind each, and ADRs 0011 and 0012 the
+two decisions that reversed earlier positions.
 
 ## Investigated and rejected
 
@@ -28,7 +31,10 @@ Not "no time" - measured, and found wanting.
 | --- | --- |
 | **Geostrophic current speed by thermal wind** | Prototyped against the density field, integrated from a reference level of no motion at 1000 dbar, and measured before being believed. On 2026-07-30, at the height of the southwest monsoon, it gives a maximum of **0.16 m/s** for the Somali Current against a real 1.5-2.5 m/s, and puts the fastest water in the block (1.90 m/s) on the equator, where geostrophy does not hold. Finite, plausible and inverted. ADR 0010 |
 | **Geostrophic current vectors from INCOIS GEO_U/GEO_V** | Real and properly validated, but the series stops at 2019-03 against an analysis running to 2026-07-30. It cannot share this timeline. It remains the right source if currents are ever added, on their own clearly dated view |
-| **Chlorophyll and dissolved oxygen as Fields** | Chlorophyll is satellite ocean colour - a 2-D surface layer, cloud-gapped, never a Volume. The only complete gridded oxygen field for this region is a decadal climatology with no date, which cannot animate on a ten-day timeline. Deriving oxygen from T/S regressions would be inventing data. ADR 0010 |
+| **Chlorophyll and dissolved oxygen as gridded Fields** | Still right, and chlorophyll arrived by another route: not as a Field but as an *observation* from 49 BGC-Argo floats, drawn on its own because no gridded chlorophyll shares this timeline. INCOIS's own ocean-colour products end 2006-03-21 and 2020-05-01. Oxygen remains out - measured, **zero** BGC casts in this window carry usable oxygen under the project's own QC rules |
+| **Gliders** | Reachable, and empty. The global glider GDAC holds 7 deployments in this box and the newest left the water **2022-10-14**. Putting a 2022 instrument beside a 2026 analysis is what ADR 0009 refuses for INCOIS's own Argo archive |
+| **Ship CTD sections** | GO-SHIP has 6 cruises here since 2000, newest **Apr 2025**. It has an honest home, since the analysis runs back to 2004 - just a lower return than the moorings for the same work |
+| **HF-radar and ADCP** | India runs five HF-radar pairs and its OMNI buoys measure currents. `services.incois.gov.in` has no route from here at all, and **zero rows** in the public GTS feed carry current components for this region. A data-policy fact, not an architecture gap |
 | **Source the demo's observations from INCOIS instead of Ifremer** | INCOIS's Argo archive ends 2025-04-23; their gridded analysis runs to 2026-07-30. Collocating across a 15-month gap compares two different oceans. The adapter exists and is registered; the demo reads the current GDAC mirror. ADR 0009 |
 
 ## Cut on purpose - do not add back

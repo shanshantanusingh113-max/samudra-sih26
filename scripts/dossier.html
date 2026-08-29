@@ -580,13 +580,14 @@
     <li><strong>No recurring cost.</strong> Open standards, public endpoints, no licences, no GPU servers, no per-seat software. It currently runs on free static hosting.</li>
     <li><strong>Deployable on INCOIS infrastructure.</strong> A static bundle plus an optional lightweight API. No client-side dependency, so no desktop rollout.</li>
     <li><strong>Maintainable.</strong> The scientific logic is separated from rendering and covered by tests. Adding a variable is configuration; adding a source is one class.</li>
-    <li><strong>Standards-aligned.</strong> CF conventions, ERDDAP, OPeNDAP and WebGL2 are all long-lived, widely supported and not owned by any vendor.</li>
+    <li><strong>Standards-aligned, in both directions.</strong> We read CF, ERDDAP, OPeNDAP and WMTS, and we serve OPeNDAP, CF-1.8 NetCDF and OGC WMS. All long-lived, widely supported and owned by no vendor.</li>
   </ul>
 
   <h3>Known limitations, stated plainly</h3>
   <ul>
     <li>The vertical axis is stretched and non-linear in metres. This is deliberate and labelled on screen, and the profile chart uses the same stretch so the two agree.</li>
-    <li>Currents are not yet rendered as 3D flow. The data exists but its published series ends in 2019 and cannot share the current timeline.</li>
+    <li>Currents are shown as Copernicus Marine's own rendered arrows on the surface, not as 3D flow and not as numbers of ours. Their values need an account; INCOIS's own series ends in 2019 and cannot share this timeline. The layer says on screen that it is a picture, and it cannot be clicked or queried.</li>
+    <li>No gliders. The global glider archive is on the same server we read for Argo and holds seven deployments in this basin; the newest left the water in October 2022, three and a half years before this analysis window.</li>
     <li>Horizontal resolution is 1&deg;, because that is what INCOIS publishes. We do not upsample, as that would invent structure the instruments never measured.</li>
     <li>Gliders and moorings are supported by the design but not demonstrated, because no reachable public source for Indian Ocean gliders was found in the time available.</li>
     <li>The internal INCOIS archive needs credentials we do not have.</li>
@@ -727,7 +728,9 @@
       <tr><td>Is it live or real time?</td><td>The data is real and current to 30 July 2026, but the demo runs from a local copy on purpose so a network failure cannot affect it. The live connection is real and can be demonstrated through the API.</td></tr>
       <tr><td>What is an Argo float?</td><td>A robot instrument about the size of a person. It sinks to 2000 m, drifts for ten days, then rises to the surface measuring temperature and salinity all the way up, transmits by satellite, and repeats. There are around 4000 worldwide.</td></tr>
       <tr><td>Who owns this data?</td><td>The gridded analysis is INCOIS's, part of the Ministry of Earth Sciences. Argo data is made freely available by the international Argo programme. Both are openly published and we credit both.</td></tr>
-      <tr><td>Why only temperature and salinity?</td><td>Those are what this INCOIS product publishes with full depth resolution. Adding a variable is configuration, not new code, and other products carrying currents and chlorophyll are already identified.</td></tr>
+      <tr><td>Why only temperature and salinity?</td><td>Those are what this INCOIS product publishes with full depth resolution. Density and the temperature anomaly are computed from them here, and chlorophyll now comes from the 49 Argo floats that carry a fluorometer. Adding a variable is configuration, not new code.</td></tr>
+      <tr><td>Are all the instruments Argo floats?</td><td>No. Nine are moored buoys - four of them India's own OMNI network, three from the joint MoES-NOAA RAMA array - reaching us through the public global weather feed. They are anchored, so they have no drift track, and because they never move their comparison follows the timeline: you watch one patch of ocean through the whole season.</td></tr>
+      <tr><td>Can we get the data out of it?</td><td>Yes, three ways: OPeNDAP, CF-1.8 NetCDF and OGC WMS 1.3.0, all served from the analysis on its native grid rather than from the volume used for rendering. You can open our OPeNDAP URL in xarray on your own machine.</td></tr>
       <tr><td>Why stop at 2000 m? The ocean is deeper.</td><td>Because Argo floats profile to 2000 m, so that is the depth range the analysis covers. Below that there are very few measurements anywhere in the world.</td></tr>
     </tbody>
   </table>
@@ -821,8 +824,10 @@
 
   <h3>Standards</h3>
   <ul>
-    <li>CF-1.6, ACDD-1.3 and COARDS metadata conventions</li>
-    <li>ERDDAP griddap and tabledap RESTful access; OPeNDAP subsetting</li>
+    <li>CF-1.6, ACDD-1.3 and COARDS read from INCOIS; <strong>CF-1.8 written</strong> by our own NetCDF endpoint</li>
+    <li>ERDDAP griddap and tabledap consumed; <strong>OPeNDAP (DAP2) served</strong>, verified against the reference <code>pydap</code> client</li>
+    <li><strong>OGC WMS 1.3.0 served</strong>, both EPSG:4326 and CRS:84 axis orders</li>
+    <li>WMTS consumed, for the Copernicus current overlay</li>
     <li>WebGL2 and GLSL ES 3.00</li>
   </ul>
 

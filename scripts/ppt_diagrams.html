@@ -153,6 +153,8 @@
     <div class="col">
       <div class="node src"><b>INCOIS ERDDAP</b><span>incois_argo_10d_VAM<br>NetCDF · CF-1.6 · 24 levels</span></div>
       <div class="node src"><b>Argo GDAC</b><span>float profiles<br>CSV · QC flags</span></div>
+      <div class="node src"><b>Argo BGC</b><span>chlorophyll<br>49 floats</span></div>
+      <div class="node src"><b>NOAA OSMC · GTS</b><span>moored buoys<br>OMNI + RAMA</span></div>
     </div>
     <div class="flow">→</div>
     <div class="node core"><b>Source Adapters</b><span>one class per provider<br>the only code that knows<br>what an ERDDAP is</span></div>
@@ -165,11 +167,14 @@
     <div class="col">
       <div class="node out"><b>Browser · Three.js</b><span>ray-marched volume<br>globe ⇄ map morph</span></div>
       <div class="node out"><b>FastAPI</b><span>/api/collocation<br>/api/column</span></div>
+      <div class="node out"><b>Open standards</b><span>OPeNDAP · CF-1.8 NetCDF<br>OGC WMS 1.3.0</span></div>
     </div>
   </div>
   <div class="seam">
-    <b>The extensibility seam.</b> Adding a mooring, ADCP or HF-radar feed means writing one
-    adapter. The renderer, the API and the UI have never heard of ERDDAP.
+    <b>The extensibility seam.</b> Four providers, four adapter classes, one interface - and the
+    fourth shares no convention with the others: depth not pressure, one row per level, no
+    quality flags. The renderer, the API and the UI have never heard of ERDDAP. Everything
+    served on the right comes off the Grid and never the Volume.
   </div>
 </div>
 

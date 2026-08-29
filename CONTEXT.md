@@ -51,9 +51,11 @@ _Avoid_: NaN, fill value, nodata, null
 ### In-situ observations
 
 **Float**:
-One autonomous instrument, identified for life by its WMO platform number. A Float drifts,
-surfaces on a cycle, and reports as it goes. Gliders and moorings are also Floats to this
-system where it does not matter that they move differently.
+One instrument, identified for life by its WMO platform number. An Argo Float drifts, surfaces
+on a cycle, and reports as it goes. Moorings are also Floats to this system, and carry a `kind`
+because there are exactly two places where the difference matters: an anchored buoy has no
+Track, and because it never moves it gets a Collocation at *every* Timestep rather than only the
+one nearest its cast.
 _Avoid_: buoy, device, sensor, instrument
 
 **Profile**:
@@ -160,12 +162,23 @@ Everything above the line is being built. Everything below it is deliberately, k
 - **Globe View** over the Indian EEZ with Float Tracks and a single-Level surface layer.
 - **Drill-down** between the two views as one continuous motion.
 - **Collocation**: click a Float, see its Profile against the model's, with Residuals.
-- **Transfer Function** editor: cmocean Palettes, adjustable range, linear/log, opacity.
+- **Anomaly Feature isolation**: clear the rest of the Volume away and leave only the body of
+  water one Feature describes, which is the box every number on its panel is measured over.
+- **Transfer Function** editor: the Field's cmocean Palette, an adjustable value range and
+  opacity. Linear only: a log scale warped the water while the colourbar stayed linear.
 - **Vertical Exaggeration** control.
-- Two **Source Adapters** - INCOIS ERDDAP (Grids) and Argo GDAC ERDDAP (Profiles) - behind
-  one interface, plus written proof a third can be added in one file.
-- A REST API over the pipeline, and offline-safe pre-baked data so the demo cannot be
-  killed by a network failure.
+- Four **Source Adapters** behind one interface: INCOIS ERDDAP (Grids), Argo GDAC (Profiles),
+  Argo BGC (chlorophyll) and NOAA's OSMC GTS feed (moored buoys). The last is a genuinely
+  different format - depth rather than pressure, one row per level, the surface reading in a
+  different column, no quality flags at all - which is what makes the seam a demonstration
+  rather than an assertion.
+- A **Surface Current overlay**, baked from Copernicus Marine's WMTS. An image, labelled as one,
+  carrying no number anybody can read off it. ADR 0011.
+- A REST API over the pipeline, plus **OPeNDAP, CF-1.8 NetCDF and OGC WMS** served from the
+  native Grids and never the Volume. ADR 0012.
+- A five-step **guided tour**, because the guide panel explains what you touched and a
+  first-time visitor does not know what to touch.
+- Offline-safe pre-baked data so the demo cannot be killed by a network failure.
 
 ### Out
 
@@ -173,13 +186,17 @@ Named here so nobody wonders whether we forgot.
 
 - **Live INCOIS internal archive.** We use INCOIS's *public* ERDDAP. The internal operational
   archive needs credentials we do not have; the Source Adapter is the seam where it would attach.
-- **OGC WMS/WCS server.** We consume open standards and CF conventions; we do not re-serve them.
-  A day of work for a checkbox no judge will click.
+- **OGC WCS.** WMS *is* served now, along with OPeNDAP and CF-1.8 NetCDF - ADR 0012. The three
+  share one wrapper and cost an afternoon between them rather than a day each, which is what
+  changed the calculus. WCS stays out: no maintained pure-Python server, and the numbers are
+  already on OPeNDAP, which is what this community actually uses.
 - **User accounts, saved sessions, sharing.** No auth of any kind.
 - **Writing data back.** The platform is strictly read-only.
-- **Currents, in any form.** Not implemented at all. INCOIS publish geostrophic currents
-  (`GEO_U`/`GEO_V`), but that series ends 2019-03 and cannot share a timeline with the
-  temperature field. Volumetric flow visualisation is a project in itself.
+- **Current *numbers*.** The Surface Current overlay carries Copernicus's rendered arrows and
+  nothing else: no Volume, no isosurface, no Collocation, no value under the cursor. Their data
+  needs a Copernicus account (measured: metadata 200, `uo` 403). INCOIS's own `GEO_U`/`GEO_V`
+  ends 2019-03 and cannot share this timeline, and deriving our own was measured and rejected -
+  ADR 0010, ADR 0011. Volumetric flow visualisation is a project in itself.
 - **Real-time streaming ingest.** Data is fetched and baked ahead of time, not subscribed to.
 - **Mobile layout.** Desktop browser only - the operational reality for a forecaster.
 - **WebGPU.** WebGL2 is universal today; WebGPU is noted as a migration path, not taken.

@@ -250,6 +250,20 @@ the floats: they drift with the current, so their tracks are themselves a measur
 
 ---
 
+## Optional, only if you are ahead of the clock (25 seconds)
+
+> _Switch **Variable** to **Temperature anomaly**, open **Anomaly Features**, click the top row,
+> then **Show only this body of water**._
+
+"Every one of those numbers is measured over one box of water. This is that box. The rest of the
+block is cleared away and the camera pans onto it, so you can see how wide the thing is and how
+deep it runs, rather than taking our word for it."
+
+> _Cut this first. It is a good moment and it is not the argument. If the room is engaged and you
+> are ahead of the clock, it lands; otherwise go straight to the close._
+
+---
+
 ## B3:45 - Close (15 seconds)
 
 > _Stop the animation. Stand still._
@@ -271,7 +285,7 @@ credentials we do not have, and the adapter is exactly where it would attach."
 | If you have | Drop |
 | --- | --- |
 | 3 minutes of deck | Slide 4 down to one sentence: "every risk on this slide we hit and solved during the build" |
-| 3 minutes of demo | The three controls at B2:55, and the emphasis slider at B2:20 |
+| 3 minutes of demo | The optional beat first, then the three controls at B2:55, then the emphasis slider at B2:20 |
 | 2 minutes of demo | Everything except the dive and the comparison. Those two are the whole idea |
 
 **Never cut:** the dive, and clicking a float.
@@ -282,12 +296,12 @@ credentials we do not have, and the adapter is exactly where it would attach."
 
 | Problem | What to do |
 | --- | --- |
-| Venue wifi dies | Nothing happens. Every byte is baked into the page; the demo makes zero network calls. |
+| Venue wifi dies | Nothing happens. Every byte is baked into the page - including the typefaces and the current overlay - and the demo makes zero network calls. Verified: zero external requests on load. |
 | Rendering is sluggish | Drop **Ray steps** to 64. Still readable, changes nothing scientific. |
-| Cannot find a float to click | Any marker works. Eighty-nine of the ninety-two have a comparison. |
+| Cannot find a float to click | Almost any marker works: 227 of the 230 instruments carry a comparison. Squares are moored buoys, and those follow the timeline. |
 | Lost in 3D | Press **Return to globe**, then dive again. |
 | The page misbehaves | Refresh. It reloads in seconds from cache. |
-| Asked something you do not know | "That is in our decision records, we wrote up why." `docs/adr/` genuinely has nine. |
+| Asked something you do not know | "That is in our decision records, we wrote up why." `docs/adr/` genuinely has twelve. |
 
 ---
 
@@ -308,6 +322,10 @@ credentials we do not have, and the adapter is exactly where it would attach."
 | "What resolution is the data?" | One degree, because that is what INCOIS publishes. We do not upsample. That would invent structure the instruments never measured. |
 | "Does it work offline?" | Yes. That is why it is baked. |
 | "Did you generate or simulate any of this?" | No. Every number comes from INCOIS's server or the Argo programme. |
-| "What is the accuracy?" | Across 206 floats the median typical gap between model and instrument is 0.46 °C. That is the analysis's own accuracy, which is what we are measuring. |
+| "What is the accuracy?" | Across 206 floats the median RMS gap between model and instrument is 0.46 °C. That is the analysis's own accuracy, which is what we are measuring. Be careful with the word "typical": RMS is the quadratic mean, always at least the mean absolute deviation. |
+| "Doesn't the analysis already use Argo? Aren't you comparing it with itself?" | Partly, and that is the operational question rather than a flaw - did the analysis reproduce the observation it was given, here, at this depth? It does not always: the disagreement runs from 0.00 to 1.99 °C. The panel says this on screen so you do not have to. |
+| "Where do the currents come from?" | Copernicus Marine, and they are their picture rather than our field. Their numbers need an account; we take the rendered tiles and say so. You cannot click them or read a speed off them, and that limit is on screen. ADR 0011. |
+| "Are those all Argo floats?" | No. Nine are moored buoys - four from India's own OMNI network, three from RAMA. They are drawn as squares, they have no drift track because they are anchored, and their comparison follows the timeline. |
+| "Can we get the data out?" | Yes, three ways: OPeNDAP, CF-1.8 NetCDF and OGC WMS, all from the analysis grid rather than the rendering volume. Open our OPeNDAP URL in xarray on your own machine. ADR 0012. |
 | "Has nobody built this before?" | Say it narrowly: we have not found a browser tool that renders a 3D model volume and lets you click an in-situ float to get a quantified comparison. Do not say "nobody has done this" - Argovis, Copernicus MyOcean and the EU Digital Twin Ocean are close neighbours and we have not finished checking them. |
-| "How long did this take?" | Built for this hackathon. Fifty-four automated tests on the scientific logic, nine architecture decision records. |
+| "How long did this take?" | Built for this hackathon. 230 automated tests on the scientific logic, twelve architecture decision records, and a defects file that lists what was wrong and what the numbers were. |

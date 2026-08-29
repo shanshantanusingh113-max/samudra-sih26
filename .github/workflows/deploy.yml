@@ -52,6 +52,18 @@ jobs:
           ls dist/data/volumes/*.bin >/dev/null
           echo "data present: $(du -sh dist/data | cut -f1)"
 
+      - name: Check nothing reaches out over the network
+        working-directory: web
+        # The demo must survive a dead venue network. This was quietly false once: all three
+        # pages linked Google Fonts while the README carried a badge saying otherwise, so the
+        # typefaces are served from the build and the check is here rather than in a comment.
+        run: |
+          ls dist/fonts/*.woff2 >/dev/null
+          test -f dist/fonts.css
+          # A URL, not a mention: the pages carry comments naming the host they no longer use.
+          ! grep -rqE "(https?:)?//(fonts\.(googleapis|gstatic)\.com|cdn\.jsdelivr\.net|unpkg\.com)" dist/*.html dist/assets dist/fonts.css
+          echo "no external font or CDN references in the build"
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: web/dist

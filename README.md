@@ -12,7 +12,7 @@ and what the instruments in the water actually measured.**
 [![SIH 2026](https://img.shields.io/badge/Smart%20India%20Hackathon-2026-ff9933)](https://sih.gov.in/)
 [![PS 26067](https://img.shields.io/badge/Problem%20Statement-26067-138808)](https://sih.gov.in/)
 [![MoES / INCOIS](https://img.shields.io/badge/MoES-INCOIS-000080)](https://incois.gov.in/)
-![Tests](https://img.shields.io/badge/tests-146%20passing-2ea043)
+![Tests](https://img.shields.io/badge/tests-230%20passing-2ea043)
 ![Network calls at demo time](https://img.shields.io/badge/network%20calls%20at%20demo%20time-0-2ea043)
 
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
@@ -125,6 +125,26 @@ so they cost no extra download and make no extra assumption - which is the probl
 | **Temperature anomaly** | departure from the mean of the 12 baked timesteps - a seasonal swing, *not* a climatological normal, and the app says so |
 | **Observation coverage** | Argo casts within 334 km whose dive passed through each depth |
 
+Two more quantities are on screen and are deliberately *not* variables, because neither went
+through this pipeline:
+
+| Layer | What it is |
+| --- | --- |
+| **Chlorophyll** | Measured by 49 Argo floats that carry a fluorometer. Drawn on its own, because no gridded chlorophyll shares this timeline - INCOIS's own ocean-colour products end in 2006 and 2020 - so there is nothing to compare it against |
+| **Surface currents** | Copernicus Marine's own rendered arrows, baked as an image. Their numbers need an account, so we carry the picture and say so: it cannot be clicked and no speed can be read off it. `docs/adr/0011` |
+
+### Three kinds of instrument in the water
+
+| Instrument | Count | What it gives |
+| --- | --- | --- |
+| **Argo floats** | 221, of which 49 carry chlorophyll | A cast every ten days, drifting; 2,955 casts across the window |
+| **Moored buoys** | 9 - four from India's OMNI network, three RAMA | A water column at a *fixed point*, every few hours. Because they never move, their comparison follows the timeline: you watch one patch of ocean through the whole season, which an Argo float cannot show you |
+
+The buoys arrive through NOAA's public GTS feed in a format that shares nothing with Argo's -
+depth instead of pressure, one row per level, the surface reading in a different column, no
+quality flags at all. Absorbing that cost one class behind the same interface, which is the
+extensibility claim demonstrated on somebody else's format rather than on a second copy of ours.
+
 ### It runs on INCOIS's real data
 
 This is not a mock-up with invented numbers. It reads:
@@ -139,16 +159,18 @@ This is not a mock-up with invented numbers. It reads:
 
 ## 3. Requirement coverage, clause by clause
 
-Every line of Problem Statement 26067 below, marked honestly. **17 met, 6 partly met, 5 not
+Every line of Problem Statement 26067 below, marked honestly. **20 met, 7 partly met, 1 not
 met.** The gaps are listed as plainly as the wins, because a reviewer will find them anyway and
-it is better they hear it from us.
+it is better they hear it from us. Where something is *not* built, the row says what we measured
+before deciding: a dead endpoint, a date that cannot share this timeline, or a judgement that
+building it badly would be worse than leaving it.
 
 ### The five gaps INCOIS identified
 
 | Gap in the problem statement | Status | What we built, or what is missing | Where |
 | --- | --- | --- | --- |
 | Web-based, platform-independent 3D rendering with depth-resolved volumetric views | **Met** | GPU ray-marched water column, 5 m to 2000 m, in any WebGL2 browser. No install, no plugin | `web/src/scene/volumeShader.ts` |
-| Unified display of Argo **and Glider** profiles (lat, lon, depth, time, temperature, salinity, chlorophyll) alongside model fields | **Partly** | Argo floats fully: position, depth, time, temperature, salinity. **No gliders and no chlorophyll** - we found no reachable public glider feed for this region | `pipeline/samudra/sources/argo.py` |
+| Unified display of Argo **and Glider** profiles (lat, lon, depth, time, temperature, salinity, chlorophyll) alongside model fields | **Partly** | Argo fully, including **chlorophyll** from 49 BGC floats, plus 9 moored buoys. **No gliders**, and the reason is not our adapter: the global glider archive holds 7 deployments in this box and the newest left the water on 2022-10-14 | `pipeline/samudra/sources/argo.py` |
 | Interactive controls: variable selection, depth-slice navigation, time-step animation, customisable colourbars | **Met** | All four, live | `web/src/ui/Controls.tsx`, `Timeline.tsx` |
 | Ingest new data streams or model variables without significant re-engineering | **Met** | One adapter class per provider. Proven, not asserted: two Argo providers that disagree about every column name share one parser | `pipeline/samudra/sources/base.py` |
 | Tools for intuitive, rapid understanding of 3D phenomena | **Met** | Every control explains itself in plain language, and says whether it changed the science or only the picture | `web/src/guide.ts` |
@@ -162,10 +184,10 @@ it is better they hear it from us.
 | ...with isosurface extraction | **Met** | Draws the surface at one chosen value, e.g. the 20 °C isotherm | `volumeShader.ts` |
 | ...with time-step animation | **Met** | Play button, 12 analyses over 4 months | `Timeline.tsx` |
 | ...using WebGL / Three.js or Cesium.js | **Met** | Three.js and WebGL2. Why not Cesium: `docs/adr/0001` | `OceanScene.ts` |
-| ...of **current vectors** | **Not met** | INCOIS publish geostrophic currents, but that series ends 2019-03 and cannot share a timeline with the temperature field. Deriving them ourselves by thermal wind was built and rejected on measurement: it gave 0.16 m/s for the Somali Current in peak monsoon against a real 1.5-2.5 m/s. `docs/adr/0010` | - |
+| ...of **current vectors** | **Partly** | Copernicus Marine's daily surface currents, baked as a labelled image layer and marked on screen as somebody else's picture. Their numbers need an account (measured: metadata 200, `uo` 403), so we carry the arrows and claim nothing more. INCOIS's own series ends 2019-03; deriving our own by thermal wind was built and rejected on measurement - 0.16 m/s for the Somali Current in peak monsoon against a real 1.5-2.5. `docs/adr/0010`, `docs/adr/0011` | `pipeline/samudra/currents.py` |
 | **Instrument overlay** with geospatially accurate markers | **Met** | Floats drawn at the position they held at the moment on screen, with drift tracks | `OceanScene.ts` |
 | ...click a float to inspect a depth-vs-variable profile chart with timestamps | **Met** | Observed against modelled on one axis, gap shaded, cast and analysis dates named | `ProfilePanel.tsx` |
-| ...of **Glider, CTD and BGC** data | **Not met** | The `Float` abstraction and the adapter seam would carry them unchanged, but none is demonstrated | - |
+| ...of **Glider, CTD and BGC** data | **Partly** | **BGC is wired up**: chlorophyll from 49 Argo floats, 625 casts, live in this window. Gliders and ship CTD exist on reachable endpoints and neither can share this timeline - the newest glider here is Oct 2022 and the newest GO-SHIP section Apr 2025. Both are measured and recorded rather than guessed at | `sources/argo.py`, `docs/plan/03-requirement-gaps.md` |
 | **Multi-format ingestion**: NetCDF via xarray backend | **Met** | `xarray` + `netCDF4`. PyNIO is deprecated upstream; xarray is its sanctioned replacement | `sources/incois.py` |
 | ...and delimited text formats | **Met** | The Argo CSV parser, with the column layout stored as data rather than code | `sources/argo.py` |
 | ...modular, new sources with minimal code change | **Met** | See the gap table above | `sources/base.py` |
@@ -175,30 +197,50 @@ it is better they hear it from us.
 | **Vertical exaggeration slider** | **Met** | 200x to 3500x, with the real depths labelled on the flank | `Controls.tsx`, `DepthRuler.tsx` |
 | **Modern JS frontend** | **Met** | TypeScript, React 19, Vite | `web/` |
 | **Lightweight REST API backend** | **Met** | FastAPI, 11 endpoints including live collocation for any float | `api/main.py` |
-| ...**OPeNDAP** API backend | **Not met** | We *consume* ERDDAP subsetting. We do not re-serve OPeNDAP | - |
+| ...**OPeNDAP** API backend | **Met** | DAP2 over the native grids: `.das`, `.dds`, `.dods` with constraint expressions. Verified by opening our own endpoint with `xarray` + `pydap` in the test suite. (ERDDAP's griddap *is* DAP2, so we always consumed OPeNDAP; what was missing was serving it) | `api/dap.py` |
 | **Deployable on INCOIS infrastructure with no client-side dependencies** | **Met** | Static site plus one Python service. No tokens, no accounts, no plugins | `web/`, `api/` |
-| **Extensible design** for CTDs, moorings, HF-radar, ADCP | **Partly** | The seam is real and tested, but no such sensor is wired up | `sources/base.py` |
+| **Extensible design** for CTDs, moorings, HF-radar, ADCP | **Met for moorings** | 9 moored buoys are wired up and on the water - 4 of them India's own OMNI network, 3 RAMA - through NOAA's public GTS feed. A genuinely different format (depth not pressure, one row per level, no quality flags) absorbed behind the same protocol. HF-radar and ADCP stay unmet because India's are behind a login, not because the seam cannot carry them | `sources/osmc.py` |
 | ...and **machine-learning derived products** | **Not met** | Named as an extension point. Inventing one would be inventing a requirement | - |
 
 ### Standards and outreach
 
 | Clause | Status | Detail |
 | --- | --- | --- |
-| **CF Conventions for NetCDF** | **Partly** | INCOIS publish CF-1.6 and we read those conventions directly. This is their compliance, not ours: our own baked output is a packed binary volume plus JSON, not re-served NetCDF |
-| **OGC WMS / WCS** | **Not met** | Deliberate. We consume open standards rather than re-publishing them. `CONTEXT.md` records the reasoning |
-| **Interoperability with data portals** | **Partly** | We read two national portals through their open APIs. We do not expose one |
-| **Public outreach and science communication** | **Met** | Opens in any browser with no install, no login and no cost. A school class can fly into the Bay of Bengal |
+| **CF Conventions for NetCDF** | **Met** | We read INCOIS's CF-1.6 and now write CF-1.8: `/api/netcdf/{field}/{index}` serves a self-describing file with real standard names. Fields with no standard name - the anomaly, coverage - carry a `long_name` and no invented one |
+| **OGC WMS / WCS** | **Partly** | WMS 1.3.0 is served, with both axis orders handled and tested. It publishes the fields that exist nowhere else - density and the anomaly - because INCOIS's own ERDDAP already serves WMS for their temperature, so re-serving that is re-publishing. **WCS is not built**, deliberately: no maintained Python server, and the numbers are already on OPeNDAP |
+| **Interoperability with data portals** | **Partly** | We read **five** independent institutions through open APIs - INCOIS, Ifremer Coriolis, NOAA AOML, EMODnet Physics, Copernicus Marine - each behind one adapter, and expose OPeNDAP and WMS so a sixth system could read us back. We are not listed in anybody's catalogue, which a prototype should not be |
+| **Public outreach and science communication** | **Partly** | Opens in any browser with no install, login or cost, and a five-step guided tour walks a first-time visitor through the dive, the comparison, the evidence and an anomaly. Still desktop-only by choice, which is right for a forecaster's console and is the reason this is Partly rather than Met |
 
 ### The honest summary
 
-Everything about **rendering, overlaying, controlling and comparing** is built and working.
+Everything about **rendering, overlaying, controlling and comparing** is built and working, and
+so now is everything about **serving it back out**: OPeNDAP, CF-1.8 NetCDF and OGC WMS all run
+over the native analysis grids, never over the rendering volume.
 
-What is missing is **breadth of variables and instruments**: currents, chlorophyll, gliders, CTD
-and BGC. Each of those is a data-source problem rather than a platform problem, which is exactly
-what the adapter seam exists to solve, and each would cost one class plus a reachable feed.
+What is still missing is two instrument types and one kind of number, and in every case we can
+say why with a measurement rather than a shrug:
 
-The two clauses we chose not to do at all are **OGC WMS/WCS** and **ML-derived products**, both
-recorded with reasons in [`CONTEXT.md`](CONTEXT.md).
+- **Gliders.** The global glider archive is on the same server we already read for Argo and
+  holds seven deployments in this exact box. The newest left the water on **2022-10-14**, three
+  and a half years before this analysis window. Wiring it up would put a 2022 instrument beside
+  a 2026 model, which is the mistake ADR 0009 already refuses for INCOIS's own Argo archive.
+- **Ship CTD.** GO-SHIP has six cruises here since 2000, most recently **April 2025**. This one
+  has an honest home, because the analysis runs back to 2004 - it is simply a lower return than
+  the moorings for the same work.
+- **Real current numbers.** We draw Copernicus's current arrows and say plainly that they are
+  Copernicus's picture. Their values need an account; India's HF-radar archive is behind a
+  login; and **zero rows** in the public GTS feed carry current components for this region. So
+  the layer shows direction and speed honestly and cannot be clicked, which is the limit being
+  stated rather than hidden.
+
+The one clause we chose not to build at all is **ML-derived products**, and that refusal is
+worth more than the feature. We already built the thing ML would be used for and built it
+better: the anomaly detector reports a z-score against a stated threshold and says how many
+observations stand behind each departure. Relabelling that as AI would replace a defensible
+number with an indefensible one, and "trained on what?" has no answer when the series is twelve
+steps long. Worse, the obvious application - filling the gaps - would paint smooth, believable
+temperature over the 6% of the block where nobody measured, which is the one honest hole this
+platform is proudest of. See [`docs/plan/03-requirement-gaps.md`](docs/plan/03-requirement-gaps.md).
 
 ### Two things we are proud of that were not asked for
 
@@ -220,7 +262,7 @@ python -m venv .venv
 .venv/Scripts/pip install -r requirements.txt      # Linux/macOS: .venv/bin/pip
 cd web && npm install && cd ..
 
-# 2. get the data (takes about a minute; downloads from INCOIS and Argo)
+# 2. get the data (a few minutes; INCOIS, Argo, BGC-Argo, NOAA's buoy feed and Copernicus)
 cd pipeline && ../.venv/Scripts/python -m samudra.bake && cd ..
 
 # 3. run the website
@@ -230,13 +272,31 @@ cd web && npm run dev            # then open http://localhost:5173
 .venv/Scripts/python -m uvicorn api.main:app --port 8000
 ```
 
+The API serves the REST endpoints the app cannot precompute, and three open standards over the
+same analysis grids:
+
+```bash
+# OPeNDAP - open our own endpoint from Python, no download
+python -c "import xarray as xr; print(xr.open_dataset(
+  'http://localhost:8000/opendap/temperature/11', engine='pydap'))"
+
+# CF-1.8 NetCDF
+curl -O http://localhost:8000/api/netcdf/density/11
+
+# OGC WMS 1.3.0
+curl 'http://localhost:8000/wms?service=WMS&request=GetCapabilities'
+curl -o map.png 'http://localhost:8000/wms?service=WMS&version=1.3.0&request=GetMap&layers=density&crs=CRS:84&bbox=55,-10,100,25&width=800&height=622&format=image/png'
+```
+
 If you skip step 2, the data is already committed, so the website still works.
 
-**Tests:** `cd pipeline && ../.venv/Scripts/python -m pytest` - 146 tests covering the depth
+**Tests:** `cd pipeline && ../.venv/Scripts/python -m pytest` - 230 tests covering the depth
 warp, volume encoding, grid interpolation, collocation maths, the Argo parser, observation
 coverage, the TEOS-10 density chain, the anomaly baseline and the features found in it, the
-isotherm depth, and the adapter seam that lets two providers with incompatible column layouts
-share one parser.
+isotherm depth, the adapter seam that lets four providers with incompatible layouts share one
+protocol, the colour-vision ordering of the coverage bands, the current-tile arithmetic, and the
+OPeNDAP and WMS endpoints - the DAP2 one checked by opening it with a real `pydap` client rather
+than by asserting on our own bytes.
 
 ## 5. How it is put together
 
@@ -280,7 +340,8 @@ The design decisions, including the ones that were hard-won, are written up in
 | [`design/STITCH.md`](design/STITCH.md) | Per-screen prompts for Google Stitch |
 | [`docs/plan/01-cut-features.md`](docs/plan/01-cut-features.md) | What was deliberately not built, and what is worth adding back |
 | [`CLAUDE.md`](CLAUDE.md) | Orientation for anyone picking this up: a map of every file, the commands, and the rules that matter |
-| [`docs/REVIEW-PROMPT.md`](docs/REVIEW-PROMPT.md) | A brief for reviewing the whole project against the problem statement |
+| [`docs/plan/03-requirement-gaps.md`](docs/plan/03-requirement-gaps.md) | Every clause of the problem statement that was unmet, researched endpoint by endpoint, with what was built and what was deliberately not |
+| [`docs/plan/00-data-sources-verified.md`](docs/plan/00-data-sources-verified.md) | Every endpoint tested from this machine, live and dead, with dates and row counts |
 
 ## 6. What we deliberately did **not** build
 
@@ -288,11 +349,14 @@ Being explicit so nobody assumes we forgot. The full list with reasons is in `CO
 
 - Connecting to INCOIS's **internal** archive - that needs credentials we do not have. Our
   Source Adapter is the exact place it would plug in.
-- Re-serving the data as an OGC WMS/WCS server. We *consume* open standards; re-publishing them
-  is a checkbox no judge will click.
+- **OGC WCS.** WMS is served; WCS is not. There is no maintained pure-Python WCS server, and the
+  numbers are already on OPeNDAP, which is what this community actually uses.
 - User accounts, saved sessions, mobile layout, WebGPU, machine-learning products.
-- Currents, in any form. INCOIS publish geostrophic currents, but that series ends 2019-03 and
-  cannot share a timeline with the temperature field without a caveat on screen.
+- **Current numbers.** We draw Copernicus's arrows and label them as Copernicus's picture. Their
+  values need an account, INCOIS's own series ends 2019-03, India's HF-radar archive is behind a
+  login, and no row in the public GTS feed carries a current component for this region.
+- **Gliders and ship CTD.** Both are reachable and neither can share this timeline - the newest
+  glider in this basin left the water in Oct 2022 and the newest GO-SHIP section is Apr 2025.
 
 ---
 
@@ -337,6 +401,9 @@ ourselves. Every link below was verified working from the build machine.
 | 2 | `incois_argo_mnt_McCreary` / `incois_argo_mnt_VAM` - monthly gridded analysis with uncertainty | **INCOIS**, MoES | Analysis error and observation-count fields (RMSE, obs per cell) | https://erddap.incois.gov.in/erddap/griddap/incois_argo_mnt_McCreary.html |
 | 3 | `incois_valueadded_products_datasets` - value-added products | **INCOIS**, MoES | Mixed-layer depth, D20/D26 isotherm depth, heat content, geostrophic currents (GEO_U/GEO_V). *Note: this series ends 2019-03.* | https://erddap.incois.gov.in/erddap/griddap/incois_valueadded_products_datasets.html |
 | 4 | `ArgoFloats` - Argo float profiles | Coriolis GDAC / Ifremer | The in-situ observations: pressure, temperature, salinity per cast | https://erddap.ifremer.fr/erddap/tabledap/ArgoFloats.html |
+| 4b | `ArgoFloats-synthetic-BGC` - BGC-Argo profiles | Coriolis GDAC / Ifremer | **Chlorophyll**: 625 casts from 50 floats in this window, with per-value quality flags | https://erddap.ifremer.fr/erddap/tabledap/ArgoFloats-synthetic-BGC.html |
+| 4c | `OSMC_RealTime` - the GTS, flattened | NOAA OSMC / AOML | **Moored buoys**: India's OMNI network and the RAMA array, 9-11 depths to 500 m. Public domain (CC0) | https://erddap.aoml.noaa.gov/gdp/erddap/tabledap/OSMC_RealTime.html |
+| 4d | `GLOBAL_ANALYSISFORECAST_PHY_001_024` - surface currents | E.U. Copernicus Marine Service | The current-arrow overlay, taken from their WMTS as rendered tiles. Their *data* needs an account; the tiles do not | https://data.marine.copernicus.eu/product/GLOBAL_ANALYSISFORECAST_PHY_001_024 |
 | 5 | Natural Earth 1:50m coastlines | Natural Earth (public domain) | Coastline geometry for the globe and map | https://github.com/nvkelso/natural-earth-vector |
 | 6 | cmocean colour palettes | Thyng et al. (2016) | Perceptually-uniform oceanographic colour scales | https://matplotlib.org/cmocean/ |
 
@@ -348,3 +415,11 @@ the Global Ocean Observing System.
 
 Gridded analysis products are produced and published by the Indian National Centre for Ocean
 Information Services (INCOIS), Ministry of Earth Sciences, Government of India.
+
+Moored buoy observations reach us through the Global Telecommunication System, republished by
+NOAA's Observing System Monitoring Center. The Indian buoys are the NIOT/INCOIS OMNI network;
+RAMA is a joint MoES-NOAA programme.
+
+The surface-current overlay is E.U. Copernicus Marine Service Information. Those arrows are
+Copernicus's own rendering of their own model, drawn by them and reproduced here with
+attribution - not a field this platform computed.

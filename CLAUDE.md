@@ -7,7 +7,7 @@ Browser-native 3D ocean visualisation for INCOIS. Smart India Hackathon 2026, PS
 
 **Read [`CONTEXT.md`](CONTEXT.md) first.** It defines the domain vocabulary and the scope cut
 line, and its terms - Grid, Volume, Profile, Collocation, Depth Warp, Source Adapter - are used
-precisely throughout the code. Then skim [`docs/adr/`](docs/adr/): nine decision records, several
+precisely throughout the code. Then skim [`docs/adr/`](docs/adr/): twelve decision records, several
 of which document traps that already cost hours.
 
 ---
@@ -29,9 +29,15 @@ the queries a static bundle cannot precompute.
 File-by-file map in [`pipeline/CLAUDE.md`](pipeline/CLAUDE.md), loaded when you work there.
 The adapter seam is `samudra/sources/base.py`; the scientific truth is `samudra/grid.py`.
 
-### `api/` - FastAPI. Answers what the static bundle cannot.
+### `api/` - FastAPI. Answers what the static bundle cannot, and serves the open standards.
 
-`api/main.py`. `GRID_SOURCES` and `PROFILE_SOURCES` near the top are the adapter registry.
+`api/main.py` is the REST half; `GRID_SOURCES` and `PROFILE_SOURCES` near the top are the
+adapter registry. `api/standards.py` registers OPeNDAP, CF-1.8 NetCDF and OGC WMS, built on
+`api/cf.py` (Grid to CF dataset), `api/dap.py` (DAP2) and `api/wms.py` (WMS 1.3.0). ADR 0012.
+
+**Every one of those reads the native Grid and none can reach a Volume.** This is the easiest
+place in the project to break the first rule, because a consumer pulling NetCDF over the wire
+cannot see that they have been handed a quantised, depth-warped picture of the data.
 
 ### `web/` - React + TypeScript + Three.js. One WebGL scene for globe and volume.
 
@@ -40,7 +46,8 @@ The scene lives in `src/scene/OceanScene.ts`; every control is explained in `src
 
 ### Generated data - do not hand-edit
 
-- `web/public/data/` - manifest, volumes (`.bin`), `floats.json`, `collocations.json`, `anomalies.json`, coastlines. Written by `bake.py`.
+- `web/public/data/` - manifest, volumes (`.bin`), `floats.json`, `collocations.json`, `anomalies.json`, coastlines, and `currents/*.png`. Written by `bake.py`.
+- `web/public/fonts/` and `web/public/fonts.css` - the two typefaces, served from the build. Written by `scripts/fetch_fonts.py`. Do not replace with a Google Fonts link; that is the zero-network-calls rule.
 - `data/grids/` - native Grids as `.npz` for the API. Server-side only.
 
 ### Documents
@@ -48,11 +55,12 @@ The scene lives in `src/scene/OceanScene.ts`; every control is explained in `src
 | File | What it is |
 | --- | --- |
 | `CONTEXT.md` | Domain vocabulary and the scope cut line. Read first. |
-| `docs/adr/00*.md` | Ten decision records. |
+| `docs/adr/00*.md` | Twelve decision records. |
 | `docs/Samudra3D-Dossier.pdf` | Full project dossier including an anticipated-questions section. Regenerate with `web/render-dossier.mjs` from `scripts/dossier.html`. |
 | `docs/demo/script.md` | The demo script: what to say, what to do. |
 | `docs/plan/00-data-sources-verified.md` | Every endpoint tested, including the dead ones. |
 | `docs/plan/01-cut-features.md` | What was cut, what is worth adding back, known rough edges. |
+| `docs/plan/03-requirement-gaps.md` | Every unmet clause of PS 26067, researched with dates and row counts, and the decision taken on each. Read before proposing to add a data source. |
 | `ppt/SLIDES.md`, `ppt/PROMPT.md` | SIH deck content and a generation prompt. |
 | `design/STITCH.md` | Per-screen prompts for Google Stitch. |
 
@@ -106,11 +114,39 @@ for world-spanning geometry. Anything new and transparent needs a `renderOrder` 
 table in `OceanScene.ts`.
 
 **The demo path makes zero network calls.** Everything the browser needs is in
-`web/public/data`. Keep it that way; a dead venue network must not be able to kill a demo.
+`web/public/data` and `web/public/fonts`. Keep it that way; a dead venue network must not be
+able to kill a demo. This was quietly false for a while - all three pages linked Google Fonts,
+about 63 KB over three requests - while the README carried a badge saying otherwise.
 
 **If you add a control, add its guide entry.** An unexplained control is worse than no control.
 `src/guide.ts` is the single place. A Field with a `GUIDE` entry under its own key explains
 itself when clicked; the rest fall back to the entry for the selector.
+
+**A blob a viewer cannot isolate is a blob they cannot read.** Every sentence on the Anomaly
+Feature panel is measured over one box of water, and until "Show only this body of water" existed
+that box could not be seen: a coloured patch inside a solid block says *that* water departed and
+nothing about where it starts, how deep it runs, or whether it is one body or three. Two things
+the clip alone did not solve, both measured: the remaining body needs about four times the
+opacity, because the ray no longer accumulates anything on its way through; and the view has to
+**pan** onto it, not zoom - `focusOn`'s fixed radius is right for a Float and collapses the block
+frame to a diagonal for a body five degrees across.
+
+**The Volume texture's v axis is referenced to the SOUTH edge.** `toTexture` computes
+`(uBoxMax.z - p.z) / span.z` and world z is *minus* latitude, so that expands to
+`(lat - south) / (north - south)`: v = 0 is the southern edge, not the northern one. Anything
+building a box in texture coordinates - `applyFocus` is the only one so far - must match. Written
+north-referenced it mirrors the box about the region's centre line and gives no error at all:
+the isolation clip showed -5.0N to 4.0N for a feature at 12.5N to 20.5N, about 1800 km from the
+ring pointing at it. Measure a clip by projecting the feature's own corners and diffing the
+rendered frame against a volume-off frame; `web/probe-isolate.mjs` does exactly that.
+
+**A chart's depth axis is trimmed to the instrument, so everything drawn must be trimmed too.**
+The Profile chart stops at the depth the Float or buoy actually reached, which is right - a buoy
+whose deepest sensor is 180 m should not be squashed into the top of a 2000 m axis. The model has
+values far below that, and drawing them puts the model curve outside the frame. Below the last
+measurement there is nothing to compare against anyway, and comparing is the only thing the chart
+is for. Extending the axis instead was tried and rejected: it drops the measured part of the
+worst case from 69% of the plot to 30%.
 
 **A marker points at the thing, not at its extreme.** An Anomaly Feature's marker and every
 fact its panel reports come from the cell nearest the body's centre, never the peak cell. Placed
@@ -123,6 +159,25 @@ constant value is an isotherm, an isohaline or an isopycnal depending on what it
 static entry written for temperature explained cyclone fuel to someone looking at density. The
 same trap caught the Collocation verdict, which told users the model read "cooler than" the
 float for a density field.
+
+**A Field with no render hint gets the default, not the last Field's.** `selectField()` in
+`store.ts` applies `emphasis` and `opacity` from the `FieldSpec` where one is given and from
+`DEFAULT_EMPHASIS` / `DEFAULT_OPACITY` where it is not. It used to change nothing when a Field
+declared nothing, so the hints leaked forwards: visiting Observation Coverage once left
+Temperature with the gradient weighting switched off, which turns the thermocline into an
+invisible band under an opaque warm lid while the guide panel still tells the reader to look
+for it.
+
+**An instrument is not always an Argo float, and a number about them is not always 221.**
+There are Floats and there are moorings, `reportingByKind()` splits them, and the count on
+screen is the count *drawn at the Timestep on screen* - measured across the twelve steps, 184 to
+210 Floats and 5 to 9 buoys, against a bake of 221 and 9. Anything that says "Argo floats" and
+means "instruments" is wrong twice.
+
+**Currents are a picture and must never look like a Field.** ADR 0011. The overlay has no
+Volume, no isosurface, no Collocation, no entry in the Variable selector and no value under the
+cursor. It says on screen that it is Copernicus's own rendering. If it ever acquires a tooltip
+with a speed in it, something has gone wrong.
 
 **A palette belongs to a Field, never to a chooser.** There used to be a dropdown of nine, seven
 of which named quantities the platform does not carry. The derivable ones became Fields and the
@@ -148,8 +203,10 @@ nothing saying what they were. `src/ui/MapKey.tsx` is where that lives.
 ## Testing
 
 TDD applies to the science: depth warp, volume encoding, grid interpolation, collocation, the
-Argo parser, the adapter seam, and every derived Field. Not to glue, UI or shaders. 146 tests
-currently.
+Argo parser, the adapter seam, and every derived Field. Not to glue, UI or shaders. It also
+applies to anything we *serve* - the DAP2 and WMS endpoints are science leaving the building,
+and `test_dap.py` checks them by opening them with a real `pydap` client rather than by
+asserting on our own bytes. 230 tests currently.
 
 When a test and the code disagree, work out which is wrong before changing either. Three times
 the *test's* expectation was the wrong one: gravity-corrected depth, a fixture too small for the
