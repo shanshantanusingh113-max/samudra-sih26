@@ -61,7 +61,8 @@ The scene lives in `src/scene/OceanScene.ts`; every control is explained in `src
 | `docs/plan/00-data-sources-verified.md` | Every endpoint tested, including the dead ones. |
 | `docs/plan/01-cut-features.md` | What was cut, what is worth adding back, known rough edges. |
 | `docs/plan/03-requirement-gaps.md` | Every unmet clause of PS 26067, researched with dates and row counts, and the decision taken on each. Read before proposing to add a data source. |
-| `ppt/SLIDES.md`, `ppt/PROMPT.md` | SIH deck content and a generation prompt. |
+| `ppt/DESIGN-SPEC.md` | How the SIH deck and every picture in it must look. Written so an AI can build the deck from it alone. |
+| `ppt/DECK.md` | The exact words for each of the six slides, where each image goes, and a generation prompt for every diagram. |
 | `design/STITCH.md` | Per-screen prompts for Google Stitch. |
 
 ---

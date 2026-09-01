@@ -335,8 +335,8 @@ The design decisions, including the ones that were hard-won, are written up in
 | [`docs/demo/technical-approach.md`](docs/demo/technical-approach.md) | The spoken version of the Technical Approach slide, about 70 seconds |
 | [`docs/research/operational-stakes.md`](docs/research/operational-stakes.md) | Sourced figures for the pitch: cyclones, upwelling, the Argo programme |
 | [`docs/BUGS.md`](docs/BUGS.md) | Known defects, ranked, with file and line |
-| [`ppt/SLIDES.md`](ppt/SLIDES.md) | Slide-by-slide content and art direction for the SIH submission deck |
-| [`ppt/PROMPT.md`](ppt/PROMPT.md) | A ready-to-paste prompt for generating that deck with an AI |
+| [`ppt/DESIGN-SPEC.md`](ppt/DESIGN-SPEC.md) | How the SIH submission deck and every picture in it must look |
+| [`ppt/DECK.md`](ppt/DECK.md) | The exact words for each of the six slides, plus an image-generation prompt for every diagram |
 | [`design/STITCH.md`](design/STITCH.md) | Per-screen prompts for Google Stitch |
 | [`docs/plan/01-cut-features.md`](docs/plan/01-cut-features.md) | What was deliberately not built, and what is worth adding back |
 | [`CLAUDE.md`](CLAUDE.md) | Orientation for anyone picking this up: a map of every file, the commands, and the rules that matter |

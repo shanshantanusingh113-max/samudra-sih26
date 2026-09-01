@@ -2,263 +2,456 @@
 <html>
 <head>
 <meta charset="utf-8">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<!--
+  The infographic boards for the SIH idea deck, drawn for the WHITE official template.
+
+  Rendered to ppt/images/*.png at 2x by web/render-diagrams.mjs. Every label here is real text
+  at a real pixel, which is the whole reason these are rendered rather than generated: an image
+  model cannot spell "incois_argo_10d_VAM" and cannot be trusted to point an arrow at the right
+  box. Fonts come from the build's own copies, so this renders identically with no network.
+
+  Colours are chosen to clear AA contrast on white paper and on a projector, which is why the
+  amber and green here are darker than the app's own.
+-->
+<link rel="stylesheet" href="../web/public/fonts.css">
 <style>
   :root{
-    --deep:#071420; --shelf:#0c1f2e; --panel:#102737;
-    --edge:rgba(120,170,195,.22); --edge-hot:rgba(120,190,210,.45);
-    --ink:#e4eef6; --dim:#9db5c8; --faint:#6d8598;
-    --cyan:#3fb8c4; --amber:#f5b841; --coral:#f2765f; --green:#5fd68a;
-    --d:"Chivo",sans-serif; --m:"IBM Plex Mono",monospace;
+    --paper:#ffffff;
+    --panel:#F3F8FB;
+    --panel2:#E8F1F6;
+    --edge:#CBDCE6;
+    --edge-hot:#8FBACD;
+    --ink:#0E1B26;
+    --body:#33505F;
+    --faint:#6E8898;
+    --teal:#0B6E7F;
+    --cyan:#1291A6;
+    --amber:#B26A0C;
+    --coral:#BE3B26;
+    --green:#12704A;
+    --d:"Chivo",Arial,sans-serif;
+    --m:"IBM Plex Mono",Consolas,monospace;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:#000;font-family:var(--d)}
-  .board{background:var(--deep);padding:44px;color:var(--ink)}
-  h3{margin:0 0 4px;font-size:26px;font-weight:900;letter-spacing:-.02em}
-  .sub{margin:0 0 30px;font-family:var(--m);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan)}
+  body{margin:0;background:#8fa3b0;font-family:var(--d);-webkit-font-smoothing:antialiased}
+  .board{background:var(--paper);padding:30px 34px;color:var(--ink);margin:24px}
+  .bt{margin:0 0 3px;font-size:20px;font-weight:900;letter-spacing:-.01em;text-transform:uppercase}
+  .bs{margin:0 0 20px;font-family:var(--m);font-size:11px;letter-spacing:.09em;
+      text-transform:uppercase;color:var(--cyan)}
+  b{font-weight:700}
+  .num{font-family:var(--m);font-weight:500;color:var(--amber)}
+  .rule{height:3px;background:var(--teal);width:56px;margin:0 0 16px}
 
-  /* ---------- shared bits ---------- */
-  .chip{font-family:var(--m);font-size:11px;letter-spacing:.06em;color:var(--faint)}
-  .box{border:1px solid var(--edge);border-radius:10px;background:var(--shelf);padding:16px 18px}
-  .box b{display:block;font-size:15px;margin-bottom:5px}
-  .box span{font-size:13px;line-height:1.5;color:var(--dim)}
+  /* ================= S2 gap map ================= */
+  #gapmap{width:620px}
+  .gm{display:flex;flex-direction:column;gap:11px}
+  .gmrow{border:1px solid var(--edge);border-left:3px solid var(--coral);border-radius:7px;
+         background:var(--panel);padding:11px 13px}
+  .gmn{font-family:var(--m);font-size:10px;letter-spacing:.1em;color:var(--coral);
+       text-transform:uppercase;margin-bottom:3px}
+  .gmg{font-size:13px;line-height:1.4;color:var(--body);margin-bottom:8px}
+  .gma{font-size:13px;line-height:1.45;color:var(--ink);padding-left:17px;position:relative}
+  .gma:before{content:"\2192";position:absolute;left:0;top:0;color:var(--green);font-weight:700}
 
-  /* ---------- A: gap ---------- */
-  #gap{width:1500px}
-  .gap-row{display:grid;grid-template-columns:1fr 92px 1fr;align-items:stretch;gap:0}
-  .gap-side{padding:26px;border-radius:12px;border:1px solid var(--edge);display:flex;flex-direction:column}
-  .gap-side.bad{background:linear-gradient(160deg,#1d1114,#120c10)}
-  .gap-side.good{background:linear-gradient(160deg,#0b2430,#08181f);border-color:var(--edge-hot)}
-  .gap-label{font-family:var(--m);font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px}
-  .bad .gap-label{color:var(--coral)} .good .gap-label{color:var(--cyan)}
-  .gap-side h4{margin:0 0 14px;font-size:21px;font-weight:700}
-  .gap-side ul{margin:0 0 auto;padding-left:18px}
-  .gap-side li{font-size:14px;line-height:1.85;color:var(--dim)}
-  .arrow{text-align:center;font-size:34px;color:var(--cyan)}
-  .stack-viz{display:flex;flex-direction:column;gap:9px;margin-top:20px}
-  .layer{height:30px;border-radius:3px;opacity:.85}
-  .cube{margin-top:20px;height:126px;border-radius:6px;
-    background:linear-gradient(180deg,#f7d774,#f0a24a 26%,#c96b8a 52%,#7b5fa8 74%,#3d3f79);
-    border:1px solid var(--edge-hot)}
+  /* ================= S2 uniqueness ribbon ================= */
+  #unique{width:1220px}
+  .uq{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .uqc{border:1px solid var(--edge);border-top:3px solid var(--teal);border-radius:8px;
+       background:var(--panel);padding:14px 15px}
+  .uqk{font-family:var(--m);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+       color:var(--teal);margin-bottom:7px}
+  .uqh{font-size:15px;font-weight:700;line-height:1.25;margin-bottom:7px}
+  .uqb{font-size:12.5px;line-height:1.55;color:var(--body)}
+  .foot{margin-top:14px;padding:11px 14px;border-left:3px solid var(--amber);
+        background:#FDF6EA;font-size:13px;line-height:1.55;color:var(--body)}
+  .foot b{color:var(--ink)}
 
-  /* ---------- B: architecture ---------- */
-  #arch{width:1560px}
-  .arch{display:grid;grid-template-columns:250px 60px 280px 60px 250px 60px 300px;align-items:center}
-  .node{border:1px solid var(--edge);border-radius:10px;background:var(--shelf);padding:15px}
-  .node.src{border-color:rgba(245,184,65,.45)}
-  .node.core{border-color:var(--edge-hot);background:var(--panel)}
-  .node.out{border-color:rgba(63,184,196,.45)}
-  .node b{display:block;font-size:14px;margin-bottom:4px}
-  .node span{display:block;font-family:var(--m);font-size:10.5px;line-height:1.6;color:var(--faint)}
-  .flow{display:flex;align-items:center;justify-content:center;color:var(--cyan);font-size:22px}
-  .col{display:flex;flex-direction:column;gap:12px}
-  .seam{margin-top:22px;padding:13px 18px;border-left:2px solid var(--amber);
-    background:linear-gradient(90deg,rgba(245,184,65,.09),transparent 70%);font-size:13.5px;color:var(--dim)}
-  .seam b{color:var(--amber)}
+  /* ================= S3 architecture ================= */
+  #arch{width:1700px}
+  .az{display:grid;grid-template-columns:1fr 34px 1fr 34px 1.05fr 34px 1.15fr;align-items:stretch}
+  .zone{display:flex;flex-direction:column}
+  .zh{font-family:var(--m);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+      color:var(--faint);margin-bottom:7px;border-bottom:1px solid var(--edge);padding-bottom:5px}
+  .zh span{color:var(--teal);font-weight:500}
+  .nodes{display:flex;flex-direction:column;gap:8px;flex:1}
+  .node{border:1px solid var(--edge);border-radius:7px;background:var(--panel);padding:9px 11px}
+  .node.src{border-left:3px solid var(--amber)}
+  .node.core{border:1.5px solid var(--edge-hot);background:var(--panel2)}
+  .node.truth{border-left:3px solid var(--green);background:#EEF7F2}
+  .node.pic{border-left:3px solid var(--cyan)}
+  .node.out{border-left:3px solid var(--teal)}
+  .node b{display:block;font-size:12.5px;line-height:1.3;margin-bottom:3px}
+  .node span{display:block;font-family:var(--m);font-size:9.5px;line-height:1.55;color:var(--faint)}
+  .node em{display:block;font-style:normal;font-size:11px;line-height:1.45;color:var(--body);margin-top:3px}
+  .arrows{display:flex;align-items:center;justify-content:center;color:var(--edge-hot);
+          font-size:22px;font-weight:700}
+  .lawn{margin-top:15px;padding:12px 15px;border:1px solid var(--edge);border-left:3px solid var(--green);
+        border-radius:7px;background:#F1F8F4;font-size:13px;line-height:1.55;color:var(--body)}
+  .lawn b{color:var(--green)}
 
-  /* ---------- C: methodology ---------- */
-  #method{width:1560px}
-  .steps{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
-  .step{border:1px solid var(--edge);border-radius:10px;background:var(--shelf);padding:18px;position:relative}
-  .step .n{font-family:var(--m);font-size:11px;color:var(--cyan);letter-spacing:.12em}
-  .step b{display:block;margin:9px 0 6px;font-size:15px}
-  .step span{font-size:12.5px;line-height:1.55;color:var(--dim)}
-  .step::after{content:"›";position:absolute;right:-12px;top:50%;transform:translateY(-50%);
-    color:var(--cyan);font-size:26px;z-index:2}
-  .step:last-child::after{display:none}
-  .proof{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:20px}
-  .proof div{border:1px solid var(--edge);border-radius:9px;background:var(--panel);padding:14px 16px}
-  .proof b{display:block;font-size:23px;font-family:var(--d);font-weight:700;color:var(--amber)}
-  .proof span{font-family:var(--m);font-size:10.5px;color:var(--faint);letter-spacing:.04em}
+  /* ================= S3 stack ================= */
+  #stack{width:460px}
+  .st{display:flex;flex-direction:column;gap:10px}
+  .stg{border:1px solid var(--edge);border-radius:7px;background:var(--panel);padding:10px 13px}
+  .stk{font-family:var(--m);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+       color:var(--teal);margin-bottom:5px}
+  .stv{font-size:13px;line-height:1.6;color:var(--ink)}
+  .stv i{font-style:normal;color:var(--faint)}
 
-  /* ---------- D: feasibility ---------- */
-  #risk{width:1520px}
-  table{width:100%;border-collapse:collapse}
-  th{font-family:var(--m);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
-     color:var(--faint);text-align:left;padding:0 16px 11px;border-bottom:1px solid var(--edge)}
-  td{padding:15px 16px;border-bottom:1px solid rgba(120,170,195,.11);font-size:13.5px;
-     line-height:1.55;color:var(--dim);vertical-align:top}
-  td:first-child{color:var(--ink);font-weight:700;width:27%}
-  td.fix{color:var(--green)}
-  .pill{display:inline-block;padding:3px 9px;border-radius:20px;font-family:var(--m);
-    font-size:10px;letter-spacing:.08em;border:1px solid}
-  .done{color:var(--green);border-color:rgba(95,214,138,.4);background:rgba(95,214,138,.1)}
+  /* ================= S3 methodology ================= */
+  #method{width:1700px}
+  .mt{display:grid;grid-template-columns:repeat(5,1fr);gap:0;align-items:stretch}
+  .mstep{position:relative;padding:12px 22px 12px 16px;border:1px solid var(--edge);
+         background:var(--panel);border-right:none}
+  .mstep:last-child{border-right:1px solid var(--edge)}
+  .mstep:after{content:"";position:absolute;right:-11px;top:50%;width:20px;height:20px;
+    margin-top:-10px;background:var(--panel);border-top:1px solid var(--edge);
+    border-right:1px solid var(--edge);transform:rotate(45deg);z-index:2}
+  .mstep:last-child:after{display:none}
+  .mn{font-family:var(--m);font-size:22px;font-weight:500;color:var(--edge-hot);line-height:1}
+  .mh{font-size:13.5px;font-weight:700;margin:5px 0 4px;text-transform:uppercase;letter-spacing:.02em}
+  .mb{font-size:11.5px;line-height:1.5;color:var(--body)}
+  .status{margin-top:14px;display:flex;align-items:center;gap:0;border:1.5px solid var(--green);
+          border-radius:7px;overflow:hidden}
+  .stat{padding:10px 16px;font-size:13px;border-right:1px solid #BEDCCB;flex:1}
+  .stat:last-child{border-right:none}
+  .stat b{display:block;font-size:10px;font-family:var(--m);letter-spacing:.1em;
+          text-transform:uppercase;color:var(--faint);font-weight:500;margin-bottom:3px}
+  .stat.go{background:#EAF6F0;color:var(--green);font-weight:700}
 
-  /* ---------- E: impact ---------- */
-  #impact{width:1520px}
-  .who{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px}
-  .who div{border:1px solid var(--edge);border-radius:10px;background:var(--shelf);padding:18px}
-  .who .ic{font-size:24px;margin-bottom:9px}
-  .who b{display:block;font-size:15px;margin-bottom:5px}
-  .who span{font-size:12.5px;line-height:1.55;color:var(--dim)}
-  /* Before -> after rows, NOT bars. Bar lengths here would encode nothing real, and a reader
-     would quite reasonably interpret width as magnitude. */
-  .bars{display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--edge)}
-  .bar{display:grid;grid-template-columns:290px 1fr 34px 1fr;align-items:center;gap:14px;
-    padding:13px 4px;border-bottom:1px solid rgba(120,170,195,.11)}
-  .bar .lab{font-size:13.5px;color:var(--ink)}
-  .bar .was{font-family:var(--m);font-size:12px;color:var(--coral)}
-  .bar .arw{text-align:center;color:var(--faint);font-size:16px}
-  .bar .now{font-family:var(--m);font-size:12px;color:var(--green)}
+  /* ================= S4 feasibility ================= */
+  #feas{width:540px}
+  .fz{display:flex;flex-direction:column;gap:11px}
+  .fbox{border:1px solid var(--edge);border-top:3px solid var(--teal);border-radius:8px;
+        background:var(--panel);padding:13px 15px}
+  .fh{font-size:14.5px;font-weight:700;margin-bottom:2px}
+  .fsub{font-family:var(--m);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+        color:var(--teal);margin-bottom:9px}
+  .fbox ul{margin:0;padding-left:15px}
+  .fbox li{font-size:12.5px;line-height:1.55;color:var(--body);margin-bottom:6px}
+  .fbox li:last-child{margin-bottom:0}
+
+  /* ================= S4 risks ================= */
+  #risks{width:1120px}
+  .rk{display:flex;flex-direction:column;gap:9px}
+  .rrow{display:grid;grid-template-columns:30px 1fr 26px 1fr;align-items:stretch;gap:0}
+  .rn{display:flex;align-items:center;justify-content:center;font-family:var(--m);font-size:14px;
+      font-weight:500;color:#fff;background:var(--teal);border-radius:5px 0 0 5px}
+  .rbad{border:1px solid var(--edge);border-left:none;background:#FDF2F0;padding:9px 12px}
+  .rmid{display:flex;align-items:center;justify-content:center;color:var(--green);
+        font-size:16px;font-weight:700;background:#fff}
+  .rgood{border:1px solid var(--edge);border-radius:0 5px 5px 0;background:#F1F8F4;padding:9px 12px}
+  .rl{font-family:var(--m);font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+  .rbad .rl{color:var(--coral)} .rgood .rl{color:var(--green)}
+  .rt{font-size:12.5px;line-height:1.5;color:var(--body)}
+  .rt b{color:var(--ink)}
+
+  /* ================= S5 audience ================= */
+  #aud{width:660px}
+  .hub{border:1.5px solid var(--teal);border-radius:8px;background:var(--panel2);
+       padding:11px 14px;text-align:center;margin-bottom:12px}
+  .hub b{display:block;font-size:15px;color:var(--teal);letter-spacing:.02em}
+  .hub span{font-size:12px;color:var(--body)}
+  .spokes{display:flex;flex-direction:column;gap:9px}
+  .spoke{display:grid;grid-template-columns:34px 1fr;border:1px solid var(--edge);
+         border-radius:7px;background:var(--panel);overflow:hidden}
+  .sic{display:flex;align-items:center;justify-content:center;background:var(--teal);color:#fff;
+       font-family:var(--m);font-size:13px;font-weight:500}
+  .sbody{padding:9px 12px}
+  .sh{font-size:13px;font-weight:700;margin-bottom:3px}
+  .sb{font-size:12px;line-height:1.5;color:var(--body)}
+
+  /* ================= S5 benefits ================= */
+  #ben{width:760px}
+  .bn{display:flex;flex-direction:column;gap:11px}
+  .bcard{border:1px solid var(--edge);border-left:4px solid var(--teal);border-radius:7px;
+         background:var(--panel);padding:12px 14px}
+  .bcard.eco{border-left-color:var(--amber)}
+  .bcard.env{border-left-color:var(--green)}
+  .bk{font-family:var(--m);font-size:10px;letter-spacing:.11em;text-transform:uppercase;
+      color:var(--teal);margin-bottom:5px}
+  .eco .bk{color:var(--amber)} .env .bk{color:var(--green)}
+  .bb{font-size:12.5px;line-height:1.6;color:var(--body)}
+  .bb b{color:var(--ink)}
+  .headline{margin-top:12px;border:1.5px solid var(--amber);border-radius:7px;background:#FDF6EA;
+            padding:11px 14px;font-size:12.5px;line-height:1.55;color:var(--body)}
+  .headline b{color:var(--amber);font-family:var(--m);font-weight:500}
 </style>
 </head>
 <body>
 
-<!-- ============ A. THE GAP ============ -->
-<div class="board" id="gap">
-  <h3>The gap this closes</h3>
-  <p class="sub">Problem Statement 26067 · INCOIS</p>
-  <div class="gap-row">
-    <div class="gap-side bad">
-      <div class="gap-label">Today</div>
-      <h4>Two windows, flat maps, guesswork</h4>
-      <ul>
-        <li>Model output in one desktop program</li>
-        <li>Float measurements in another</li>
-        <li>One depth at a time - the ocean is 4 km deep</li>
-        <li>Agreement judged in the forecaster's head</li>
-        <li>New instrument = rewrite the tool</li>
-      </ul>
-      <div class="stack-viz">
-        <div class="layer" style="background:#6b4b52"></div>
-        <div class="layer" style="background:#59444f"></div>
-        <div class="layer" style="background:#473d4a"></div>
-      </div>
-      <div class="chip" style="margin-top:9px">separate 2-D slices</div>
+<!-- ============================================================ SLIDE 2, left -->
+<div class="board" id="gapmap">
+  <h3 class="bt">The five gaps PS 26067 names</h3>
+  <p class="bs">Their words, then what is built and running</p>
+  <div class="gm">
+    <div class="gmrow">
+      <div class="gmn">Gap 1</div>
+      <div class="gmg">"No web-based, platform-independent 3D rendering with depth-resolved volumetric views."</div>
+      <div class="gma">A GPU ray-marched water column, <span class="num">5 m to 2000 m</span>, in any WebGL2 browser. Public and live today.</div>
     </div>
-    <div class="arrow">→</div>
-    <div class="gap-side good">
-      <div class="gap-label">Samudra 3D</div>
-      <h4>One browser, one water column, one answer</h4>
-      <ul>
-        <li>Whole depth range rendered at once, 5-2000 m</li>
-        <li>Floats suspended at their true positions</li>
-        <li>Click one: measured vs modelled, on one chart</li>
-        <li>Disagreement shaded and quantified</li>
-        <li>New instrument = one adapter class</li>
-      </ul>
-      <div class="cube"></div>
-      <div class="chip" style="margin-top:9px">one continuous volume</div>
+    <div class="gmrow">
+      <div class="gmn">Gap 2</div>
+      <div class="gmg">"No unified display of instrument profile data alongside model fields."</div>
+      <div class="gma"><span class="num">230</span> instruments drawn inside the water. Click one and the model is scored against it: <span class="num">96,481</span> depth points compared.</div>
+    </div>
+    <div class="gmrow">
+      <div class="gmn">Gap 3</div>
+      <div class="gmg">"Absence of interactive controls for variable selection, depth-slice navigation, time-step animation, customizable colorbars."</div>
+      <div class="gma">All four, live. <span class="num">5</span> variables, two depth handles, <span class="num">12</span> analyses animated, both colourbar handles.</div>
+    </div>
+    <div class="gmrow">
+      <div class="gmn">Gap 4</div>
+      <div class="gmg">"Inability to ingest new data streams or model variables without significant re-engineering."</div>
+      <div class="gma">One adapter class per provider. <span class="num">5</span> institutions already read through the same seam.</div>
+    </div>
+    <div class="gmrow">
+      <div class="gmn">Gap 5</div>
+      <div class="gmg">"Lack of tools to support intuitive, rapid understanding of complex 3D ocean phenomena."</div>
+      <div class="gma">Every control explains itself in plain language. A <span class="num">5-step</span> guided tour, and <span class="num">111</span> unusual bodies of water found for you.</div>
     </div>
   </div>
 </div>
 
-<!-- ============ B. ARCHITECTURE ============ -->
+<!-- ============================================================ SLIDE 2, bottom ribbon -->
+<div class="board" id="unique">
+  <h3 class="bt">Innovation and uniqueness</h3>
+  <p class="bs">Four things this does that a stack of flat maps cannot</p>
+  <div class="uq">
+    <div class="uqc">
+      <div class="uqk">01 &middot; Quantified</div>
+      <div class="uqh">The disagreement is a number</div>
+      <div class="uqb">Not "the model looks off". The model reads <b>0.72 &deg;C</b> warm across <b>522</b> depths, RMS <b>1.72 &deg;C</b>. Every instrument carries its own verdict, computed at its own place and time.</div>
+    </div>
+    <div class="uqc">
+      <div class="uqk">02 &middot; Honest</div>
+      <div class="uqh">It shows where there is no evidence</div>
+      <div class="uqb">Observation Coverage is a variable in its own right: how many Argo casts stand behind each point. <b>6.0%</b> of the block has none, and the picture says exactly where.</div>
+    </div>
+    <div class="uqc">
+      <div class="uqk">03 &middot; Automatic</div>
+      <div class="uqh">It finds the odd water for you</div>
+      <div class="uqb"><b>111</b> unusual bodies across 12 analyses, each with a z-score, a depth band, a footprint in km&sup2; and the cast count behind it. Isolate one and the rest of the block clips away.</div>
+    </div>
+    <div class="uqc">
+      <div class="uqh" style="margin-top:0"><span class="uqk">04 &middot; Disciplined</span>The picture and the truth are kept apart</div>
+      <div class="uqb">The GPU gets a quantised byte texture. Every number a person reads, and every byte served over OPeNDAP, WMS or NetCDF, comes from the native grid instead.</div>
+    </div>
+  </div>
+  <div class="foot"><b>And it refuses to invent.</b> Geostrophic current speed was built, measured at 0.16 m/s for the Somali Current in peak monsoon against a real 1.5 to 2.5 m/s, and deleted. There is no machine-learning gap-filler painting over the 6% nobody measured, because a smooth believable temperature there would hide the one honest hole in the picture.</div>
+</div>
+
+<!-- ============================================================ SLIDE 3, architecture -->
 <div class="board" id="arch">
-  <h3>System architecture</h3>
-  <p class="sub">Open standards in · WebGL out · no client-side install</p>
-  <div class="arch">
-    <div class="col">
-      <div class="node src"><b>INCOIS ERDDAP</b><span>incois_argo_10d_VAM<br>NetCDF · CF-1.6 · 24 levels</span></div>
-      <div class="node src"><b>Argo GDAC</b><span>float profiles<br>CSV · QC flags</span></div>
-      <div class="node src"><b>Argo BGC</b><span>chlorophyll<br>49 floats</span></div>
-      <div class="node src"><b>NOAA OSMC · GTS</b><span>moored buoys<br>OMNI + RAMA</span></div>
+  <h3 class="bt">Architecture</h3>
+  <p class="bs">Five open sources &rarr; one adapter seam &rarr; two representations &rarr; four ways out</p>
+  <div class="az">
+
+    <div class="zone">
+      <div class="zh"><span>Zone 1</span> &nbsp;Sources &middot; open, anonymous, dated</div>
+      <div class="nodes">
+        <div class="node src"><b>INCOIS ERDDAP</b><span>incois_argo_10d_VAM</span><em>The model field. griddap / DAP2, CF-1.6, 24 levels, 5-2000 m</em></div>
+        <div class="node src"><b>Argo GDAC &middot; Ifremer</b><span>tabledap / ArgoFloats</span><em>221 floats, per-value QC flags</em></div>
+        <div class="node src"><b>Argo BGC synthetic</b><span>ArgoFloats-synthetic-BGC</span><em>Chlorophyll, 49 floats</em></div>
+        <div class="node src"><b>NOAA OSMC real-time</b><span>GTS &middot; tabledap</span><em>9 moored buoys: OMNI and RAMA</em></div>
+        <div class="node src"><b>Copernicus Marine</b><span>WMTS tiles</span><em>Surface currents, as a labelled picture</em></div>
+      </div>
     </div>
-    <div class="flow">→</div>
-    <div class="node core"><b>Source Adapters</b><span>one class per provider<br>the only code that knows<br>what an ERDDAP is</span></div>
-    <div class="flow">→</div>
-    <div class="col">
-      <div class="node core"><b>Grid</b><span>scientific truth<br>native levels</span></div>
-      <div class="node"><b>Volume</b><span>GPU artifact<br>4 bytes / voxel</span></div>
+
+    <div class="arrows">&rarr;</div>
+
+    <div class="zone">
+      <div class="zh"><span>Zone 2</span> &nbsp;Source adapter seam &middot; Python</div>
+      <div class="nodes">
+        <div class="node core"><b>GridSource / ProfileSource</b><span>samudra/sources/base.py</span><em>One class per provider. The only code in the project that has ever heard of ERDDAP.</em></div>
+        <div class="node core"><b>Column layout as data</b><em>Two Argo providers disagree about every column name and share one parser.</em></div>
+        <div class="node core"><b>Two layers of quality control</b><em>Argo's own flags read per channel, then a regional floor for what the global standard lets past.</em></div>
+        <div class="node core"><b>Land masked, never filled</b><em>A separate channel records where the ocean actually is.</em></div>
+      </div>
     </div>
-    <div class="flow">→</div>
-    <div class="col">
-      <div class="node out"><b>Browser · Three.js</b><span>ray-marched volume<br>globe ⇄ map morph</span></div>
-      <div class="node out"><b>FastAPI</b><span>/api/collocation<br>/api/column</span></div>
-      <div class="node out"><b>Open standards</b><span>OPeNDAP · CF-1.8 NetCDF<br>OGC WMS 1.3.0</span></div>
+
+    <div class="arrows">&rarr;</div>
+
+    <div class="zone">
+      <div class="zh"><span>Zone 3</span> &nbsp;Two representations, on purpose</div>
+      <div class="nodes">
+        <div class="node truth"><b>GRID &middot; the scientific truth</b><span>float64 &middot; land is NaN</span><em>Source-shaped, exactly as the provider published it. Every answer comes from here.</em></div>
+        <div class="node pic"><b>VOLUME &middot; a picture for the GPU</b><span>4 bytes / voxel</span><em>value, coverage, gradient, spare. Quantised to bytes and depth-warped onto an even axis, because GPU textures cannot be uneven.</em></div>
+      </div>
     </div>
+
+    <div class="arrows">&rarr;</div>
+
+    <div class="zone">
+      <div class="zh"><span>Zone 4</span> &nbsp;Delivery</div>
+      <div class="nodes">
+        <div class="node out"><b>Browser &nbsp;&larr;&nbsp; Volume</b><span>Three.js &middot; WebGL2 &middot; GLSL ES 3.00</span><em>One scene for both the globe and the ray-marched block. No install, no plugin, no account.</em></div>
+        <div class="node out"><b>REST API &nbsp;&larr;&nbsp; Grid</b><span>FastAPI &middot; 11 endpoints</span><em>Live collocation for any instrument, and any column of water.</em></div>
+        <div class="node out"><b>Open standards &nbsp;&larr;&nbsp; Grid</b><span>DAP2 &middot; CF-1.8 &middot; WMS 1.3.0</span><em>OPeNDAP with constraint expressions, self-describing NetCDF, and WMS for the fields that exist nowhere else.</em></div>
+        <div class="node out"><b>Static bake &nbsp;&larr;&nbsp; both</b><span>36 MB, committed</span><em>The demo makes zero network calls, checked by CI on every push.</em></div>
+      </div>
+    </div>
+
   </div>
-  <div class="seam">
-    <b>The extensibility seam.</b> Four providers, four adapter classes, one interface - and the
-    fourth shares no convention with the others: depth not pressure, one row per level, no
-    quality flags. The renderer, the API and the UI have never heard of ERDDAP. Everything
-    served on the right comes off the Grid and never the Volume.
-  </div>
+  <div class="lawn"><b>The rule that governs all of it.</b> Every number a human or a machine reads comes from the Grid. The Volume is only ever a picture. This matters most at the API, because a consumer pulling NetCDF over the wire cannot see that they have been handed a quantised, depth-warped, land-filled approximation.</div>
 </div>
 
-<!-- ============ C. METHODOLOGY ============ -->
+<!-- ============================================================ SLIDE 3, stack -->
+<div class="board" id="stack">
+  <h3 class="bt">Technologies used</h3>
+  <p class="bs">Everything free, everything open, nothing behind an account</p>
+  <div class="st">
+    <div class="stg"><div class="stk">Data and science</div>
+      <div class="stv">Python 3.10 &middot; xarray &middot; netCDF4 &middot; NumPy &middot; SciPy &middot; gsw (TEOS-10) &middot; Pillow &middot; cmocean</div></div>
+    <div class="stg"><div class="stk">Backend</div>
+      <div class="stv">FastAPI &middot; uvicorn &middot; pydap &middot; xpublish &middot; xpublish-wms</div></div>
+    <div class="stg"><div class="stk">Frontend</div>
+      <div class="stv">TypeScript &middot; React 19 &middot; Vite &middot; Zustand &middot; Three.js &middot; WebGL2 &middot; GLSL ES 3.00</div></div>
+    <div class="stg"><div class="stk">Open standards spoken</div>
+      <div class="stv">ERDDAP griddap and tabledap <i>(read)</i> &middot; OPeNDAP DAP2 <i>(read and served)</i> &middot; CF-1.8 NetCDF <i>(served)</i> &middot; OGC WMS 1.3.0 <i>(served)</i></div></div>
+    <div class="stg"><div class="stk">Quality and delivery</div>
+      <div class="stv">pytest, <span class="num">230</span> tests &middot; Playwright &middot; GitHub Actions, build and deploy on every push</div></div>
+  </div>
+  <div class="foot">No paid service, no API key, no login, no GPU cluster. Built and tested on integrated graphics with 2 GB of shared memory.</div>
+</div>
+
+<!-- ============================================================ SLIDE 3, methodology -->
 <div class="board" id="method">
-  <h3>How it is built</h3>
-  <p class="sub">Ingest → reconcile → encode → render → compare</p>
-  <div class="steps">
-    <div class="step"><div class="n">01 INGEST</div><b>Read the archives</b>
-      <span>xarray reads CF-compliant NetCDF over ERDDAP; a parser reconstitutes Argo casts from flat CSV.</span></div>
-    <div class="step"><div class="n">02 RECONCILE</div><b>Depth Warp</b>
-      <span>24 uneven levels → an even GPU axis that gives the top 300 m half the resolution, not 15%.</span></div>
-    <div class="step"><div class="n">03 ENCODE</div><b>4 bytes a voxel</b>
-      <span>Value, coverage (where ocean truly is), gradient (where it is changing), spare.</span></div>
-    <div class="step"><div class="n">04 RENDER</div><b>Ray-march in WebGL2</b>
-      <span>Front-to-back compositing with an editable transfer function and isosurface hits.</span></div>
-    <div class="step"><div class="n">05 COMPARE</div><b>Collocate</b>
-      <span>Model interpolated to the float's own position, depth and time. Residuals, signed.</span></div>
+  <h3 class="bt">Methodology</h3>
+  <p class="bs">From five public endpoints to a block of water you can fly into</p>
+  <div class="mt">
+    <div class="mstep"><div class="mn">01</div><div class="mh">Fetch</div>
+      <div class="mb">Subset each source at the server, over one region and one window. Every endpoint tested and dated before it was trusted.</div></div>
+    <div class="mstep"><div class="mn">02</div><div class="mh">Check</div>
+      <div class="mb">Quality flags read per channel, so a float with a dead salinity sensor still gives its good temperature. Land masked, never back-filled into the sea.</div></div>
+    <div class="mstep"><div class="mn">03</div><div class="mh">Derive</div>
+      <div class="mb">Density from TEOS-10, a temperature anomaly, an observation-coverage count, and 111 unusual bodies of water located automatically.</div></div>
+    <div class="mstep"><div class="mn">04</div><div class="mh">Bake</div>
+      <div class="mb">Native grids saved for the API and the standards; byte volumes packed for the GPU. 36 MB, committed, so the demo needs no network.</div></div>
+    <div class="mstep"><div class="mn">05</div><div class="mh">Render and compare</div>
+      <div class="mb">Ray-march the block in the browser, draw every instrument where it truly was, and score the model against each cast.</div></div>
   </div>
-  <div class="proof">
-    <div><b>48</b><span>TESTS ON THE SCIENCE</span></div>
-    <div><b>8</b><span>DECISION RECORDS</span></div>
-    <div><b>159 KB</b><span>PER TIMESTEP VOLUME</span></div>
-    <div><b>0</b><span>NETWORK CALLS AT DEMO TIME</span></div>
+  <div class="status">
+    <div class="stat go"><b>Product status</b>Working prototype, on live INCOIS data</div>
+    <div class="stat"><b>Public URL</b><span class="num">rak2315.github.io/samudra-sih26</span></div>
+    <div class="stat"><b>Automated tests</b><span class="num">230</span> passing, in CI on every push</div>
+    <div class="stat"><b>Network calls at demo time</b><span class="num">0</span>, enforced by a CI check</div>
   </div>
 </div>
 
-<!-- ============ D. FEASIBILITY ============ -->
-<div class="board" id="risk">
-  <h3>Feasibility &amp; risk</h3>
-  <p class="sub">Every risk below was hit during the build - and resolved</p>
-  <table>
-    <thead><tr><th>Risk</th><th>What actually happened</th><th>Resolution</th><th>State</th></tr></thead>
-    <tbody>
-      <tr><td>No access to INCOIS data</td>
-        <td>Assumed unavailable; HYCOM was the fallback plan</td>
-        <td class="fix">INCOIS runs a public ERDDAP. We use their own product, current to 30 Jul 2026</td>
-        <td><span class="pill done">SOLVED</span></td></tr>
-      <tr><td>Upstream server unreachable</td>
-        <td>HYCOM and NOAA CoastWatch time out from our network</td>
-        <td class="fix">Data baked into the build; the demo makes zero network calls</td>
-        <td><span class="pill done">SOLVED</span></td></tr>
-      <tr><td>Weak GPU in the demo room</td>
-        <td>Target is Intel UHD, 2 GB shared VRAM</td>
-        <td class="fix">Adaptive ray steps, byte-quantised volumes, textures freed on swap</td>
-        <td><span class="pill done">SOLVED</span></td></tr>
-      <tr><td>Bad sensors in real data</td>
-        <td>A live float reports 20 PSU - impossible in open ocean</td>
-        <td class="fix">Per-channel QC; the cast keeps its good temperature</td>
-        <td><span class="pill done">SOLVED</span></td></tr>
-      <tr><td>Rendering that misleads</td>
-        <td>Interpolating a no-data value paints fake upwelling along coasts</td>
-        <td class="fix">Separate coverage channel; land can never fabricate a temperature</td>
-        <td><span class="pill done">SOLVED</span></td></tr>
-      <tr><td>Scaling to full archive</td>
-        <td>813 analysis steps exist; 12 are baked</td>
-        <td class="fix">Same pipeline, run longer. Volumes are 159 KB each</td>
-        <td><span class="pill done">DESIGNED</span></td></tr>
-    </tbody>
-  </table>
+<!-- ============================================================ SLIDE 4, feasibility -->
+<div class="board" id="feas">
+  <h3 class="bt">Feasibility</h3>
+  <p class="bs">Nothing here is projected</p>
+  <div class="fz">
+    <div class="fbox">
+      <div class="fh">It already runs</div><div class="fsub">Technical</div>
+      <ul>
+        <li><b>Built, deployed and public today.</b> Open it on a phone during the pitch.</li>
+        <li><b>Ordinary hardware is enough.</b> Built and tested on integrated graphics with 2 GB of shared memory.</li>
+        <li><b>230 automated tests</b> cover the science, and CI runs them on every push.</li>
+      </ul>
+    </div>
+    <div class="fbox">
+      <div class="fh">It costs nothing to keep</div><div class="fsub">Viability</div>
+      <ul>
+        <li><b>No licence, no API key, no account, no GPU cluster.</b> Every source is open and anonymous.</li>
+        <li><b>36 MB of static files</b> plus one small Python service is the entire deployment.</li>
+        <li><b>It adds no new data collection.</b> It makes data INCOIS already pays for do more work.</li>
+      </ul>
+    </div>
+    <div class="fbox">
+      <div class="fh">INCOIS can host it</div><div class="fsub">Deployment</div>
+      <ul>
+        <li><b>Static site plus one API,</b> both fine behind their own firewall, with no client install.</li>
+        <li><b>It already speaks their standards:</b> OPeNDAP, CF-1.8 NetCDF and OGC WMS 1.3.0.</li>
+        <li><b>A new sensor is one adapter class.</b> Proven with moored buoys, a genuinely different format.</li>
+      </ul>
+    </div>
+  </div>
 </div>
 
-<!-- ============ E. IMPACT ============ -->
-<div class="board" id="impact">
-  <h3>Impact</h3>
-  <p class="sub">Operational, educational, and national</p>
-  <div class="who">
-    <div><div class="ic">🌀</div><b>Forecasters</b><span>See thermocline depth before issuing a cyclone advisory - the ocean heat that fuels intensification.</span></div>
-    <div><div class="ic">🛟</div><b>Search &amp; rescue</b><span>Currents and water structure in the actual search box, in one view, in seconds.</span></div>
-    <div><div class="ic">🎣</div><b>Fisheries</b><span>Thermal fronts and mixed-layer depth drive where fish aggregate.</span></div>
-    <div><div class="ic">🎓</div><b>Outreach</b><span>Opens in any browser. A school class can fly into the Bay of Bengal.</span></div>
+<!-- ============================================================ SLIDE 4, risks -->
+<div class="board" id="risks">
+  <h3 class="bt">Challenges met, and how</h3>
+  <p class="bs">Each of these was hit during the build. Each was measured, then resolved.</p>
+  <div class="rk">
+
+    <div class="rrow"><div class="rn">1</div>
+      <div class="rbad"><div class="rl">Risk &middot; the data disappears</div><div class="rt"><b>Source endpoints die or refuse you.</b> HYCOM and NOAA CoastWatch both timed out from our network on day one. INCOIS's own chlorophyll ends in 2006 and 2020, their currents in 2019, and the last glider left this basin on 14 Oct 2022.</div></div>
+      <div class="rmid">&rarr;</div>
+      <div class="rgood"><div class="rl">Resolved</div><div class="rt"><b>Every endpoint is tested, dated and written down, and the adapter seam makes a swap one class.</b> We moved to INCOIS's own public ERDDAP, which made the demo end-to-end INCOIS instead of a substitute.</div></div></div>
+
+    <div class="rrow"><div class="rn">2</div>
+      <div class="rbad"><div class="rl">Risk &middot; the instruments lie</div><div class="rt"><b>Real sensors fail in the water.</b> One float in this region reported about 20 PSU, fresher than the Baltic Sea and impossible here, and the global quality standard let it through.</div></div>
+      <div class="rmid">&rarr;</div>
+      <div class="rgood"><div class="rl">Resolved</div><div class="rt"><b>Two layers of quality control.</b> Argo's own flags are read per channel, so a float with a dead salinity sensor still gives its good temperature, then a regional floor catches what the global rule passes. Reading the flags properly took usable floats from <b>93 to 221</b>.</div></div></div>
+
+    <div class="rrow"><div class="rn">3</div>
+      <div class="rbad"><div class="rl">Risk &middot; the hardware cannot cope</div><div class="rt"><b>A forecasting desk is not a gaming PC.</b> Ray-marching every pixel of a 3D texture is heavy, and the machines this has to run on have no discrete graphics card.</div></div>
+      <div class="rmid">&rarr;</div>
+      <div class="rgood"><div class="rl">Resolved</div><div class="rt"><b>4 bytes per voxel, a ray-step slider, and textures freed as the animation plays.</b> The whole thing was built and tested on integrated graphics with 2 GB of shared memory.</div></div></div>
+
+    <div class="rrow"><div class="rn">4</div>
+      <div class="rbad"><div class="rl">Risk &middot; missing data can lie</div><div class="rt"><b>The gaps invent a phenomenon.</b> A GPU blends neighbouring cells before the shader sees them, so blending "no data" into the sea paints a fake cold strip along every coast, and it looks exactly like real upwelling that a forecaster would act on.</div></div>
+      <div class="rmid">&rarr;</div>
+      <div class="rgood"><div class="rl">Resolved</div><div class="rt"><b>A separate channel records where the ocean actually is.</b> Masked cells are back-filled from their nearest real neighbour so they are harmless to blend against, and land can never contribute a value at any zoom.</div></div></div>
+
+    <div class="rrow"><div class="rn">5</div>
+      <div class="rbad"><div class="rl">Risk &middot; a plausible wrong number</div><div class="rt"><b>Worse than no number at all.</b> A derived current field looked finite, physical and entirely convincing on screen, and a judge or a forecaster would have had no way to tell it was wrong.</div></div>
+      <div class="rmid">&rarr;</div>
+      <div class="rgood"><div class="rl">Resolved</div><div class="rt"><b>Measured against reality, then deleted.</b> It gave 0.16 m/s for the Somali Current in peak monsoon against a real 1.5 to 2.5. Currents now ship as Copernicus's own labelled image, with no tooltip and no number to read off it.</div></div></div>
+
   </div>
-  <div class="bars">
-    <div class="bar"><div class="lab">Programs a forecaster must open</div>
-      <div class="was">two, side by side</div><div class="arw">→</div><div class="now">one browser tab</div></div>
-    <div class="bar"><div class="lab">Depths visible at once</div>
-      <div class="was">one slice</div><div class="arw">→</div><div class="now">all 24 levels, 5-2000 m</div></div>
-    <div class="bar"><div class="lab">Model-vs-observation check</div>
-      <div class="was">done mentally, unrecorded</div><div class="arw">→</div><div class="now">one click, quantified in °C</div></div>
-    <div class="bar"><div class="lab">Cost to add a new instrument</div>
-      <div class="was">re-engineer the tool</div><div class="arw">→</div><div class="now">one adapter class</div></div>
-    <div class="bar"><div class="lab">Software a user must install</div>
-      <div class="was">desktop packages</div><div class="arw">→</div><div class="now">none - any browser</div></div>
+  <div class="foot">Every risk above was met during the build and resolved, and each resolution is recorded with the measurement that settled it. <b>This is a record, not a forecast.</b></div>
+</div>
+
+<!-- ============================================================ SLIDE 5, audience -->
+<div class="board" id="aud">
+  <h3 class="bt">Who it helps</h3>
+  <p class="bs">Every one of these is an existing INCOIS operational mandate</p>
+  <div class="hub">
+    <b>INCOIS &middot; Ocean Valley, Hyderabad</b>
+    <span>Ministry of Earth Sciences. One tab instead of three programs.</span>
   </div>
+  <div class="spokes">
+    <div class="spoke"><div class="sic">01</div><div class="sbody">
+      <div class="sh">Cyclone and hazard forecasters</div>
+      <div class="sb">A storm's fuel is the heat <i>below</i> the surface, not on it. Cyclone heat potential is measured down to the depth of an isotherm, and this draws that isotherm as a solid surface you can fly around and watch dome over four months.</div></div></div>
+    <div class="spoke"><div class="sic">02</div><div class="sbody">
+      <div class="sh">Search and rescue</div>
+      <div class="sb">See the real water structure inside the actual search box in seconds, with the nearest instruments and what they measured, instead of opening three separate programs.</div></div></div>
+    <div class="spoke"><div class="sic">03</div><div class="sbody">
+      <div class="sh">Fisheries advisories</div>
+      <div class="sb">INCOIS already sends potential fishing zone advisories to lakhs of fishermen. Those depend on fronts and on mixed-layer depth, and both become objects you can point at rather than things inferred from stacked flat maps.</div></div></div>
+    <div class="spoke"><div class="sic">04</div><div class="sbody">
+      <div class="sh">Climate and ocean-state monitoring</div>
+      <div class="sb">A temperature anomaly field with unusual bodies of water found automatically, and beside it an honest map of where no observation stands behind the analysis at all.</div></div></div>
+    <div class="spoke"><div class="sic">05</div><div class="sbody">
+      <div class="sh">Students, the public, and policy</div>
+      <div class="sb">A browser, no install, no login, no cost, and a five-step guided tour. The same tool that a forecaster uses is the one a school class flies into the Bay of Bengal with.</div></div></div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 5, benefits -->
+<div class="board" id="ben">
+  <h3 class="bt">Benefits of the solution</h3>
+  <p class="bs">Social &middot; economic &middot; environmental</p>
+  <div class="bn">
+    <div class="bcard">
+      <div class="bk">Social</div>
+      <div class="bb">Opens in <b>any browser, with no install, no login and no cost</b>, so the same tool serves a forecaster's console and a school classroom. Every control explains in plain language what it does and whether it changed the science or only the picture, so the tool teaches while it is used. Directly supports the outreach, exhibition and e-learning mandate the problem statement asks for.</div>
+    </div>
+    <div class="bcard eco">
+      <div class="bk">Economic</div>
+      <div class="bb"><b>No licence, no API key, no GPU cluster, and no new data collection.</b> 36 MB of static files plus one small Python service is the entire deployment. It makes the data INCOIS already produces, and already pays for, do more work, and it cuts a three-program comparison down to one browser tab. Adding a new sensor costs one class, not a rebuilt tool.</div>
+    </div>
+    <div class="bcard env">
+      <div class="bk">Environmental</div>
+      <div class="bb">Chlorophyll from <b>49 biogeochemical floats</b> sits beside the physics. <b>111 unusual bodies of water</b> are found automatically across the four months, each with a z-score, a depth band and a footprint in km&sup2;, which is how anomalous warm water gets noticed early. And <b>6.0%</b> of the block is marked as having no evidence behind it rather than quietly filled in with a guess.</div>
+    </div>
+  </div>
+  <div class="headline">What changes for the person doing the work: <b>"the model looks off"</b> becomes <b>0.72 &deg;C warm across 522 depths, RMS 1.72 &deg;C</b> - Argo 1902681, its 11 July 2026 cast against the 10 July analysis.</div>
 </div>
 
 </body>
