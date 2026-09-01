@@ -21,3 +21,15 @@ xarray==2025.6.1
 # comparing the numbers against the Grid they came from. It is also how a user consumes it -
 # xarray.open_dataset(url, engine="pydap").
 pydap==3.5.9
+
+# Bake-time only. The Copernicus Marine Toolbox is the only route to the *values* in
+# GLOBAL_MULTIYEAR_PHY_001_030 - current vectors, mixed layer depth, 1/12 degree, to 2026-06-23.
+# Measured 2026-09-01: the zarr metadata is anonymous (200) and every data chunk is 403, so there
+# is no unauthenticated path. It needs a free account; run `copernicusmarine login` once and the
+# credentials live in the user's home directory, never in this repo.
+#
+# It costs 47 packages, including dask and boto3 - the same weight the note above rejects
+# xpublish-wms for. The difference is where they run. These never reach the browser and never
+# reach the API; they run once, on a developer's machine, to fetch data that is then committed.
+# Nothing in web/ or api/ imports this.
+copernicusmarine==2.4.1

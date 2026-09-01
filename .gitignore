@@ -17,3 +17,9 @@ web/tsconfig.tsbuildinfo
 
 # /skill-doctor writes this before rewriting CLAUDE.md. A tool backup, not a document.
 *.doctor-backup
+
+# Copernicus Marine credentials, if anyone points the toolbox at the repo instead of their home
+# directory. The default location is ~/.copernicusmarine/ and nothing here should ever hold one.
+.copernicusmarine/
+.copernicusmarine-credentials
+.env
