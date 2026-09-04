@@ -76,9 +76,8 @@ The scene lives in `src/scene/OceanScene.ts`; every control is explained in `src
 | `docs/plan/01-cut-features.md` | What was cut, what is worth adding back, known rough edges. |
 | `docs/plan/03-requirement-gaps.md` | Every unmet clause of PS 26067, researched with dates and row counts, and the decision taken on each. Read before proposing to add a data source. |
 | `docs/plan/05-coverage-audit-and-ideas.md` | The PS audited clause by clause against what answers it, and the ideas that close what does not. Names the three operational mandates the PS lists and the build does not answer, and the outreach section it answers with one tour. |
-| `ppt/README.md` | **The deck folder's index**: what is in it, the order to use it, and the two commands that regenerate its pictures and its figures. |
-| `ppt/DESIGN-SPEC.md` | How the SIH deck and every picture in it must look. Written so an AI can build the deck from it alone. |
-| `ppt/DECK.md` | The exact words for each of the six slides, where each image goes, and a generation prompt for every diagram. |
+| `ppt/README.md` | **The deck folder's index**: the sixteen screenshots and what each is for. **Only screenshots go on a slide** - the nine "infographic boards" were pictures of text and are deleted; `DECK.md` carries their content as words to be typed natively. |
+| `ppt/DECK.md` | The content for each of the six slides, and a prompt for the two things that are genuinely diagrams. |
 | `ppt/FACTS.md` | **Generated.** Every figure the deck may quote, read off the bake by `pipeline/scripts/collect_facts.py`. `DECK.md` has warned "do not adjust a number by arithmetic" for three rounds; this is what that warning points at. |
 | `assets/screenshots/{light,dark}/` | **The one copy of every screenshot**, named by what it shows. `docs/images/`, `web/public/images/` and `ppt/images/` are outputs, filled by `cd web && node capture.mjs --publish-only --publish`. |
 | `design/STITCH.md` | Per-screen prompts for Google Stitch. |
@@ -105,7 +104,7 @@ cd web && npm run dev                                     # http://localhost:517
 .venv/Scripts/python -m uvicorn api.main:app --port 8000  # the REST API
 
 # regenerate artefacts
-cd web && node render-diagrams.mjs      # PPT diagrams from scripts/ppt_diagrams.html
+cd web && node render-diagrams.mjs      # the README's architecture diagram, from scripts/ppt_diagrams.html
 cd web && node render-dossier.mjs       # the dossier PDF
 cd web && node capture.mjs --theme light --publish  # screenshots: shoot, encode as JPEG, copy into the docs
 cd web && node probe-hazard.mjs         # measures the sheet, the drape and the arrows
@@ -158,8 +157,7 @@ without `--force` - because the harness shoots one camera angle per state and ca
 its own flow shot has no Somali Current in it. Seventeen of the nineteen light pictures were
 grabbed from a real browser for exactly that reason. `scripts/normalise_screenshot.py` crops a
 grab to 16:9 and resizes it to the harness's own 1600x900 at quality 82 - **crop and resize
-only**, because `ppt/DESIGN-SPEC.md` section 8 is explicit that a screenshot is the deck's proof
-and may not be retouched. `--no-crop` exists for one real case: a frame wider than 16:9 whose
+only**, because a screenshot is the deck's proof and may not be retouched. `--no-crop` exists for one real case: a frame wider than 16:9 whose
 subject is on the right, where cropping left keeps the panel and throws the subject away.
 
 **A publish map with a hole in it is invisible everywhere except on the page.** `PUBLISH_MAP` in

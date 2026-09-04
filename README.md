@@ -487,9 +487,9 @@ landing page names no picture that is not there and keeps its headline readable 
 <img src="docs/images/architecture.png" width="900" alt="The architecture in four zones: eight open sources, one source-adapter seam in Python, two representations of the same data - the Grid which is the scientific truth and the Volume which is a picture for the GPU - and four ways the data leaves: the browser, the static bake, the REST API and the open standards.">
 
 *Rendered from [`scripts/ppt_diagrams.html`](scripts/ppt_diagrams.html) by
-`cd web && node render-diagrams.mjs`, the same way every picture in the deck is made. There is
-one drawing of this system and both documents show it, because two drawings drift apart and
-nothing notices.*
+`cd web && node render-diagrams.mjs`. It is drawn rather than generated because every label in it
+is a fact, and an image model cannot spell `incois_argo_10d_VAM` or be trusted to point an arrow
+at the right box.*
 
 ### The shape of it, in one paragraph
 
@@ -643,9 +643,8 @@ limits are in [`CONTEXT.md`](CONTEXT.md).
 | [`docs/demo/technical-approach.md`](docs/demo/technical-approach.md) | The spoken version of the Technical Approach slide, about 70 seconds |
 | [`docs/research/operational-stakes.md`](docs/research/operational-stakes.md) | Sourced figures for the pitch: cyclones, upwelling, the Argo programme |
 | [`docs/BUGS.md`](docs/BUGS.md) | Known defects, ranked, with file and line |
-| [`ppt/README.md`](ppt/README.md) | **The submission deck folder**: what is in it, the order to use it, and how the pictures and the figures are regenerated |
-| [`ppt/DESIGN-SPEC.md`](ppt/DESIGN-SPEC.md) | How the SIH submission deck and every picture in it must look |
-| [`ppt/DECK.md`](ppt/DECK.md) | The exact words for each of the six slides, plus an image-generation prompt for every diagram |
+| [`ppt/README.md`](ppt/README.md) | **The submission deck folder**: the sixteen screenshots, and what goes on which slide |
+| [`ppt/DECK.md`](ppt/DECK.md) | The content for each of the six slides, and a prompt for the two diagrams |
 | [`ppt/FACTS.md`](ppt/FACTS.md) | Every figure the deck may use, **generated from the build** by `pipeline/scripts/collect_facts.py`. Diff it after a bake |
 | [`design/STITCH.md`](design/STITCH.md) | Per-screen prompts for Google Stitch |
 | [`docs/plan/01-cut-features.md`](docs/plan/01-cut-features.md) | What was deliberately not built, and what is worth adding back |
