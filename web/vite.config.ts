@@ -17,6 +17,10 @@ export default defineConfig({
         // Provenance is also plain HTML, plus a small inline script that reads the baked
         // manifest so its figures cannot drift out of step with what the platform serves.
         provenance: "provenance.html",
+        // The compliance page, on the same terms: every clause of PS 26067 word for word, the
+        // measured figure read live from the manifest, and a link that opens the app with the
+        // control that answers it already set.
+        requirements: "requirements.html",
       },
     },
   },

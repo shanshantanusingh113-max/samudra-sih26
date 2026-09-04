@@ -68,12 +68,15 @@
 
   /* ================= S3 architecture ================= */
   #arch{width:1700px}
-  .az{display:grid;grid-template-columns:1fr 34px 1fr 34px 1.05fr 34px 1.15fr;align-items:stretch}
+  .az{display:grid;grid-template-columns:1.75fr 34px 1fr 34px 1.05fr 34px 1.15fr;align-items:stretch}
   .zone{display:flex;flex-direction:column}
   .zh{font-family:var(--m);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
       color:var(--faint);margin-bottom:7px;border-bottom:1px solid var(--edge);padding-bottom:5px}
   .zh span{color:var(--teal);font-weight:500}
   .nodes{display:flex;flex-direction:column;gap:8px;flex:1}
+  /* Zone 1 grew from five providers to seven. In one column it made the board twice as tall as
+     it needed to be and left zones 3 and 4 as empty white. Two columns puts it back. */
+  .nodes.two{display:grid;grid-template-columns:1fr 1fr;align-content:start}
   .node{border:1px solid var(--edge);border-radius:7px;background:var(--panel);padding:9px 11px}
   .node.src{border-left:3px solid var(--amber)}
   .node.core{border:1.5px solid var(--edge-hot);background:var(--panel2)}
@@ -193,22 +196,22 @@
     <div class="gmrow">
       <div class="gmn">Gap 2</div>
       <div class="gmg">"No unified display of instrument profile data alongside model fields."</div>
-      <div class="gma"><span class="num">230</span> instruments drawn inside the water. Click one and the model is scored against it: <span class="num">96,481</span> depth points compared.</div>
+      <div class="gma"><span class="num">237</span> instruments drawn inside the water. Click one and the model is scored against it: <span class="num">100,905</span> depth points compared.</div>
     </div>
     <div class="gmrow">
       <div class="gmn">Gap 3</div>
       <div class="gmg">"Absence of interactive controls for variable selection, depth-slice navigation, time-step animation, customizable colorbars."</div>
-      <div class="gma">All four, live. <span class="num">5</span> variables, two depth handles, <span class="num">12</span> analyses animated, both colourbar handles.</div>
+      <div class="gma">All four, live. <span class="num">15</span> variables in five groups, two depth handles, <span class="num">12</span> analyses animated, both colourbar handles and a log or linear scale.</div>
     </div>
     <div class="gmrow">
       <div class="gmn">Gap 4</div>
       <div class="gmg">"Inability to ingest new data streams or model variables without significant re-engineering."</div>
-      <div class="gma">One adapter class per provider. <span class="num">5</span> institutions already read through the same seam.</div>
+      <div class="gma">One adapter class per provider. <span class="num">8</span> sources read through the same seam, plus a ninth that reads a NetCDF file a visitor drops on the page.</div>
     </div>
     <div class="gmrow">
       <div class="gmn">Gap 5</div>
       <div class="gmg">"Lack of tools to support intuitive, rapid understanding of complex 3D ocean phenomena."</div>
-      <div class="gma">Every control explains itself in plain language. A <span class="num">5-step</span> guided tour, and <span class="num">111</span> unusual bodies of water found for you.</div>
+      <div class="gma">Every control explains itself in plain language. A <span class="num">21-step</span> guided tour over all <span class="num">43</span> controls, eight plain-word questions, a one-click cyclone setup, and <span class="num">121</span> unusual bodies of water found for you.</div>
     </div>
   </div>
 </div>
@@ -221,40 +224,42 @@
     <div class="uqc">
       <div class="uqk">01 &middot; Quantified</div>
       <div class="uqh">The disagreement is a number</div>
-      <div class="uqb">Not "the model looks off". The model reads <b>0.72 &deg;C</b> warm across <b>522</b> depths, RMS <b>1.72 &deg;C</b>. Every instrument carries its own verdict, computed at its own place and time.</div>
+      <div class="uqb">Not "the model looks off". The float in the screenshot beside this agrees to <b>0.17 &deg;C</b> over <b>996</b> depths, RMS <b>0.47 &deg;C</b>. Turn the bias map on and all <b>230</b> instruments are ranked by that same figure - and the worst is a moored buoy the analysis never ingested, at <b>1.66 &deg;C</b>. Agreement and disagreement are the same measurement.</div>
     </div>
     <div class="uqc">
       <div class="uqk">02 &middot; Honest</div>
       <div class="uqh">It shows where there is no evidence</div>
-      <div class="uqb">Observation Coverage is a variable in its own right: how many Argo casts stand behind each point. <b>6.0%</b> of the block has none, and the picture says exactly where.</div>
+      <div class="uqb">Observation Coverage is a variable in its own right: how many Argo casts stand behind each point. <b>9.9%</b> of the block has none, and the picture says exactly where.</div>
     </div>
     <div class="uqc">
       <div class="uqk">03 &middot; Automatic</div>
       <div class="uqh">It finds the odd water for you</div>
-      <div class="uqb"><b>111</b> unusual bodies across 12 analyses, each with a z-score, a depth band, a footprint in km&sup2; and the cast count behind it. Isolate one and the rest of the block clips away.</div>
+      <div class="uqb"><b>121</b> unusual bodies across 12 analyses, each with a z-score, a depth band, a footprint in km&sup2; and the cast count behind it. Isolate one and the rest of the block clips away.</div>
     </div>
     <div class="uqc">
       <div class="uqh" style="margin-top:0"><span class="uqk">04 &middot; Disciplined</span>The picture and the truth are kept apart</div>
       <div class="uqb">The GPU gets a quantised byte texture. Every number a person reads, and every byte served over OPeNDAP, WMS or NetCDF, comes from the native grid instead.</div>
     </div>
   </div>
-  <div class="foot"><b>And it refuses to invent.</b> Geostrophic current speed was built, measured at 0.16 m/s for the Somali Current in peak monsoon against a real 1.5 to 2.5 m/s, and deleted. There is no machine-learning gap-filler painting over the 6% nobody measured, because a smooth believable temperature there would hide the one honest hole in the picture.</div>
+  <div class="foot"><b>And it refuses to invent.</b> Geostrophic current speed was built, measured at 0.16 m/s for the Somali Current in peak monsoon against a real 1.5 to 2.5 m/s, and deleted. There is no machine-learning gap-filler painting over the 9.9% nobody measured, because a smooth believable temperature there would hide the one honest hole in the picture.</div>
 </div>
 
 <!-- ============================================================ SLIDE 3, architecture -->
 <div class="board" id="arch">
   <h3 class="bt">Architecture</h3>
-  <p class="bs">Five open sources &rarr; one adapter seam &rarr; two representations &rarr; four ways out</p>
+  <p class="bs">Eight open sources &rarr; one adapter seam &rarr; two representations &rarr; four ways out</p>
   <div class="az">
 
     <div class="zone">
-      <div class="zh"><span>Zone 1</span> &nbsp;Sources &middot; open, anonymous, dated</div>
-      <div class="nodes">
-        <div class="node src"><b>INCOIS ERDDAP</b><span>incois_argo_10d_VAM</span><em>The model field. griddap / DAP2, CF-1.6, 24 levels, 5-2000 m</em></div>
-        <div class="node src"><b>Argo GDAC &middot; Ifremer</b><span>tabledap / ArgoFloats</span><em>221 floats, per-value QC flags</em></div>
-        <div class="node src"><b>Argo BGC synthetic</b><span>ArgoFloats-synthetic-BGC</span><em>Chlorophyll, 49 floats</em></div>
-        <div class="node src"><b>NOAA OSMC real-time</b><span>GTS &middot; tabledap</span><em>9 moored buoys: OMNI and RAMA</em></div>
-        <div class="node src"><b>Copernicus Marine</b><span>WMTS tiles</span><em>Surface currents, as a labelled picture</em></div>
+      <div class="zh"><span>Zone 1</span> &nbsp;Sources &middot; open, dated, one free account</div>
+      <div class="nodes two">
+        <div class="node src"><b>INCOIS ERDDAP &middot; two analyses</b><span>incois_argo_10d_VAM &middot; _10day_McCreary</span><em>The model field, and a second analysis of the same floats carrying INCOIS's own cast count and error estimate. 24 levels, 5-2000 m.</em></div>
+        <div class="node src"><b>Argo GDAC &middot; Ifremer</b><span>ArgoFloats &middot; ArgoFloats-synthetic-BGC</span><em>228 floats with per-value QC flags; chlorophyll from 52 of them.</em></div>
+        <div class="node src"><b>NOAA OSMC real-time</b><span>GTS &middot; tabledap</span><em>9 moored buoys, OMNI and RAMA. The only instruments INCOIS did not assimilate.</em></div>
+        <div class="node src"><b>Copernicus Marine</b><span>uo, vo &middot; 1/12&deg;</span><em>Current vectors, as real numbers. One free account, at bake time only.</em></div>
+        <div class="node src"><b>EGO glider GDAC</b><span>ftp.ifremer.fr/ifremer/glider/v2</span><em>The archive PS 26067 names. Read, and empty for a reason: newest cast in this box 14 Oct 2022.</em></div>
+        <div class="node src"><b>World Ocean Atlas 2023</b><span>NOAA NCEI &middot; decav91C0</span><em>The 1991-2020 monthly normal. A baseline, never a value on screen.</em></div>
+        <div class="node src"><b>A file a visitor drops on the page</b><span>CF-conventions NetCDF</span><em>The ninth adapter, and the one a judge can check in front of you.</em></div>
       </div>
     </div>
 
@@ -263,10 +268,10 @@
     <div class="zone">
       <div class="zh"><span>Zone 2</span> &nbsp;Source adapter seam &middot; Python</div>
       <div class="nodes">
-        <div class="node core"><b>GridSource / ProfileSource</b><span>samudra/sources/base.py</span><em>One class per provider. The only code in the project that has ever heard of ERDDAP.</em></div>
-        <div class="node core"><b>Column layout as data</b><em>Two Argo providers disagree about every column name and share one parser.</em></div>
-        <div class="node core"><b>Two layers of quality control</b><em>Argo's own flags read per channel, then a regional floor for what the global standard lets past.</em></div>
-        <div class="node core"><b>Land masked, never filled</b><em>A separate channel records where the ocean actually is.</em></div>
+        <div class="node core"><b>GridSource / ProfileSource</b><span>samudra/sources/base.py</span><em>One class per provider. The only code in the project that has ever heard of ERDDAP. Nine of them; the last three touched no renderer, no endpoint and no UI file.</em></div>
+        <div class="node core"><b>Column layout as data</b><em>Three providers disagree about every column name and share one parser. The GTS feed gives depth rather than pressure, one row per level, and no quality flags at all.</em></div>
+        <div class="node core"><b>Two layers of quality control</b><em>Argo's own flags read per channel, then a regional salinity floor for what the global standard lets past. Reading them properly more than doubled the usable observations.</em></div>
+        <div class="node core"><b>Land masked, never filled</b><em>A separate coverage channel records where the ocean actually is, so absence stays absence.</em></div>
       </div>
     </div>
 
@@ -275,8 +280,9 @@
     <div class="zone">
       <div class="zh"><span>Zone 3</span> &nbsp;Two representations, on purpose</div>
       <div class="nodes">
-        <div class="node truth"><b>GRID &middot; the scientific truth</b><span>float64 &middot; land is NaN</span><em>Source-shaped, exactly as the provider published it. Every answer comes from here.</em></div>
-        <div class="node pic"><b>VOLUME &middot; a picture for the GPU</b><span>4 bytes / voxel</span><em>value, coverage, gradient, spare. Quantised to bytes and depth-warped onto an even axis, because GPU textures cannot be uneven.</em></div>
+        <div class="node truth"><b>GRID &middot; the scientific truth</b><span>float64 &middot; land is NaN</span><em>Source-shaped, exactly as the provider published it. Every collocation, tooltip, section, API response and served byte comes from here.</em></div>
+        <div class="node pic"><b>VOLUME &middot; a picture for the GPU</b><span>56 x 36 x 48 &middot; 4 bytes / voxel</span><em>value, coverage, gradient, spare. Quantised to bytes and depth-warped onto an even axis, because GPU textures cannot be uneven.</em></div>
+        <div class="node truth"><b>The Fields that are not Volumes</b><span>float32, on the Grid's own axes</span><em>Three depth Sheets and two column Drapes ship unquantised, because a reader reads metres and kJ/cm&sup2; off them. 8 KB a file.</em></div>
       </div>
     </div>
 
@@ -285,15 +291,15 @@
     <div class="zone">
       <div class="zh"><span>Zone 4</span> &nbsp;Delivery</div>
       <div class="nodes">
-        <div class="node out"><b>Browser &nbsp;&larr;&nbsp; Volume</b><span>Three.js &middot; WebGL2 &middot; GLSL ES 3.00</span><em>One scene for both the globe and the ray-marched block. No install, no plugin, no account.</em></div>
-        <div class="node out"><b>REST API &nbsp;&larr;&nbsp; Grid</b><span>FastAPI &middot; 11 endpoints</span><em>Live collocation for any instrument, and any column of water.</em></div>
+        <div class="node out"><b>Browser &nbsp;&larr;&nbsp; Volume and Grid</b><span>Three.js &middot; WebGL2 &middot; GLSL ES 3.00</span><em>One scene for the globe and the ray-marched block. The picture comes from the Volume; every number on screen comes from the Grid shipped beside it.</em></div>
+        <div class="node out"><b>Static bake &nbsp;&larr;&nbsp; both</b><span>71.1 MB, committed</span><em>15 Fields over 12 analyses. The demo makes zero network calls, checked in CI on every push.</em></div>
+        <div class="node out"><b>REST API &nbsp;&larr;&nbsp; Grid</b><span>FastAPI &middot; 14 routes</span><em>Live collocation for any instrument, any column of water, any section line, and the one route that accepts anything: a NetCDF file.</em></div>
         <div class="node out"><b>Open standards &nbsp;&larr;&nbsp; Grid</b><span>DAP2 &middot; CF-1.8 &middot; WMS 1.3.0</span><em>OPeNDAP with constraint expressions, self-describing NetCDF, and WMS for the fields that exist nowhere else.</em></div>
-        <div class="node out"><b>Static bake &nbsp;&larr;&nbsp; both</b><span>36 MB, committed</span><em>The demo makes zero network calls, checked by CI on every push.</em></div>
       </div>
     </div>
 
   </div>
-  <div class="lawn"><b>The rule that governs all of it.</b> Every number a human or a machine reads comes from the Grid. The Volume is only ever a picture. This matters most at the API, because a consumer pulling NetCDF over the wire cannot see that they have been handed a quantised, depth-warped, land-filled approximation.</div>
+  <div class="lawn"><b>The rule that governs all of it.</b> Every number a human or a machine reads comes from the Grid. The Volume is only ever a picture. This matters most at the API, because a consumer pulling NetCDF over the wire cannot see that they have been handed a quantised, depth-warped, land-filled approximation. <b>Two modules break the one-copy rule and both are held to it:</b> the drift integrator and the vertical section run in the browser as well as in Python, because the demo runs with the API off - and a probe runs the shipped browser module against the pipeline's and fails on disagreement. Measured: drift median 0.331 km over 101 days, section worst gap 5.07e-5 degC over 1,102 values.</div>
 </div>
 
 <!-- ============================================================ SLIDE 3, stack -->
@@ -310,31 +316,31 @@
     <div class="stg"><div class="stk">Open standards spoken</div>
       <div class="stv">ERDDAP griddap and tabledap <i>(read)</i> &middot; OPeNDAP DAP2 <i>(read and served)</i> &middot; CF-1.8 NetCDF <i>(served)</i> &middot; OGC WMS 1.3.0 <i>(served)</i></div></div>
     <div class="stg"><div class="stk">Quality and delivery</div>
-      <div class="stv">pytest, <span class="num">230</span> tests &middot; Playwright &middot; GitHub Actions, build and deploy on every push</div></div>
+      <div class="stv">pytest, <span class="num">377</span> tests &middot; Playwright, <span class="num">13</span> browser probes &middot; GitHub Actions, build and deploy on every push</div></div>
   </div>
-  <div class="foot">No paid service, no API key, no login, no GPU cluster. Built and tested on integrated graphics with 2 GB of shared memory.</div>
+  <div class="foot">No paid service and no GPU cluster. <b>No account to view or use it; one free Copernicus account to rebuild the data</b>, and that credential never leaves the machine that bakes. Built and tested on integrated graphics with 2 GB of shared memory.</div>
 </div>
 
 <!-- ============================================================ SLIDE 3, methodology -->
 <div class="board" id="method">
   <h3 class="bt">Methodology</h3>
-  <p class="bs">From five public endpoints to a block of water you can fly into</p>
+  <p class="bs">From eight public endpoints to a block of water you can fly into</p>
   <div class="mt">
     <div class="mstep"><div class="mn">01</div><div class="mh">Fetch</div>
       <div class="mb">Subset each source at the server, over one region and one window. Every endpoint tested and dated before it was trusted.</div></div>
     <div class="mstep"><div class="mn">02</div><div class="mh">Check</div>
       <div class="mb">Quality flags read per channel, so a float with a dead salinity sensor still gives its good temperature. Land masked, never back-filled into the sea.</div></div>
     <div class="mstep"><div class="mn">03</div><div class="mh">Derive</div>
-      <div class="mb">Density from TEOS-10, a temperature anomaly, an observation-coverage count, and 111 unusual bodies of water located automatically.</div></div>
+      <div class="mb">Density from TEOS-10, the five cyclone-hazard fields INCOIS stopped publishing in 2019, a temperature anomaly, two observation counts and 121 unusual bodies of water located automatically.</div></div>
     <div class="mstep"><div class="mn">04</div><div class="mh">Bake</div>
-      <div class="mb">Native grids saved for the API and the standards; byte volumes packed for the GPU. 36 MB, committed, so the demo needs no network.</div></div>
+      <div class="mb">Native grids saved for the API and the standards; byte volumes packed for the GPU; depth sheets and column drapes left unquantised. 71.1 MB, committed, so the demo needs no network.</div></div>
     <div class="mstep"><div class="mn">05</div><div class="mh">Render and compare</div>
-      <div class="mb">Ray-march the block in the browser, draw every instrument where it truly was, and score the model against each cast.</div></div>
+      <div class="mb">Ray-march the block in the browser, draw every instrument where it truly was, score the model against each cast, and publish the score: typical temperature gap 0.19 degC, and 0.75 degC against the nine buoys INCOIS did not assimilate.</div></div>
   </div>
   <div class="status">
     <div class="stat go"><b>Product status</b>Working prototype, on live INCOIS data</div>
     <div class="stat"><b>Public URL</b><span class="num">rak2315.github.io/samudra-sih26</span></div>
-    <div class="stat"><b>Automated tests</b><span class="num">230</span> passing, in CI on every push</div>
+    <div class="stat"><b>Automated tests</b><span class="num">377</span> passing, in CI on every push</div>
     <div class="stat"><b>Network calls at demo time</b><span class="num">0</span>, enforced by a CI check</div>
   </div>
 </div>
@@ -349,14 +355,14 @@
       <ul>
         <li><b>Built, deployed and public today.</b> Open it on a phone during the pitch.</li>
         <li><b>Ordinary hardware is enough.</b> Built and tested on integrated graphics with 2 GB of shared memory.</li>
-        <li><b>230 automated tests</b> cover the science, and CI runs them on every push.</li>
+        <li><b>377 automated tests</b> cover the science, and <b>13 browser probes</b> measure what reaches the screen. CI runs them on every push.</li>
       </ul>
     </div>
     <div class="fbox">
       <div class="fh">It costs nothing to keep</div><div class="fsub">Viability</div>
       <ul>
-        <li><b>No licence, no API key, no account, no GPU cluster.</b> Every source is open and anonymous.</li>
-        <li><b>36 MB of static files</b> plus one small Python service is the entire deployment.</li>
+        <li><b>No licence and no GPU cluster.</b> No account to view or use it; one free Copernicus account to rebuild the data. Every other source is open and anonymous.</li>
+        <li><b>71.1 MB of static files</b> plus one small Python service is the entire deployment.</li>
         <li><b>It adds no new data collection.</b> It makes data INCOIS already pays for do more work.</li>
       </ul>
     </div>
@@ -378,14 +384,14 @@
   <div class="rk">
 
     <div class="rrow"><div class="rn">1</div>
-      <div class="rbad"><div class="rl">Risk &middot; the data disappears</div><div class="rt"><b>Source endpoints die or refuse you.</b> HYCOM and NOAA CoastWatch both timed out from our network on day one. INCOIS's own chlorophyll ends in 2006 and 2020, their currents in 2019, and the last glider left this basin on 14 Oct 2022.</div></div>
+      <div class="rbad"><div class="rl">Risk &middot; the data disappears</div><div class="rt"><b>Source endpoints die or refuse you.</b> HYCOM and NOAA CoastWatch both timed out from our network on day one. INCOIS's own chlorophyll ends in 2006 and 2020, their currents and their cyclone-hazard products in 2019, and the last glider left this basin on 14 Oct 2022. Each is measured, dated and either replaced or reported.</div></div>
       <div class="rmid">&rarr;</div>
       <div class="rgood"><div class="rl">Resolved</div><div class="rt"><b>Every endpoint is tested, dated and written down, and the adapter seam makes a swap one class.</b> We moved to INCOIS's own public ERDDAP, which made the demo end-to-end INCOIS instead of a substitute.</div></div></div>
 
     <div class="rrow"><div class="rn">2</div>
       <div class="rbad"><div class="rl">Risk &middot; the instruments lie</div><div class="rt"><b>Real sensors fail in the water.</b> One float in this region reported about 20 PSU, fresher than the Baltic Sea and impossible here, and the global quality standard let it through.</div></div>
       <div class="rmid">&rarr;</div>
-      <div class="rgood"><div class="rl">Resolved</div><div class="rt"><b>Two layers of quality control.</b> Argo's own flags are read per channel, so a float with a dead salinity sensor still gives its good temperature, then a regional floor catches what the global rule passes. Reading the flags properly took usable floats from <b>93 to 221</b>.</div></div></div>
+      <div class="rgood"><div class="rl">Resolved</div><div class="rt"><b>Two layers of quality control.</b> Argo's own flags are read per channel, so a float with a dead salinity sensor still gives its good temperature, then a regional floor catches what the global rule passes. Reading the flags properly took usable floats from <b>93 to 228</b>.</div></div></div>
 
     <div class="rrow"><div class="rn">3</div>
       <div class="rbad"><div class="rl">Risk &middot; the hardware cannot cope</div><div class="rt"><b>A forecasting desk is not a gaming PC.</b> Ray-marching every pixel of a 3D texture is heavy, and the machines this has to run on have no discrete graphics card.</div></div>
@@ -400,7 +406,7 @@
     <div class="rrow"><div class="rn">5</div>
       <div class="rbad"><div class="rl">Risk &middot; a plausible wrong number</div><div class="rt"><b>Worse than no number at all.</b> A derived current field looked finite, physical and entirely convincing on screen, and a judge or a forecaster would have had no way to tell it was wrong.</div></div>
       <div class="rmid">&rarr;</div>
-      <div class="rgood"><div class="rl">Resolved</div><div class="rt"><b>Measured against reality, then deleted.</b> It gave 0.16 m/s for the Somali Current in peak monsoon against a real 1.5 to 2.5. Currents now ship as Copernicus's own labelled image, with no tooltip and no number to read off it.</div></div></div>
+      <div class="rgood"><div class="rl">Resolved</div><div class="rt"><b>Measured against reality, then deleted.</b> It gave 0.16 m/s for the Somali Current in peak monsoon against a real 1.5 to 2.5. Currents now come from Copernicus's own analysis, held to the same test and passing it: <b>2.94 m/s at 9.5&deg;N, 51.5&deg;E</b> on 30 July, which is the Somali Current core in the month it peaks.</div></div></div>
 
   </div>
   <div class="foot">Every risk above was met during the build and resolved, and each resolution is recorded with the measurement that settled it. <b>This is a record, not a forecast.</b></div>
@@ -429,7 +435,7 @@
       <div class="sb">A temperature anomaly field with unusual bodies of water found automatically, and beside it an honest map of where no observation stands behind the analysis at all.</div></div></div>
     <div class="spoke"><div class="sic">05</div><div class="sbody">
       <div class="sh">Students, the public, and policy</div>
-      <div class="sb">A browser, no install, no login, no cost, and a five-step guided tour. The same tool that a forecaster uses is the one a school class flies into the Bay of Bengal with.</div></div></div>
+      <div class="sb">A browser, no install, no login, no cost, a guided walk through every control, and an exhibition mode that resets itself. The same tool that a forecaster uses is the one a school class flies into the Bay of Bengal with.</div></div></div>
   </div>
 </div>
 
@@ -444,11 +450,11 @@
     </div>
     <div class="bcard eco">
       <div class="bk">Economic</div>
-      <div class="bb"><b>No licence, no API key, no GPU cluster, and no new data collection.</b> 36 MB of static files plus one small Python service is the entire deployment. It makes the data INCOIS already produces, and already pays for, do more work, and it cuts a three-program comparison down to one browser tab. Adding a new sensor costs one class, not a rebuilt tool.</div>
+      <div class="bb"><b>No licence, no GPU cluster, and no new data collection.</b> No account to view or use it; one free Copernicus account to rebuild the data. 71.1 MB of static files plus one small Python service is the entire deployment. It makes the data INCOIS already produces, and already pays for, do more work, and it cuts a three-program comparison down to one browser tab. Adding a new sensor costs one class, not a rebuilt tool.</div>
     </div>
     <div class="bcard env">
       <div class="bk">Environmental</div>
-      <div class="bb">Chlorophyll from <b>49 biogeochemical floats</b> sits beside the physics. <b>111 unusual bodies of water</b> are found automatically across the four months, each with a z-score, a depth band and a footprint in km&sup2;, which is how anomalous warm water gets noticed early. And <b>6.0%</b> of the block is marked as having no evidence behind it rather than quietly filled in with a guess.</div>
+      <div class="bb">Chlorophyll from <b>52 biogeochemical floats</b> sits beside the physics. <b>121 unusual bodies of water</b> are found automatically across the four months, each with a z-score, a depth band and a footprint in km&sup2;, which is how anomalous warm water gets noticed early. And <b>9.9%</b> of the block is marked as having no evidence behind it rather than quietly filled in with a guess.</div>
     </div>
   </div>
   <div class="headline">What changes for the person doing the work: <b>"the model looks off"</b> becomes <b>0.72 &deg;C warm across 522 depths, RMS 1.72 &deg;C</b> - Argo 1902681, its 11 July 2026 cast against the 10 July analysis.</div>

@@ -7,50 +7,63 @@ Last reconciled against the tree: 2026-08-25.
 
 ---
 
-## 1. Rank the Residuals, so the disagreement is findable
+## 1. Rank the Residuals - **built**
 
-**Half of this shipped.** The automatic anomaly scan was scoped as one feature covering two
-different questions, and only one of them is built:
+Both halves of the automatic scan now exist.
 
 | Question | Status |
 | --- | --- |
-| Where did the *field* depart from its own average? | **Done.** `find_anomaly_features()` labels every connected departure, `bake.py` attaches why it is there and what stands behind it, and the frontend rings each one and explains it on click. 111 features across the twelve Timesteps |
-| Where does the *model* most disagree with the *floats*? | **Not built.** Every number it needs is already in `collocations.json` |
-| Fronts and sharp gradients | Not built. Already computed as the gradient channel in every Volume, so it is free |
-| Unusual currents | Not possible. No current data exists in the project, and deriving it was measured and rejected - ADR 0010 |
+| Where did the *field* depart from its own average? | **Done.** `find_anomaly_features()`, 121 features across the twelve Timesteps |
+| Where does the *model* most disagree with the *floats*? | **Done.** `pipeline/samudra/residuals.py` ranks and bins them; the "Model vs instruments" group in the left panel is the map and the list |
+| Fronts and sharp gradients | Not built. Already computed as the gradient channel in every Volume, so it is free. Idea A6 in [`05-coverage-audit-and-ideas.md`](05-coverage-audit-and-ideas.md) |
+| Unusual currents | Superseded. Currents are real numbers now - ADR 0013 - so this is reopenable, but nothing is built |
 
-**Do not call it AI.** This is the single most puncturable claim available. A z-score is not a
-model, and "Confidence: 91%" is a fabricated number unless it derives from something real. An
-INCOIS judge will ask "trained on what?" and there is no answer. `CONTEXT.md` records machine
-learning as an extension point, not an implementation, and that should stay true. The shipped
-half already follows this: it reports a z-score with the threshold it had to clear, never a
-confidence.
+**The word "AI" survived nowhere**, which was the risk recorded here. There is no model, no
+training set and no confidence score: `residuals.json` carries the mean and the RMS of residuals
+`bake.py` had already written, and the ranking is on the RMS as a fraction of each Field's own
+encoded range so a degree and a PSU can share one list. The verdict thresholds this section said
+to fix first were fixed a round earlier and now live in `web/src/agreement.ts`, read by both the
+Collocation panel and the bias map so the two cannot contradict each other.
 
-### What the remaining half looks like
+Re-measured on 2026-09-03, after two fixes that moved every figure in this table. A float's
+comparison is now refused below **20 matched depths** - an Argo cast reports at a median 221 of
+this model's levels - and a moored buoy is exempt, because a buoy's 3 to 9 sensors are the whole
+instrument rather than a truncated dive. Measured: of the 12 temperature rows below 20 depths, 9
+were buoys and 3 were truncated casts, at 10, 13 and 14. Nine rows dropped in all, three per
+Field. Every ranked row now prints the depths behind it.
 
-The residual ranking is the strongest item left, because it *is* the project's thesis. Float
-2902306 at -2.16 degC across 119 depths would be item one on that list today, and it is a real
-upwelling signal rather than a curiosity.
+| Field | Instruments | Mean bias | Typical gap | 5 degree boxes with 3+ instruments |
+| --- | --- | --- | --- | --- |
+| Temperature | 230 | +0.021 degC | 0.190 degC | 35 |
+| Salinity | 221 | -0.006 PSU | 0.034 PSU | 34 |
+| Density | 221 | -0.007 kg/m3 | 0.049 kg/m3 | 34 |
 
-- **Pipeline:** rank the entries already in `collocations.json` by RMS or by mean residual,
-  capped at maybe 20, and write the ranking alongside them.
-- **Frontend:** a list panel. Clicking an entry sets `selectedFloatId`, `timestepIndex` and calls
-  `focusOn(lon, lat)` - all of which already exist and are store-driven. The Collocation panel
-  then does the rest of the work unchanged.
-- **Guide entry required.** An unexplained control is worse than no control.
+**The pooled figure is largely the model agreeing with itself.** INCOIS assimilate Argo, so a
+float's residual measures the analysis against an observation it was fed. The nine moored buoys
+are not assimilated, and split out they disagree several times as much:
 
-**One thing to fix first.** The verdict thresholds are temperature thresholds applied to every
-Field, so salinity and density both read "Close agreement" for 82 of 85 floats. Ranking a list by
-a number whose verdict is a constant would put a meaningless column next to it. See
-`docs/BUGS.md` item 2.
+| Field | 9 moorings | Floats | ratio |
+| --- | --- | --- | --- |
+| Temperature | **0.748 degC** | 0.167 degC (221) | 4.5x |
+| Salinity | **0.144 PSU** | 0.029 PSU (212) | 4.9x |
+| Density | **0.257 kg/m3** | 0.040 kg/m3 (212) | 6.4x |
 
-**Cost:** 2-3 hours. **Risk:** low technically, high rhetorically if the word "AI" survives.
+The panel prints both, and the second is the number a forecaster wants: how far the analysis
+sits from water nobody told it about.
 
-### While you are in there: a Collocation per Timestep
+The regional finding survives: the northern Bay of Bengal, **15-20 N 85-90 E**, is in the worst
+three boxes for all three Fields - worst for salinity at 0.184 PSU, second for density at
+0.167 kg/m3, third for temperature at 0.686 degC - against basin-wide figures four to five times
+smaller. That is the Ganges-Brahmaputra freshwater plume, and it is the one place a 1 degree
+analysis of this region would be expected to struggle. Temperature's two worst boxes are now
+elsewhere and both rest on the minimum three instruments, which is worth knowing before quoting
+either of them.
 
-Every Float's chart is currently the comparison for its **latest** cast, and 81 of 88 of those
-sit at step 10 or 11 of 12. The panel now says so plainly rather than letting a scrubbed timeline
-imply a chart that moved, so it is no longer a defect - but it is still a missing feature.
+### Still not built: a Collocation per Timestep
+
+Every Float's chart is the comparison for its **latest** cast, and 81 of 88 of those sit at step
+10 or 11 of 12. The panel says so plainly rather than letting a scrubbed timeline imply a chart
+that moved, so it is no longer a defect - but it is still a missing feature.
 
 Doing it properly was measured rather than estimated, and it is not cheap:
 
@@ -137,20 +150,18 @@ validated against the Argo parking-depth drift before anything is drawn. That dr
 screen as the Track of every Float, and it is a direct measurement of the current at 1000 m,
 which is worth saying out loud in the demo whether or not arrows are ever added.
 
-**3D streamlines remain cut** - a project in themselves, and `CONTEXT.md` says so.
+**3D streamlines remain cut** - and the line between them and what shipped is the vertical. A
+sheet of moving dots on the chosen Level is built (ADR 0017) and runs the drift model's own step
+rule; advection through the *block* needs a vertical velocity neither provider publishes.
 
 ---
 
 ## If there is one day
 
-1. **Fix the Tier 1 items in [`docs/BUGS.md`](../BUGS.md)** (2 h) - five defects that say
-   something false in plain English, four of them in a single file. Two are one line each. Do
-   this before adding anything, because a new feature sitting next to a sentence with its sign
-   backwards costs more than it earns
-2. **TCHP / D26 field** (3 h) - makes the cyclone story physical, uses data already held, and
-   half of it exists in `samudra/thermocline.py`
-3. **Rank the Residuals** (2-3 h) - the other half of the anomaly scan, over numbers already
-   computed
+The Tier 1 bugs, the TCHP / D26 Field and Rank the Residuals were all on this list and are all
+built. What is left in this document is the Collocation-per-Timestep question in section 1 and
+"Ask the Ocean" in section 2. Everything else moved to
+[`05-coverage-audit-and-ideas.md`](05-coverage-audit-and-ideas.md), which is the current list.
 
 "Ask the Ocean" is the most impressive-sounding and the most likely to misfire live. Build it
 last, or not this cycle.

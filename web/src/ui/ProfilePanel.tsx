@@ -1,5 +1,6 @@
 import { positionAt } from "../floatTime";
 import { depthToAxis } from "../scene/geography";
+import { thresholds } from "../agreement";
 import { useStore } from "../store";
 import type { CollocationSeries, ObservedOnlySeries, VolumeSpec } from "../types";
 
@@ -33,11 +34,17 @@ export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) 
     set,
     manifest,
     timestepIndex,
+    touched,
   } = useStore();
   const timeMs = new Date(manifest?.timesteps[timestepIndex] ?? 0).getTime();
   const spec = field();
 
   if (!selectedFloatId || !spec) return null;
+  // The right-hand panel answers whichever question was asked last, and touching a control is
+  // a newer question than the comparison already open. Selecting an instrument clears
+  // `touched`, so this only yields when the reader has actually gone back to a control - and
+  // the guide's close button hands the space straight back. See `GuidePanel`.
+  if (touched) return null;
   const chosen = floats.find((f) => f.id === selectedFloatId);
   const collocation = collocations[selectedFloatId];
   if (!chosen) return null;
@@ -72,7 +79,7 @@ export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) 
   const reporting = here !== null;
   const shown = here ?? chosen.latest;
 
-  // Nine of the current 221 floats sit just past the southern or western edge of the loaded
+  // Seven of the current 237 instruments have their newest fix just past an edge of the loaded
   // Grid. "No usable data" would be misleading about those: the observations are fine, the
   // model simply does not extend that far, and saying so is a different and truer sentence.
   const outsideGrid =
@@ -123,37 +130,24 @@ export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) 
         </div>
       </div>
 
-      {/* An aligned key/value block: someone scanning for one number should not have to read a
-          sentence to find it. */}
-      <dl className="kv">
-        <dt>Position</dt>
-        <dd>
-          {Math.abs(shown.lat).toFixed(2)}&deg;{shown.lat >= 0 ? "N" : "S"}{" "}
-          {shown.lon.toFixed(2)}&deg;E
-        </dd>
-        <dt>{anchored ? "Last reported" : reporting ? "Surfaced" : "Last surfaced"}</dt>
-        <dd>{shown.time.slice(0, 10)}</dd>
-        <dt>{anchored ? "Reports" : "Profiles"}</dt>
-        <dd>{chosen.profileCount}</dd>
-        <dt>{anchored ? "Deepest sensor" : "That cast reached"}</dt>
-        <dd>{shown.depthMax.toFixed(0)} m</dd>
-      </dl>
-
-      {anchored && (
-        <p className="note">
-          Anchored to the sea floor, so it does not drift and has no track. It measures the same
-          water column every few hours, which is why this comparison follows the timeline instead
-          of being pinned to one date.
-        </p>
-      )}
+      {/*
+        * Four labelled rows on four lines became one line.
+        *
+        * The chart is what this panel is for, and it used to start below the fold: an aligned
+        * key/value block is right when the labels are the point, and here they are not. Position,
+        * date, count and depth all read without one, and every figure kept its unit.
+        */}
+      <p className="profile-facts">
+        {Math.abs(shown.lat).toFixed(2)}&deg;{shown.lat >= 0 ? "N" : "S"}{" "}
+        {shown.lon.toFixed(2)}&deg;E &middot; {shortDate(shown.time)} &middot;{" "}
+        {chosen.profileCount} {anchored ? "reports" : "profiles"} &middot; reached{" "}
+        {shown.depthMax.toFixed(0)} m
+      </p>
 
       {!reporting && (
         <p className="note substituted">
-          {anchored
-            ? "This buoy sent nothing"
-            : "This float was not surfacing anywhere"}{" "}
-          near {analysisDate}, so its marker is not on the water at this step. The figures above
-          are its nearest report, {chosen.latest.time.slice(0, 10)}.
+          Nothing reported near {analysisDate}, so there is no marker at this step. Figures above
+          are from {shortDate(chosen.latest.time)}.
         </p>
       )}
 
@@ -163,8 +157,8 @@ export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) 
         <p className="empty">Loading this float&apos;s comparison&hellip;</p>
       ) : series && volume && series.matched === 0 ? (
         /*
-         * A Collocation exists and is empty. Six of the 212 Floats in the current bake are like
-         * this, so about one click in thirty-five landed on a chart with a single line, a legend
+         * A Collocation exists and is empty. One of the 234 in the current bake is like
+         * this, so a click could land on a chart with a single line, a legend
          * promising two more that were never drawn, "0 depths compared", two dashes and no
          * verdict - with nothing on screen saying why. The `outsideGrid` branch below never
          * fired, because an entry does exist; it is just empty.
@@ -177,23 +171,28 @@ export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) 
         <p className="empty">{whyEmpty(series, volume)}</p>
       ) : series && volume ? (
         <>
-          {substituted && (
-            <p className="note substituted">
-              {WHY_NO_COLLOCATION[fieldKey] ??
-                `There is no ${spec.label.toLowerCase()} to compare against this cast.`}{" "}
-              Showing {shownSpec.label.replace("Sea Water ", "").toLowerCase()} instead.
-            </p>
-          )}
+          {/*
+            * One line, under the chart's own title, saying what is being compared against what.
+            *
+            * These were two separate blocks: a substitution notice and a three-line paragraph
+            * about which analysis step the chart is pinned to. Both are the same fact - what
+            * this chart is - and the substitution clause is printed only when it applies.
+            *
+            * The pinning still has to be said. A baked Collocation sits at the analysis step
+            * nearest its own cast, so a user scrubbing the timeline with this panel open is
+            * watching a static comparison; "fixed" carries that, and the accent colour marks it.
+            */}
           <p className={`analysis-note lead${analysisDrifted ? " drifted" : ""}`}>
+            {substituted &&
+              `No ${spec.label.replace("Sea Water ", "").toLowerCase()} here - showing ` +
+                `${shownSpec.label.replace("Sea Water ", "").toLowerCase()}. `}
+            {shortDate(castTime)} {anchored ? "report" : "cast"} vs {shortDate(analysisDate)}{" "}
+            analysis
             {analysisDrifted
-              ? `Comparing the ${castTime?.slice(0, 10)} cast against the ${analysisDate}` +
-                ` analysis - not the step on the timeline. Scrubbing does not move this chart.`
+              ? " - fixed, scrubbing does not move it."
               : anchored
-                ? `Comparing this buoy's ${castTime?.slice(0, 10)} report against the` +
-                  ` ${analysisDate} analysis. It is anchored, so this chart follows the` +
-                  ` timeline - move it and you are watching one patch of ocean through the season.`
-                : `Comparing the ${castTime?.slice(0, 10)} cast against the ${analysisDate}` +
-                  ` analysis, the step you are looking at.`}
+                ? " - follows the timeline."
+                : "."}
           </p>
           <Chart series={series} spec={shownSpec} volume={volume} anchored={anchored} />
           <Verdict
@@ -205,35 +204,55 @@ export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) 
           <Stats series={series} units={shownSpec.units} />
 
           {/*
-            * The objection an oceanographer on the panel will raise, raised first.
+            * Two paragraphs of caveat, folded behind one closed disclosure.
             *
-            * INCOIS's VAM analysis is *derived from* Argo profiles, so this comparison is partly
-            * the analysis being graded against its own input, and somebody will say so. The
-            * adapter's own docstring has always said this; nothing on screen did, so the verdict
-            * read as a straightforward validation.
-            *
+            * Both are worth saying and neither is worth the space above the fold. The first is
+            * the objection an oceanographer will raise - INCOIS's VAM analysis is *derived from*
+            * Argo profiles, so this is partly the analysis being graded against its own input.
             * Saying it costs nothing, because the check is not degenerate: across the current
-            * bake temperature splits 150 close / 52 moderate / 4 large and salinity 122 / 65 /
-            * 11. An analysis reproducing its own inputs is exactly the operational question, and
-            * turning the objection into the point is stronger than hoping it does not come up.
+            * bake temperature splits 161 close / 62 moderate / 10 large and salinity 126 / 76 /
+            * 22. The second says why the top few metres of the cast are not on the chart.
+            *
+            * Closed, because a reader who has not yet read the chart has no question to answer;
+            * one line naming the question is what tells them there is an answer here at all.
             */}
-          <p className="note">
-            {anchored ? (
-              <>
-                This is a moored buoy, not an Argo float, so it is <b>not</b> part of what INCOIS
-                assimilated. Nothing about this water column went into the analysis being drawn
-                against it, which makes this the more independent of the two comparisons the
-                platform can show - and the reason it was worth wiring the buoys up.
-              </>
-            ) : (
-              <>
-                INCOIS's analysis assimilates Argo, so this float may be one of the observations
-                that went into it. That is the question a forecaster actually asks: did the
-                analysis reproduce the measurement it was given, here, at this depth? It does not
-                always - across this bake the disagreement runs from 0.00 to 1.99 &deg;C.
-              </>
+          <details className="why">
+            <summary>Why this comparison</summary>
+            {/* Kept per Field, not written once. The reason coverage has no Collocation and the
+                reason an anomaly has none are different reasons; the one-clause notice above
+                only says that a substitution happened. */}
+            {substituted && (
+              <p className="note">
+                {WHY_NO_COLLOCATION[fieldKey] ??
+                  `There is no ${spec.label.toLowerCase()} to compare against this cast.`}
+              </p>
             )}
-          </p>
+            <p className="note">
+              {anchored ? (
+                <>
+                  A moored buoy is <b>not</b> part of what INCOIS assimilated. Nothing about this
+                  water column went into the analysis being drawn against it, which makes this
+                  the more independent of the two comparisons the platform can show.
+                </>
+              ) : (
+                <>
+                  INCOIS's analysis assimilates Argo, so this float may be one of the observations
+                  that went into it. That is the question a forecaster asks: did the analysis
+                  reproduce the measurement it was given, here, at this depth? Not always -
+                  across this bake the disagreement runs from 0.00 to 1.98 &deg;C.
+                </>
+              )}
+            </p>
+            {series.aboveModel > 0 && (
+              <p className="note">
+                The model's shallowest level is {volume.surfaceMetres} m, so the top{" "}
+                {series.aboveModel === 1 ? "measurement" : `${series.aboveModel} measurements`} of
+                this cast {series.aboveModel === 1 ? "has" : "have"} nothing to compare against.
+                Left out rather than extrapolated into: the very surface is the number people most
+                want, and inventing it would be the worst place to start.
+              </p>
+            )}
+          </details>
 
           {collocation?.observedOnly?.chlorophyll && volume && (
             <ObservedOnly
@@ -241,19 +260,6 @@ export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) 
               when={collocation.observedOnlyTime}
               sameDive={collocation.observedOnlySameDive !== false}
             />
-          )}
-
-          {series.aboveModel > 0 && (
-            <p className="note">
-              The model's shallowest level is {volume.surfaceMetres} m, so the top{" "}
-              {series.aboveModel === 1
-                ? "measurement of this cast has"
-                : `${series.aboveModel} measurements of this cast have`}{" "}
-              nothing to compare against.{" "}
-              {series.aboveModel === 1 ? "It is" : "They are"} left out rather than extrapolated
-              into - the very surface is the number people most want, and inventing it would be
-              the worst place to start.
-            </p>
           )}
         </>
       ) : (
@@ -272,6 +278,21 @@ export function ProfilePanel({ onFocus }: { onFocus: (lon: number, lat: number) 
       </button>
     </aside>
   );
+}
+
+/**
+ * `2026-04-20` as `20 Apr`.
+ *
+ * The panel carries three dates and they now sit inline in running text rather than in a
+ * labelled column, where an ISO stamp is 10 characters of noise around the two that differ.
+ * The year is dropped because every Timestep in a bake is in the same one, and the header says
+ * which above the fold.
+ */
+function shortDate(stamp: string | undefined): string {
+  if (!stamp) return "an unknown date";
+  const when = new Date(stamp);
+  if (Number.isNaN(when.getTime())) return stamp.slice(0, 10);
+  return when.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
 }
 
 /** Title Case from the GTS feed's shouting. "INDIA" on a panel reads as an error. */
@@ -635,29 +656,6 @@ function Verdict({
  * `residual = observed - modelled`, so a positive bias means the float measured MORE than the
  * model did. Read the pairs as [what the model is when bias > 0, what it is when bias < 0].
  */
-/**
- * Where "close" and "large" sit, as a fraction of the Field's own encoded range.
- *
- * These were 0.6 and 1.5 flat, which are degrees Celsius wearing no units. Applied to salinity
- * they made the verdict a constant: 0.6 PSU is a sixth of the entire range the field occupies,
- * so 82 of 85 floats read "Close agreement" and the headline stopped carrying information.
- * Density, added later, landed in exactly the same place.
- *
- * The fractions are the ones temperature already implied - 0.6 and 1.5 against its 27.4 degC
- * range - so temperature's verdicts are unchanged and every other Field is judged on the same
- * terms rather than on temperature's. There is no per-Field constant to keep in step: a new
- * collocated Field is scaled correctly the moment it has a range.
- *
- * They are a judgement about wording, not a measurement, and they are stated rather than buried.
- */
-const CLOSE_FRACTION = 0.6 / 27.42;
-const LARGE_FRACTION = 1.5 / 27.42;
-
-function thresholds(range: [number, number]): [number, number] {
-  const span = Math.abs(range[1] - range[0]);
-  return [span * CLOSE_FRACTION, span * LARGE_FRACTION];
-}
-
 const SENSE: Record<string, [string, string]> = {
   temperature: ["cooler than", "warmer than"],
   salinity: ["fresher than", "more saline than"],

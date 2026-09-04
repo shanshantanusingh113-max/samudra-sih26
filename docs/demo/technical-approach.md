@@ -22,4 +22,4 @@ Ingest a subset. Resample twenty-four uneven depth levels onto an even axis, rej
 
 **(status)**
 
-A working prototype on real INCOIS data, not a mock-up. Ingestion, rendering, overlay and comparison all built and tested. Fifty-four tests green. The demo data ships inside the build, so it runs with the network cable pulled out. What is left is deployment and more variables, not core capability."
+A working prototype on real INCOIS data, not a mock-up. Ingestion, rendering, overlay and comparison all built and tested. 377 tests green. The demo data ships inside the build, so it runs with the network cable pulled out. What is left is deployment and more variables, not core capability."

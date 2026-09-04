@@ -279,3 +279,24 @@ do is expose the interfaces that would let it be, which the OPeNDAP and WMS work
 The reading side is also stronger than the README claims: **five** independent institutions were
 read openly and anonymously during this research - INCOIS ERDDAP, Ifremer Coriolis, NOAA AOML,
 EMODnet Physics, and Copernicus Marine metadata - not two.
+
+---
+
+## Reviewed 2026-09-03: two of these gaps now have partial answers
+
+The research above is unchanged and stands; what changed is the build. Two rows are no longer
+open in the way this file describes them.
+
+**CTD casts** are named in the PS's own requirement text and no CTD archive covering this window
+and this region was reachable, which is still true. What is new is that a judge with a CTD file
+does not have to take that on trust: `api/upload.py` accepts a NetCDF file dropped on the page,
+reads it through the same Source Adapter protocol as INCOIS and Argo, and renders its variables
+in the same block. It is not a CTD *ingestion*, and calling it one would be the exact overclaim
+this file exists to prevent. It is the parser this clause asks for, demonstrated on a stranger's
+own file in fifteen seconds.
+
+**Climate monitoring** is answered. `samudra/climatology.py` and `samudra/sources/woa.py` read
+NOAA's World Ocean Atlas 2023 1991-2020 monthly normal over OPeNDAP, anonymously, and the
+Temperature vs Normal Field is the analysis minus that baseline. Measured across 349,692 cells:
+mean departure -0.01 degC, and 2.10 degC at the 95th percentile of the magnitude. ADR 0016
+records why a thirty-year normal is a different decision from ADR 0010's refusal of oxygen.

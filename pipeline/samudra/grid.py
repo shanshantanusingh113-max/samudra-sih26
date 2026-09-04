@@ -34,8 +34,8 @@ class Grid:
         the nodes that have data are the open ocean, and blending them in would quietly
         manufacture a sea temperature for a point that is on land.
         """
-        row, row_weight = self._bracket(self.latitudes, latitude, "latitude")
-        col, col_weight = self._bracket(self.longitudes, longitude, "longitude")
+        row, row_weight = self.bracket(self.latitudes, latitude, "latitude")
+        col, col_weight = self.bracket(self.longitudes, longitude, "longitude")
 
         corners = self.values[:, row : row + 2, col : col + 2]
         weights = np.array(
@@ -47,8 +47,17 @@ class Grid:
         return (corners * weights).sum(axis=(1, 2))
 
     @staticmethod
-    def _bracket(axis: np.ndarray, value: float, name: str) -> tuple[int, float]:
-        """Index of the lower node, and how far between it and the next the value sits."""
+    def bracket(axis: np.ndarray, value: float, name: str) -> tuple[int, float]:
+        """Index of the lower node, and how far between it and the next the value sits.
+
+        Public because it has a second caller. `drift.CurrentSeries._sample` interpolates two
+        Grids at once - u and v - so it cannot go through `column_at`, which reads one; it was
+        reaching into `_bracket` under its private name, where a change here would not have
+        known it had two callers. Raising it to the interface is the honest fix, and it is a
+        seam: it decides where a position lands on the axes, which is a question both callers
+        must answer identically or a current and a temperature would be read at different
+        places.
+        """
         if not axis[0] <= value <= axis[-1]:
             raise ValueError(
                 f"{name} {value} is outside the grid ({axis[0]} to {axis[-1]})"

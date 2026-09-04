@@ -1,11 +1,32 @@
 # Samudra 3D - SIH 2026 idea deck: the design specification
 
+
+> **Current as of 2026-09-04.** Every board in section 9 was re-rendered on that date against
+> the running build, and every figure in `DECK.md` was re-read off the bake. **Do not adjust a
+> number here by arithmetic.** If the bake changes, re-run
+> `cd web && node render-diagrams.mjs`, then read the new figures out of
+> `web/public/data/manifest.json` and re-quote them.
+>
+> The build this deck describes: **15 Fields in 5 groups, 9 Source Adapters** (8 providers plus
+> one that reads a NetCDF file a visitor drops on the page), **12 Timesteps**, **71.1 MB**
+> baked, **377 tests** and **13 browser probes**. The features the August draft of this deck
+> did not know about are all in it now: the bias map, the scored drift check, the NetCDF drop
+> target, the vertical section, the real 1991-2020 climatological baseline, the moving current
+> flow, the 21-step guided tour, the eight plain-word questions and kiosk mode. See
+> `docs/plan/05-coverage-audit-and-ideas.md` and ADRs 0013 to 0017.
+>
+> **The screenshots were replaced on 2026-09-04 and are now the same build.** There are twelve
+> of them, up from seven: the five features the September round added had no picture at all.
+> Section 10 has the table and the command.
+
 **This file describes exactly what the deck and every picture in it must look like.**
 It is written so that a person, or an AI given only this file and `DECK.md`, can build the deck
 without asking a single follow-up question.
 
 `DECK.md` is the other half: the exact words for each slide, and the exact prompt for each
-picture. Read this file for **how it looks**, read `DECK.md` for **what it says**.
+picture. Read this file for **how it looks**, read `DECK.md` for **what it says**,
+[`FACTS.md`](FACTS.md) for **what is true** - it is generated from the build - and
+[`README.md`](README.md) for what is in this folder and the order to use it.
 
 - **Team:** Sigmoid &middot; Team ID `<FILL IN>`
 - **Problem Statement:** 26067, Ministry of Earth Sciences / INCOIS
@@ -261,16 +282,22 @@ cd web && node render-diagrams.mjs
 compare. **If you use a generated one, delete every word from inside it and re-add the text as
 native PowerPoint text boxes on top.** No exceptions.
 
-### Class B - Screenshots of the running software. **Seven of them. Already made.**
+### Class B - Screenshots of the running software. **Sixteen of them. Already made.**
 
-`ppt/images/S1-globe.jpg`, `S2-app.jpg`, `S4-coverage.jpg`, `S5-anomaly.jpg`, and three spares.
+`ppt/images/S1-globe.jpg`, `S2-app.jpg`, `S4-coverage.jpg`, `S5-anomaly.jpg`, and twelve spares.
+Full table in section 10.
 
-These are the deck's proof and they cannot be faked, generated or recreated. Regenerate them
-with a preview server running:
+These are the deck's proof and they cannot be faked, generated or recreated.
+
+**There is one home for every screenshot in this project and it is not this folder.**
+`assets/screenshots/light/` and `assets/screenshots/dark/` hold one copy of each picture, named
+by what it *shows*. `ppt/images/`, `docs/images/` and `web/public/images/` are **outputs**, filled
+from there by `PUBLISH_MAP` in `web/capture.mjs`. Four folders holding overlapping near-copies in
+two themes is how a project stops being able to say which picture is current, and that lasted a
+round here - one of the sets was from August and nothing pointed it out.
 
 ```bash
-cd web && npx vite preview   # then, in another terminal
-cd web && node capture.mjs
+cd web && node capture.mjs --publish-only --publish      # fills all three, no browser, ~1 second
 ```
 
 **Never retouch a screenshot.** Not the numbers, not the colours, not to hide a control you do
@@ -304,7 +331,7 @@ board is authored at; the PNG is exactly twice that.
 
 ---
 
-### `S2-gapmap.png` &middot; 620 x 757 px &middot; **portrait, ratio 0.82**
+### `S2-gapmap.png` &middot; 620 x 776 px &middot; **portrait, ratio 0.80**
 
 **Goes:** slide 2, left column, 4.85 in wide by 5.35 in tall.
 
@@ -324,7 +351,7 @@ Above the stack: the title `THE FIVE GAPS PS 26067 NAMES` in black caps, and a c
 
 ---
 
-### `S2-uniqueness.png` &middot; 1220 x 391 px &middot; **wide ribbon, ratio 3.12**
+### `S2-uniqueness.png` &middot; 1220 x 449 px &middot; **wide ribbon, ratio 2.72**
 
 **Goes:** optional. Use it only if you drop the native "Innovation and uniqueness" text box on
 slide 2 and give the ribbon the full 12.4 in width instead.
@@ -333,39 +360,55 @@ Four equal cards side by side, each with a **3 pt teal top edge**. Each card hol
 mono kicker (`01 · QUANTIFIED`, `02 · HONEST`, `03 · AUTOMATIC`, `04 · DISCIPLINED`), a bold
 15 px headline, and three or four lines of body with the numbers in bold.
 
+**Card 01 quotes the float in `S2-app.jpg`, and that is deliberate.** It used to quote a
+different one, so a judge who read the ribbon and then looked at the screenshot beside it saw two
+sets of numbers with nothing connecting them. Both were real; only one was in the picture. That
+float **agrees** closely, which is not a weaker claim than a disagreement and should not be
+softened into one: the card's point is that the platform puts a *number* on the comparison either
+way, and it names the worst instrument in the basin in the same breath.
+
 Beneath the four, a full-width amber-edged strip on `#FDF6EA` carrying the "and it refuses to
 invent" line. That strip is the most quoted sentence in the deck and it should not be cut.
 
 ---
 
-### `S3-architecture.png` &middot; 1700 x 625 px &middot; **wide, ratio 2.72**
+### `S3-architecture.png` &middot; 1700 x 660 px &middot; **wide, ratio 2.58**
 
-**Goes:** slide 3, right column, 9.2 in wide by 3.38 in tall.
+**Goes:** slide 3, right column, 9.2 in wide by 3.57 in tall. It was 3.38 in tall while zone 1
+held five sources; it holds seven now and the board grew with it.
 
-The centrepiece of the deck. Four labelled zones left to right, separated by three large
-`&rarr;` arrows in `#8FBACD`, each zone under a mono header rule reading
-`ZONE 1  SOURCES · OPEN, ANONYMOUS, DATED` and so on.
+The centrepiece of the deck, and the same picture README section 5 shows - one drawing of this
+system, in both documents, because two drawings drift apart and nothing notices. Four labelled
+zones left to right, separated by three large `&rarr;` arrows in `#8FBACD`, each zone under a
+mono header rule reading `ZONE 1  SOURCES &middot; OPEN, DATED, ONE FREE ACCOUNT` and so on.
 
 | Zone | Cards | Edge colour |
 | --- | --- | --- |
-| 1 Sources | 5: INCOIS ERDDAP, Argo GDAC Ifremer, Argo BGC synthetic, NOAA OSMC real-time, Copernicus Marine | 3 pt amber left edge |
+| 1 Sources | 7, **in two columns**: INCOIS ERDDAP (both analyses), Argo GDAC Ifremer (core and BGC), NOAA OSMC real-time, Copernicus Marine, EGO glider GDAC, World Ocean Atlas 2023, and a file a visitor drops on the page | 3 pt amber left edge |
 | 2 Adapter seam | 4: GridSource/ProfileSource, column layout as data, two layers of QC, land masked | 1.5 pt full border in `#8FBACD`, fill `#E8F1F6` |
-| 3 Two representations | 2: **GRID** (green edge, green-tinted fill) and **VOLUME** (cyan edge) | see left |
-| 4 Delivery | 4: Browser, REST API, Open standards, Static bake | 3 pt teal left edge |
+| 3 Two representations, three cards | **GRID** (green edge, green-tinted fill), **VOLUME** (cyan edge), and **the Fields that are not Volumes** - green, because a depth sheet and a column drape ship unquantised on the Grid's own axes and so belong to the Grid, not to the picture. Two representations, and one of them ships two ways | see left |
+| 4 Delivery | 4: Browser, Static bake, REST API, Open standards | 3 pt teal left edge |
+
+**Zone 1 is two columns and that is load-bearing, not cosmetic.** In one column, seven cards made
+the board half as tall again and left zones 3 and 4 as a block of empty white. If a source is
+ever added, keep the two columns and let the zone grow by one row.
 
 Each card has three lines: a bold name, a mono technical identifier in faint grey (the real
 dataset ID, the real file path, the real byte count), and a plain-English sentence in body grey.
 
-**The visual argument is the zone-3 split.** GRID is the only green-tinted object in the picture
-and VOLUME is the only cyan one, and every zone-4 card names which of the two it draws from.
+**The visual argument is the zone-3 split.** Two cards are green-tinted and one is cyan, and the
+cyan one is the only thing in the picture that is a *picture*. Every zone-4 card names which of
+the two it draws from, and the browser card names both, because the block on screen comes from
+the Volume and every number beside it comes from the Grid.
 
-Under the whole diagram, a full-width green-edged strip on `#F1F8F4`: *"The rule that governs all
-of it. Every number a human or a machine reads comes from the Grid. The Volume is only ever a
-picture."*
+Under the whole diagram, a full-width green-edged strip on `#F1F8F4` carrying two rules: *"Every
+number a human or a machine reads comes from the Grid. The Volume is only ever a picture,"* and
+the two modules that are deliberately written twice, with the measurement that holds them to
+each other.
 
 ---
 
-### `S3-stack.png` &middot; 460 x 679 px &middot; **portrait, ratio 0.68**
+### `S3-stack.png` &middot; 460 x 720 px &middot; **portrait, ratio 0.64**
 
 **Goes:** slide 3, left column, 2.95 in wide by 4.35 in tall.
 
@@ -383,7 +426,7 @@ a capital letter, and any that crowd the column get dropped rather than shrunk.
 
 ---
 
-### `S3-methodology.png` &middot; 1700 x 315 px &middot; **very wide, ratio 5.40**
+### `S3-methodology.png` &middot; 1700 x 349 px &middot; **very wide, ratio 4.87**
 
 **Goes:** slide 3, right column, under the architecture. 9.2 in wide by 1.70 in tall.
 
@@ -395,14 +438,14 @@ Stages: **Fetch &rarr; Check &rarr; Derive &rarr; Bake &rarr; Render and compare
 
 Beneath the ribbon, a green-bordered four-cell status strip. The first cell is filled `#EAF6F0`
 and reads **"Working prototype, on live INCOIS data"** in green bold. The other three carry the
-public URL, `230` tests passing, and `0` network calls at demo time, each under a mono caption.
+public URL, `377` tests passing, and `0` network calls at demo time, each under a mono caption.
 
 **That first green cell is the single most important object on slide 3.** Most submissions at
 this stage are concepts.
 
 ---
 
-### `S4-feasibility.png` &middot; 540 x 724 px &middot; **portrait, ratio 0.75**
+### `S4-feasibility.png` &middot; 540 x 744 px &middot; **portrait, ratio 0.73**
 
 **Goes:** slide 4, left column, 3.85 in wide by 5.15 in tall.
 
@@ -421,7 +464,7 @@ longer than two lines.
 
 ---
 
-### `S4-risks.png` &middot; 1120 x 702 px &middot; **landscape, ratio 1.60**
+### `S4-risks.png` &middot; 1120 x 758 px &middot; **landscape, ratio 1.48**
 
 **Goes:** slide 4, right column, 8.30 in wide by 5.19 in tall.
 
@@ -442,7 +485,7 @@ answered by a green one, readable in half a second from the back of the room.
 
 ---
 
-### `S5-audience.png` &middot; 660 x 636 px &middot; **near-square, ratio 1.04**
+### `S5-audience.png` &middot; 660 x 654 px &middot; **near-square, ratio 1.01**
 
 **Goes:** slide 5, left column, 6.10 in wide by 5.20 in tall.
 
@@ -479,23 +522,67 @@ Beneath them, an amber-bordered box on `#FDF6EA` holding the deck's headline res
 
 ---
 
-## 10. The seven screenshots
+## 10. The sixteen screenshots
 
-All are 1200 x 675 (16:9), taken from the live build on 27 August 2026.
+**Captured from the running build on 4 September 2026, by hand, in a real browser**, and
+normalised to 1600 x 900 by `scripts/normalise_screenshot.py` - crop and resize only, never
+retouched. They replaced seven 1200 x 675 shots from 27 August that predated the moving current
+flow, the vertical section, the bias map, the hazard fields, the Explore surface and kiosk mode:
+the deck talked about all six and had a picture of none.
+
+Every one is **light theme**, because the SIH template is a white page and a dark screenshot on
+it reads as a hole. The one exception is `spare-kiosk.jpg`: the exhibition screen is a dark
+screen wherever it stands, and a light capture of it would be a picture of a mode nobody would
+run in a lit hall.
+
+**They are not edited here.** `ppt/images/` is an output. The one copy of each picture lives in
+`assets/screenshots/light/` under a name that says what it shows, and one command fills this
+folder, `docs/images/` and `web/public/images/` from it - see section 8.
 
 | File | What it shows | Where |
 | --- | --- | --- |
 | `S1-globe.jpg` | The globe view: India's EEZ with the temperature field draped on it, float markers and drift tracks | Slide 1, small, right |
-| **`S2-app.jpg`** | **The whole app.** The ray-marched water column, floats on top, the control panel left, and the comparison chart right showing 522 / -0.72 / 1.72 | **Slide 2, hero** |
-| `S4-coverage.jpg` | Observation Coverage: the block coloured by how many Argo casts stand behind each point, with the four-step key | Slide 4, optional inset |
-| `S5-anomaly.jpg` | The Temperature Anomaly field with the anomaly-feature rings marked on the water | Slide 5, optional |
-| `spare-volume.jpg` | The volume with no comparison panel open, cleanest view of the block | Spare |
-| `spare-isosurface.jpg` | The 20 °C isotherm drawn as a solid surface | Spare, good for the cyclone point |
+| **`S2-app.jpg`** | **The whole app.** The ray-marched water column, floats in it, the control panel left, and the comparison chart right: 996 depths, 0.17 °C average gap, 0.47 °C RMS, with a chlorophyll profile under it | **Slide 2, hero** |
+| `S4-coverage.jpg` | Observation Coverage: the block coloured by how many Argo casts stand behind each point, with the four-band key | Slide 4, optional inset |
+| `S5-anomaly.jpg` | The Temperature Anomaly field with the anomaly-feature rings marked on the water, and the guide panel explaining it | Slide 5, optional |
+| `spare-bias.jpg` | **The bias map and its ranked list.** Every instrument recoloured by how far the analysis sat from it, worst first, with the buoy/float split stated | Spare. The strongest evidence picture in the set |
+| `spare-hazard.jpg` | Cyclone Heat Potential draped on the sea surface, deep red over the Bay of Bengal | Spare. The Disaster Management theme in one frame |
+| `spare-d26.jpg` | The depth of the 26 °C isotherm as a sheet suspended inside the block, visibly not flat | Spare, pairs with the one above |
+| `spare-flow.jpg` | The current flow: a few thousand moving dots with fading trails | Spare |
+| `spare-drift.jpg` | A drift pin with the track the currents imply, and the panel's own caveat and score. **Not 16:9** - 1600 x 669, because cropping it square would have thrown the pin away | Spare |
+| `spare-section.jpg` | A vertical section with 16 casts within 150 km of the line drawn on the same axes | Spare, good beside the "co-visualisation" claim |
+| `spare-normal.jpg` | Departure from the 1991-2020 normal through the water column | Spare, the climate claim |
+| `spare-volume.jpg` | The block with no comparison panel open, cleanest view of the water | Spare |
+| `spare-isosurface.jpg` | An isotherm drawn as a solid surface inside the water | Spare, good for the cyclone point |
 | `spare-density.jpg` | The density field | Spare |
+| `spare-explore.jpg` | The Explore surface: eight questions in plain words, each with its caveat | Spare, slide 5 |
+| `spare-kiosk.jpg` | The exhibition screen. **Dark**, deliberately - see above | Spare, slide 5 |
 
 **`S2-app.jpg` is the most valuable single asset in this project.** It shows, in one frame, the
 3D model field, the in-situ instruments inside it, and the quantified comparison. That is the
 entire problem statement answered in a picture. Give it room; do not shrink it below 6 in wide.
+
+### Replacing one
+
+Grab the frame from a real browser, then:
+
+```bash
+../.venv/Scripts/python scripts/normalise_screenshot.py <file.png> light <name>
+cd web && node capture.mjs --publish-only --publish
+```
+
+The second command opens no browser and fills all three documents in under a second, printing the
+date of every file it copies.
+
+**A full harness re-capture is about forty minutes** - headless Chromium has no GPU here, so
+every frame ray-marches in software, and there are nineteen states. It writes into `web/shots/`,
+which is scratch; `--ingest` is what promotes those into `assets/screenshots/`, and it refuses to
+overwrite a hand-picked frame unless you pass `--force`.
+
+```bash
+cd web && npx vite preview --port 4173                        # one terminal
+cd web && node capture.mjs --theme light --ingest --publish    # another, ~40 min
+```
 
 ### Cropping
 
@@ -559,7 +646,7 @@ visualisation platform that is already built, public and measured.
 I am giving you two files and a folder of images:
   DESIGN-SPEC.md  - how the deck and every picture must look
   DECK.md         - the exact words for each slide and where each image goes
-  images/         - nine rendered infographics and seven screenshots
+  images/         - nine rendered infographics and sixteen screenshots
 
 Follow both files precisely. Do not invent facts, features, figures or references.
 Every number in DECK.md was measured against a running build; anything you add will
@@ -588,8 +675,8 @@ TEXT
 
 THE THING TO GET RIGHT
 Most submissions at this stage describe something that does not exist. This one runs
-at https://rak2315.github.io/samudra-sih26/ on live INCOIS data, with 230 automated
-tests. Slide 3 carries a green "Working prototype, on live INCOIS data" status cell.
+at https://rak2315.github.io/samudra-sih26/ on live INCOIS data, with 377 automated
+tests and 13 browser probes. Slide 3 carries a green "Working prototype, on live INCOIS data" status cell.
 Make it prominent. That, and the live URL, are what separate this deck from the pile.
 
 Now produce the six slides.

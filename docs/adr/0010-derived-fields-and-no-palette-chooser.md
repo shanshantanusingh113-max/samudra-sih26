@@ -67,3 +67,32 @@ TCHP - heat integrated from the surface to the 26 degC isotherm - is exact, uses
 temperature Grid already on disk, and is the quantity that governs cyclone rapid intensification.
 It is a column integral rather than a volume, so it needs a rendering decision the other derived
 Fields did not, which is the only reason it is not here already.
+
+---
+
+## Amended on 2026-09-01: the sixth Field arrived, and so did the log scale
+
+Two things this record left open have been closed. Neither reverses it.
+
+**TCHP is built, along with four more.** The paragraph above says it needs a rendering decision
+the other derived Fields did not, and that is exactly what held it up: it is a column integral,
+not a volume. The decision is in **ADR 0014** - a column total is draped on the sea surface and a
+Field whose value is a depth is drawn as a sheet at that depth - and five hazard Fields arrived
+together on the back of it. Each has its own palette, its own guide entry and its own isosurface
+meaning, which is what this ADR required of any new Field.
+
+**The log scale is built.** `CONTEXT.md` recorded flatly that "there is no log scale - it warped
+the water while the colourbar stayed linear, so the legend became a lie". Reread, that is a bug
+report and not a design decision: the shader applied a curve and the swatch beside it did not.
+
+There is now exactly one curve, in `web/src/transfer.ts`, exported both as a TypeScript function
+and as the GLSL string the ray marcher inlines. The colourbar gradient is drawn by sampling the
+palette through the same function, so the bar visibly bunches its colours towards the low end
+when the scale is logarithmic, and a reader matching a colour to a number gets the same answer
+from both. It is offered only where the Field's encoded range never goes below zero - there is no
+logarithm of a negative number, and bending one half of a diverging scale would move its midpoint
+off the value that means "no departure", which is the one thing ADR 0007 exists to protect.
+
+**The palette chooser stays gone.** Five palettes were added in this round - `deep`, `amp`,
+`speed`, `tempo`, `matter` - and every one of them arrived attached to a `FieldSpec` and to
+nothing else, which is the rule this record set.

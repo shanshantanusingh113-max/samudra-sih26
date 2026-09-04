@@ -10,6 +10,21 @@ import { useStore } from "../store";
  * bake measured. Nothing here is an interpretation dressed as a finding: where the platform
  * does not know, it says so, and the loudest line on the panel is the one about water with no
  * observation behind it.
+ *
+ * **Bullets, to the same rule the guide panel follows.** This was four prose paragraphs and
+ * three notes - 243 words, longest block 40, in a 348 px column, so a single answer ran seven
+ * lines. `guide.ts` was cut from 170 words an entry to 66.5 of bullets a round earlier and this
+ * panel was simply missed. The rewrite is in the five functions at the bottom of this file and
+ * touches no markup: **every measured number survives and only the connective prose goes.**
+ * Measured across all nine Features in this bake, in the 348 px column it renders in: **the four
+ * blocks are a median 86 words**, longest 100, always eight bullets, longest bullet 22 words.
+ * The whole panel including its notes is a median 151 against the 243 it was.
+ *
+ * Two sentences were deleted rather than shortened, both of them defensive. "Whatever changed
+ * this body, it was not the warm layer moving over it" restates "Not the thermocline", and "so
+ * this panel does not guess at one" is a promise about our own conduct - the finding is that no
+ * origin fits, and the promise belongs in the ADR. The closing note about the detector's
+ * threshold went too: `howUnusual` already prints the threshold beside the value it is judging.
  */
 /**
  * Isolating a Feature pans onto it; it does not zoom to it.
@@ -22,7 +37,8 @@ import { useStore } from "../store";
  * behind the control panel and the button reads as having done nothing.
  */
 export function AnomalyPanel({ onPan }: { onPan?: (lon: number, lat: number) => void }) {
-  const { manifest, selectedAnomaly, features, isolateAnomaly, set } = useStore();
+  const store = useStore();
+  const { manifest, selectedAnomaly, features, isolateAnomaly, set } = store;
   const spec = manifest?.anomalyFeatures;
   const feature = selectedAnomaly === null ? undefined : features()[selectedAnomaly];
   if (!feature || !spec) return null;
@@ -52,16 +68,24 @@ export function AnomalyPanel({ onPan }: { onPan?: (lon: number, lat: number) => 
 
       <dl className="guide-body">
         <dt>Where it is</dt>
-        <dd>{whereIs(feature)}</dd>
+        <dd>
+          <Points points={whereIs(feature)} />
+        </dd>
 
         <dt>How unusual</dt>
-        <dd>{howUnusual(feature, spec.zThreshold, rank)}</dd>
+        <dd>
+          <Points points={howUnusual(feature, spec.zThreshold, rank)} />
+        </dd>
 
         <dt>Why it is there</dt>
-        <dd>{whyThere(feature, spec.isothermValue)}</dd>
+        <dd>
+          <Points points={whyThere(feature, spec.isothermValue)} />
+        </dd>
 
         <dt>What kind of water</dt>
-        <dd>{whatKind(feature)}</dd>
+        <dd>
+          <Points points={whatKind(feature)} />
+        </dd>
       </dl>
 
       {/*
@@ -85,10 +109,9 @@ export function AnomalyPanel({ onPan }: { onPan?: (lon: number, lat: number) => 
       </button>
       {isolateAnomaly && (
         <p className="note">
-          Everything outside this feature is hidden. What is left is the {feature.cells} cells
-          the detector actually selected, between {feature.topMetres.toFixed(0)} and{" "}
-          {feature.bottomMetres.toFixed(0)} m - the same water every figure on this panel is
-          measured over. The box frame stays drawn so you can see where in the block it sits.
+          {feature.cells} cells, {feature.topMetres.toFixed(0)} to{" "}
+          {feature.bottomMetres.toFixed(0)} m - the water every figure above is measured over.
+          The box frame stays, so you can see where in the block it sits.
         </p>
       )}
 
@@ -97,30 +120,51 @@ export function AnomalyPanel({ onPan }: { onPan?: (lon: number, lat: number) => 
         {evidence(feature)}
       </p>
 
+      {/* The caveat is unchanged and now has somewhere to send the reader: the climatological
+          Field exists, so "not a normal" can name the Field that is one instead of just
+          apologising. */}
       <p className="analysis-note">
         departure from the mean of the {manifest.timesteps.length} steps in this bake, not a
         climatological normal
-      </p>
-      <p className="note">
-        Not every coloured patch gets a ring. Water that swings this much every step is doing
-        what it always does, so only departures past {spec.zThreshold.toFixed(1)} times a cell's
-        own usual swing are marked. Most of the vivid band at 50-100 m is the thermocline
-        breathing, and it is not unusual there.
+        {store.manifest?.fields.some((f) => f.key === "temperature_normal_anomaly") && (
+          <>
+            {" - "}
+            <button
+              type="button"
+              className="link"
+              onClick={() => store.selectField("temperature_normal_anomaly")}
+            >
+              Temperature vs Normal
+            </button>{" "}
+            is the one against 1991-2020
+          </>
+        )}
       </p>
     </aside>
   );
 }
 
-function whereIs(f: AnomalyFeature): string {
+/** The same bullets the guide panel draws, inside a definition list's value. */
+function Points({ points }: { points: string[] }) {
+  return (
+    <ul className="guide-points">
+      {points.map((point) => (
+        <li key={point}>{point}</li>
+      ))}
+    </ul>
+  );
+}
+
+function whereIs(f: AnomalyFeature): string[] {
   const depth =
     f.topMetres === f.bottomMetres
-      ? `at ${f.topMetres.toFixed(0)} m`
-      : `between ${f.topMetres.toFixed(0)} and ${f.bottomMetres.toFixed(0)} m`;
-  return (
-    `${depth}, centred on ${place(f.lat, f.lon)}. It covers about` +
-    ` ${Math.round(f.footprintKm2 / 1000).toLocaleString()} thousand square kilometres of sea,` +
-    ` across ${f.cells} cells of the analysis grid.`
-  );
+      ? `At ${f.topMetres.toFixed(0)} m`
+      : `${f.topMetres.toFixed(0)} to ${f.bottomMetres.toFixed(0)} m down`;
+  return [
+    `${depth}, centred on ${place(f.lat, f.lon)}.`,
+    `About ${Math.round(f.footprintKm2 / 1000).toLocaleString()} thousand km²,` +
+      ` ${f.cells} grid cells.`,
+  ];
 }
 
 function place(lat: number, lon: number): string {
@@ -129,76 +173,70 @@ function place(lat: number, lon: number): string {
   }`;
 }
 
-function howUnusual(f: AnomalyFeature, threshold: number, rank: number): string {
-  return (
-    `${Math.abs(f.peakValue).toFixed(2)} °C ${f.sign > 0 ? "above" : "below"} what this water` +
-    ` normally sits at, which is ${Math.abs(f.peakZ).toFixed(1)} times its usual swing.` +
-    ` Anything past ${threshold.toFixed(1)} counts, and this is the` +
-    ` ${ordinal(rank)} strongest departure in this step.`
-  );
+function howUnusual(f: AnomalyFeature, threshold: number, rank: number): string[] {
+  return [
+    `${Math.abs(f.peakValue).toFixed(2)} °C ${f.sign > 0 ? "above" : "below"} this water's own` +
+      ` average, ${Math.abs(f.peakZ).toFixed(1)}x its usual swing.`,
+    `Past ${threshold.toFixed(1)} counts. ${ordinal(rank)} strongest this step.`,
+  ];
 }
 
-function whyThere(f: AnomalyFeature, isotherm: number): string {
+function whyThere(f: AnomalyFeature, isotherm: number): string[] {
   const move = f.isothermDeparture;
   if (move === null || f.isothermDepth === null) {
-    return (
-      `The ${isotherm} °C line does not exist in this column - the water here never passes` +
-      ` through that temperature - so there is no thermocline movement to explain it.`
-    );
+    return [
+      `No ${isotherm} °C line in this column - the water never passes through that temperature.`,
+      "So no thermocline movement explains it.",
+    ];
   }
+  const where = `The ${isotherm} °C line sits at ${f.isothermDepth.toFixed(0)} m, ${describeMove(move)}.`;
   if (!f.isothermExplains) {
-    return (
-      `Not the thermocline. The ${isotherm} °C line sits at ${f.isothermDepth.toFixed(0)} m` +
-      ` here, ${describeMove(move)}, and it did not pass through this water. Whatever changed` +
-      ` this body, it was not the warm layer moving over it.`
-    );
+    return ["Not the thermocline.", `${where} It did not cross this water.`];
   }
-  return (
-    `The ${isotherm} °C line - the bottom of the warm surface layer - sits at` +
-    ` ${f.isothermDepth.toFixed(0)} m here, ${describeMove(move)}. It swept through this water,` +
-    ` so ${f.sign > 0 ? "warm water reaches deeper here than it usually does" :
-      "the warm layer has pulled up and left cooler water where it used to be"}.`
-  );
+  return [
+    `${where} That line is the bottom of the warm layer.`,
+    `It swept through this water, so ${
+      f.sign > 0 ? "warm water reaches deeper here than usual" : "cooler water is left behind"
+    }.`,
+  ];
 }
 
 function describeMove(metres: number): string {
   if (Math.abs(metres) < 3) return "within a few metres of its own average";
-  return `${Math.abs(metres).toFixed(0)} m ${metres > 0 ? "deeper" : "shallower"} than its own average`;
+  return `${Math.abs(metres).toFixed(0)} m ${metres > 0 ? "deeper" : "shallower"} than average`;
 }
 
 /** How far salinity has to move before it is worth a sentence. Below this it is analysis noise. */
 const SALINITY_NOTICEABLE = 0.05;
 
-function whatKind(f: AnomalyFeature): string {
+function whatKind(f: AnomalyFeature): string[] {
   const salinity = f.salinityDeparture;
   const density = f.densityDeparture;
-  if (salinity === null || density === null) return "Salinity and density are missing here.";
+  if (salinity === null || density === null) return ["Salinity and density are missing here."];
 
   const facts =
-    `Salinity is ${Math.abs(salinity).toFixed(2)} PSU ${salinity > 0 ? "saltier" : "fresher"}` +
-    ` than usual and density ${Math.abs(density).toFixed(2)} kg/m³` +
-    ` ${density > 0 ? "higher" : "lower"}.`;
+    `${Math.abs(salinity).toFixed(2)} PSU ${salinity > 0 ? "saltier" : "fresher"},` +
+    ` ${Math.abs(density).toFixed(2)} kg/m³ ${density > 0 ? "denser" : "lighter"}.`;
 
   // Only the unambiguous pairings get a reading. The rest get the numbers and no story.
   if (f.sign < 0 && density > 0.2) {
-    return `${facts} Cooler and denser together is water that came up from below rather than water that cooled where it is.`;
+    return [facts, "Cooler and denser: water that came up, not water that cooled."];
   }
   if (f.sign > 0 && density < -0.2 && salinity < -SALINITY_NOTICEABLE) {
-    return `${facts} Warmer, fresher and lighter is a buoyant lid - river outflow or rain sitting on top of saltier water.`;
+    return [facts, "Warmer, fresher, lighter: a buoyant lid of river outflow or rain."];
   }
   if (f.sign > 0 && density < -0.2) {
-    return `${facts} Warmer and lighter, so this water will sit on top of what is around it rather than mixing down into it.`;
+    return [facts, "Warmer and lighter, so it sits on top rather than mixing down."];
   }
-  return `${facts} The combination does not point to one clear origin, so this panel does not guess at one.`;
+  return [facts, "No single origin fits that combination."];
 }
 
 function evidence(f: AnomalyFeature): string {
   if (f.casts === null) return "Coverage is not defined here.";
   if (f.casts === 0) {
     return (
-      "No Argo cast reached this water in the ten days around this step. The analysis here is" +
-      " interpolated between distant floats, so this departure is the model's, and no" +
-      " instrument has confirmed it. Switch to Observation Coverage to see how far the gap runs."
+      "No Argo cast reached this water in the ten days around this step, so this departure is" +
+      " the model's alone. Observation Coverage shows how far the gap runs."
     );
   }
   const n = Math.round(f.casts);

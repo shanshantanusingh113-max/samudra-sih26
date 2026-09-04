@@ -109,10 +109,10 @@
     <dt>Organisation</dt><dd>Ministry of Earth Sciences (MoES)</dd>
     <dt>Department</dt><dd>Indian National Centre for Ocean Information Services (INCOIS)</dd>
     <dt>Category</dt><dd>Software</dd>
-    <dt>Theme</dt><dd>Smart Automation</dd>
+    <dt>Theme</dt><dd>Disaster Management</dd>
     <dt>Live prototype</dt><dd>rak2315.github.io/samudra-sih26</dd>
     <dt>Source</dt><dd>github.com/RAK2315/samudra-sih26</dd>
-    <dt>Status</dt><dd>Working prototype on live INCOIS data, 54 automated tests passing</dd>
+    <dt>Status</dt><dd>Working prototype on live INCOIS data, 377 automated tests passing</dd>
   </dl>
 
   <h2 style="margin-top:26pt">Contents</h2>
@@ -173,20 +173,20 @@
     <span class="label">The state of it</span>
     <p>
       This is not a concept. It is a working prototype, deployed and publicly reachable, running
-      on live data from INCOIS's own public server, current to 30 July 2026. It carries 54
-      automated tests over the scientific logic and nine written architecture decision records.
+      on live data from INCOIS's own public server, current to 30 July 2026. It carries 377
+      automated tests over the scientific logic and sixteen written architecture decision records.
     </p>
   </div>
 
   <div class="stats">
     <div class="stat"><b>24</b><span>DEPTH LEVELS, 5-2000 m</span></div>
-    <div class="stat"><b>92</b><span>ARGO FLOATS OVERLAID</span></div>
-    <div class="stat"><b>1,107</b><span>MEASURED PROFILES</span></div>
+    <div class="stat"><b>237</b><span>INSTRUMENTS OVERLAID</span></div>
+    <div class="stat"><b>3,718</b><span>MEASURED PROFILES</span></div>
     <div class="stat"><b>0</b><span>NETWORK CALLS AT DEMO TIME</span></div>
   </div>
 
   <figure>
-    <img src="../ppt/images/02-volume-clean.png" alt="A 3D block of ocean water showing temperature layering from warm yellow at the surface through orange to violet at depth.">
+    <img src="../ppt/images/spare-volume.jpg" alt="A 3D block of ocean water showing temperature layering from warm yellow at the surface through orange to violet at depth.">
     <figcaption>
       The water column over the Arabian Sea and Bay of Bengal, from 5 m to 2000 m. Warm at the
       top, cold below, with the thermocline as the orange band between them.
@@ -288,7 +288,7 @@
   </p>
 
   <figure>
-    <img src="../ppt/images/05-collocation-full.png" alt="The 3D ocean block with one float highlighted, and a side panel showing the comparison chart and statistics.">
+    <img src="../ppt/images/S2-app.jpg" alt="The 3D ocean block with one float highlighted, and a side panel showing the comparison chart and statistics.">
     <figcaption>
       The comparison. Green is the instrument, dashed blue is the model, the shaded area is the
       difference. The panel names what is plotted, in what units, and says which way is down.
@@ -319,7 +319,7 @@
   <table>
     <thead><tr><th>Feature</th><th>What it does and why it matters</th></tr></thead>
     <tbody>
-      <tr><td>Variable selector</td><td><em>Science.</em> Switches between temperature and salinity, both from the same INCOIS analysis on the same 24 depth levels. Temperature drives cyclone intensity; salinity traces where water came from, because river outflow and evaporation leave a lasting signature.</td></tr>
+      <tr><td>Variable selector</td><td><em>Science.</em> Fifteen variables in five groups, arranged the way a forecaster thinks rather than the way the data arrived. <strong>Ocean state</strong> is what INCOIS publish plus the density derived from it. <strong>Hazard</strong> is the five quantities a cyclone forecaster names - depth of the 26&nbsp;&deg;C isotherm, cyclone heat potential, mixed layer depth, isothermal layer depth and barrier layer thickness - all computed here, because INCOIS published them until 2019 and then stopped. <strong>Circulation</strong> is the current vectors. <strong>Evidence</strong> is how much measurement stands behind the model, including INCOIS's own observation count and their own error estimate beside ours. <strong>Change</strong> holds two: departure from this build's own period average, and departure from the World Ocean Atlas 2023 1991-2020 normal for the same calendar month.</td></tr>
       <tr><td>Time animation</td><td><em>Navigation.</em> Twelve analyses at ten-day intervals covering April to July 2026. Each frame is a separate analysis published by INCOIS, not an interpolation. The colour scale is held fixed across all frames deliberately, so an apparent change is a real change and not the scale rescaling itself.</td></tr>
       <tr><td>Sea surface level</td><td><em>Navigation.</em> On the globe, chooses which depth is painted on the map, so a pattern can be followed downward without entering the 3D view.</td></tr>
     </tbody>
@@ -357,7 +357,22 @@
       <tr><td>Drift tracks</td><td><em>Science.</em> The path each float took between surfacings, drawn progressively as time advances. Floats drift with the current at their parking depth, so the track is itself a measurement of deep flow.</td></tr>
       <tr><td>Collocation</td><td><em>The contribution.</em> Pairs an observed profile with the model interpolated to that profile's exact position and time. Comparison happens at the observation's depths, not the model's, so fine vertical structure is not smoothed away.</td></tr>
       <tr><td>Residual statistics</td><td><em>Science.</em> Depths compared, average gap (signed, so direction is meaningful) and typical gap. A plain-language verdict interprets them.</td></tr>
-      <tr><td>Guide panel</td><td><em>Comprehension.</em> Explains whatever control was last touched, and otherwise describes the current view in plain language.</td></tr>
+      <tr><td>Guide panel</td><td><em>Comprehension.</em> Explains whatever control was last touched, and otherwise describes the current view in plain language. 43 entries, one per control, and an automated browser check fails the build if a control is ever added without one.</td></tr>
+      <tr><td>Bias map</td><td><em>The contribution, at basin scale.</em> Every instrument recoloured by how far the analysis sat from it, with a ranked list of the worst. Split by instrument kind, because INCOIS assimilate Argo: measured, the typical temperature gap is 0.17 &deg;C across 221 floats against 0.75 &deg;C across the nine moored buoys nothing assimilated, and pooling the two hides the honest number.</td></tr>
+      <tr><td>Vertical section</td><td><em>Science.</em> Draw a line and the model is cut open along it, depth down and distance across, with every cast within 150 km on the same axes. Cut from the model's own grid rather than the rendered block, and checked value by value against the API: 1,102 values, worst gap 5&times;10<sup>-5</sup> &deg;C.</td></tr>
+      <tr><td>Drift</td><td><em>Search and rescue.</em> Drop a pin and the analysed current carries it forward. The same integrator was run from 195 real floats' own positions, so it ships with a measured error rather than an assumed one: median 38.5 km over one Argo cycle, 87 km at the ninetieth percentile, across 1,908 cycles.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Communication, which the problem statement asks for in its own section</h3>
+  <table>
+    <thead><tr><th>Feature</th><th>What it does and why it matters</th></tr></thead>
+    <tbody>
+      <tr><td>Moving flow</td><td><em>Comprehension.</em> A few thousand dots carried by the current at the chosen depth, each with a fading trail. An arrow gives the direction in one cell; the dots show where the water is going across the whole basin, and a viewer who has never read a vector plot reads them anyway. They run the same integrator as the drift model, so the animation carries a published error: a dot and a drift pin from the same start point land 0.002 km apart after 724 km. The trails are inked rather than coloured by speed, because a trail tinted by speed sits on water coloured by the same speed and disappears over slow water; the legend says the water carries the number.</td></tr>
+      <tr><td>Show me around</td><td><em>Comprehension.</em> A guided walk in six chapters and 21 steps that visits every one of the 43 explained controls, opening each control's own explanation as it goes. A browser check fails if any control is ever left out, so the claim is measured rather than promised.</td></tr>
+      <tr><td>Explore</td><td><em>Outreach.</em> The same platform as eight questions in plain words, each of which sets up the whole scene. Every question carries the caveat its simplification costs, beside the answer: the cyclone one states that it is a map of conditions and not a forecast.</td></tr>
+      <tr><td>Kiosk mode</td><td><em>Exhibitions.</em> A URL flag hides every panel, scales the type for reading across a room, plays the questions on a loop and resets sixty seconds after the last visitor leaves, so a screen at a stall repairs itself. The depth ruler gains landmarks there: 1000 m becomes &ldquo;a sperm whale hunting&rdquo;.</td></tr>
+      <tr><td>Copy this view</td><td><em>E-learning.</em> One button writes the variable, the date, the depth, the pin and the section line into a link. A teacher's worksheet is six links, which is e-learning without an e-learning platform.</td></tr>
     </tbody>
   </table>
 </section>
@@ -424,7 +439,7 @@
   <h2>How it works inside</h2>
 
   <figure>
-    <img src="../ppt/images/07-architecture.png" alt="Architecture diagram showing data sources feeding source adapters, then grid and volume, then browser and API.">
+    <img src="../ppt/images/S3-architecture.png" alt="Architecture diagram showing data sources feeding source adapters, then grid and volume, then browser and API.">
     <figcaption>Data flows left to right. The Source Adapter layer is the only code that knows what an ERDDAP is.</figcaption>
   </figure>
 
@@ -492,7 +507,7 @@
         <li>NumPy, SciPy - resampling and gradients</li>
         <li>cmocean - oceanographic colour scales</li>
         <li>FastAPI, Uvicorn - the REST API</li>
-        <li>pytest - 54 tests on the science</li>
+        <li>pytest - 377 tests on the science</li>
       </ul>
     </div>
     <div>
@@ -557,7 +572,7 @@
   </p>
 
   <figure>
-    <img src="../ppt/images/09-feasibility-risk.png" alt="A table of risks, what happened, and how each was resolved.">
+    <img src="../ppt/images/S4-risks.png" alt="A table of risks, what happened, and how each was resolved.">
     <figcaption>Every row is something that actually happened during development, not a projected risk.</figcaption>
   </figure>
 
@@ -586,10 +601,9 @@
   <h3>Known limitations, stated plainly</h3>
   <ul>
     <li>The vertical axis is stretched and non-linear in metres. This is deliberate and labelled on screen, and the profile chart uses the same stretch so the two agree.</li>
-    <li>Currents are shown as Copernicus Marine's own rendered arrows on the surface, not as 3D flow and not as numbers of ours. Their values need an account; INCOIS's own series ends in 2019 and cannot share this timeline. The layer says on screen that it is a picture, and it cannot be clicked or queried.</li>
-    <li>No gliders. The global glider archive is on the same server we read for Argo and holds seven deployments in this basin; the newest left the water in October 2022, three and a half years before this analysis window.</li>
+    <li>Currents carry real values, from Copernicus Marine's own analysis at 1/12&deg;, drawn on the chosen depth either as moving dots or as arrows, with a real speed under the cursor. What is <em>not</em> built is flow through the block in three dimensions, and the reason is the vertical: that needs a vertical velocity, Copernicus publish eastward and northward and no vertical component, and INCOIS publish neither, so a three-dimensional particle would claim a motion nobody measured. A sheet of dots on one chosen depth claims nothing beyond the two numbers that exist. The one cost worth stating is that rebuilding the data needs one free Copernicus account, though nothing a visitor does needs any account at all.</li>
+    <li>No glider casts on the map, and the reason is not the software. The adapter reads <span class="mono">ftp.ifremer.fr/ifremer/glider/v2/</span>, which is the archive the problem statement itself names, and every one of the 824,641 lines of its global index was scanned: this basin holds <strong>one glider, two deployments and 2,876 casts</strong>, and the newest left the water on <strong>14 October 2022</strong>. Drawing a 2022 instrument at a 2026 analysis would claim an observation that does not exist, so the finding ships instead of the casts.</li>
     <li>Horizontal resolution is 1&deg;, because that is what INCOIS publishes. We do not upsample, as that would invent structure the instruments never measured.</li>
-    <li>Gliders and moorings are supported by the design but not demonstrated, because no reachable public source for Indian Ocean gliders was found in the time available.</li>
     <li>The internal INCOIS archive needs credentials we do not have.</li>
   </ul>
 </section>
@@ -600,7 +614,7 @@
   <h2>Impact and benefits</h2>
 
   <figure>
-    <img src="../ppt/images/10-impact.png" alt="Impact summary showing four audiences and before-and-after comparisons.">
+    <img src="../ppt/images/S5-benefits.png" alt="Impact summary showing four audiences and before-and-after comparisons.">
     <figcaption>Who benefits, and what changes for them.</figcaption>
   </figure>
 
@@ -645,9 +659,11 @@
   <div class="box">
     <span class="label">A worked example from the running system</span>
     <p>
-      Argo float 2902306, in the Arabian Sea off Oman, July 2026. The platform reports 119 depths
-      compared, with the model reading on average 2.16&nbsp;&deg;C warmer than the instrument
-      measured. That is not a defect in the tool: it is the Arabian Sea upwelling season, when
+      Argo float 2902306, in the Arabian Sea off Oman, 21.6&nbsp;&deg;N 60.9&nbsp;&deg;E, at the
+      last analysis of this build. The platform reports 994 depths compared, with the model
+      reading on average 0.50&nbsp;&deg;C warmer than the instrument measured and a root-mean-square
+      gap of 0.63&nbsp;&deg;C. That is not a defect in the tool: it is the Arabian Sea upwelling
+      season, when
       cold water is driven up from below and a 1&deg; gridded analysis smooths it away. A
       forecaster would want to know that before issuing an advisory for that region, and today
       there is no quick way to find it out.
@@ -694,7 +710,7 @@
     <p>
       This project was built with AI assistance, and we would say so if asked. What matters is
       what was verified rather than assumed: every data endpoint was tested with real requests
-      before being relied on, the scientific logic carries 54 automated tests, rendering defects
+      before being relied on, the scientific logic carries 377 automated tests, rendering defects
       were diagnosed by measuring pixel extents and GPU state rather than by eye, and every
       number quoted in this document comes from the running system. Two findings in these pages -
       that INCOIS runs a public ERDDAP, and that a float in this region reports impossible
@@ -757,7 +773,7 @@
       <tr><td>Can it predict cyclones?</td><td>No, and it does not claim to. It shows the ocean conditions that determine how much energy a cyclone can draw on. Forecasting is a separate discipline; this makes one of its inputs visible.</td></tr>
       <tr><td>How much would this cost to run?</td><td>Effectively nothing. It currently runs on free static hosting, with no licences, no databases and no compute servers.</td></tr>
       <tr><td>What is the hardest part technically?</td><td>Making a monotonic field legible. Ocean temperature just decreases with depth, so a naive 3D render is an opaque warm lid over darkness. Weighting opacity by rate of change is what solves it, and it took several attempts.</td></tr>
-      <tr><td>How long did it take?</td><td>Built for this hackathon, with 54 automated tests and nine written decision records.</td></tr>
+      <tr><td>How long did it take?</td><td>Built for this hackathon, with 377 automated tests and sixteen written decision records.</td></tr>
       <tr><td>What would you do next?</td><td>Render geostrophic currents as 3D flow, add a bias map showing model error at every float across the whole EEZ, and connect the internal INCOIS archive.</td></tr>
     </tbody>
   </table>

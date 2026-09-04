@@ -6,7 +6,30 @@ __pycache__/
 node_modules/
 web/dist/
 web/shots/
+# The inbox for frames grabbed by hand from a real browser. They are promoted into
+# `assets/screenshots/` by `scripts/normalise_screenshot.py`, which is the committed copy; the
+# raw PNGs are four times the size and nothing reads them again.
+finalimages/
+# Throwaway measurement scripts. Most of these answer one question once and are deleted, which
+# is why the wildcard is here - but three of them are the project's verification harness, are
+# named in CLAUDE.md's own Commands block, and have to survive a clone.
 web/probe*.mjs
+!web/probe-hazard.mjs
+!web/probe-requirements.mjs
+!web/probe-controls.mjs
+!web/probe-bias.mjs
+!web/probe-isolate.mjs
+!web/probe-section.mjs
+!web/probe-drift.mjs
+!web/probe-upload.mjs
+!web/probe-guide.mjs
+!web/probe-particles.mjs
+!web/probe-tour.mjs
+!web/probe-outreach.mjs
+!web/probe-landing.mjs
+# Not a probe: the PNG decoder the probes measure with. CLAUDE.md forbids diffing PNG bytes for
+# a magnitude, and this is what makes that possible without an image dependency.
+!web/probe-pixels.mjs
 
 # Generated CA bundle - rebuilt on demand from certifi plus the committed intermediate.
 pipeline/certs/_bundle.pem

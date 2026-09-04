@@ -1,0 +1,130 @@
+{
+ "total": 377,
+ "modules": [
+  {
+   "module": "test_netcdf_source.py",
+   "tests": 27,
+   "defends": "Reading a NetCDF file somebody hands us, and refusing the ones we cannot read."
+  },
+  {
+   "module": "test_residuals.py",
+   "tests": 26,
+   "defends": "Where the model most disagrees with the instruments, ranked and mapped."
+  },
+  {
+   "module": "test_drift.py",
+   "tests": 25,
+   "defends": "Drift: where the analysis says a thing in the water would go, and where a float actually went."
+  },
+  {
+   "module": "test_anomaly.py",
+   "tests": 24,
+   "defends": "The anomaly Field is arithmetic, so the tests are mostly about what it must refuse to do: invent a baseline it does not have, survive a single Timestep, or let land acquire a departure."
+  },
+  {
+   "module": "test_palettes.py",
+   "tests": 22,
+   "defends": "The banded palette has to survive the trip through the byte encoder."
+  },
+  {
+   "module": "test_wms.py",
+   "tests": 22,
+   "defends": "WMS 1.3.0, with the axis-order trap tested first."
+  },
+  {
+   "module": "test_upload.py",
+   "tests": 21,
+   "defends": "The upload endpoint: what it accepts, what it refuses, and what it says when it refuses."
+  },
+  {
+   "module": "test_dap.py",
+   "tests": 19,
+   "defends": "The OPeNDAP endpoint, checked against a real DAP client."
+  },
+  {
+   "module": "test_collocation.py",
+   "tests": 17,
+   "defends": "Covered by this module."
+  },
+  {
+   "module": "test_section.py",
+   "tests": 17,
+   "defends": "The vertical section: depth against distance along a line somebody drew."
+  },
+  {
+   "module": "test_argo_qc.py",
+   "tests": 16,
+   "defends": "Argo's own quality flags, and the fallback chain that could not fire without them."
+  },
+  {
+   "module": "test_coverage.py",
+   "tests": 16,
+   "defends": "Covered by this module."
+  },
+  {
+   "module": "test_hazard.py",
+   "tests": 15,
+   "defends": "The five disaster-management Fields, checked against physics rather than against themselves."
+  },
+  {
+   "module": "test_volume.py",
+   "tests": 13,
+   "defends": "Covered by this module."
+  },
+  {
+   "module": "test_argo.py",
+   "tests": 12,
+   "defends": "Covered by this module."
+  },
+  {
+   "module": "test_thermocline.py",
+   "tests": 12,
+   "defends": "The depth of an isotherm is a threshold operation on a column, and threshold operations are where the quiet mistakes live: an off-by-one bracket, an inversion picked up from the wrong end, a column that never crosses coming back as zero instead of missing."
+  },
+  {
+   "module": "test_density.py",
+   "tests": 11,
+   "defends": "Density is the first Field that is computed rather than fetched, so the tests have to do two jobs: pin the TEOS-10 chain against an independent evaluation of it, and check the physics comes out the right way up."
+  },
+  {
+   "module": "test_climatology.py",
+   "tests": 10,
+   "defends": "Departure from a real climatological normal, rather than from four months of its own."
+  },
+  {
+   "module": "test_osmc.py",
+   "tests": 10,
+   "defends": "Moorings, from the real-time GTS feed."
+  },
+  {
+   "module": "test_bgc.py",
+   "tests": 8,
+   "defends": "BGC-Argo: the same programme, the same server, one more quantity."
+  },
+  {
+   "module": "test_depth_warp.py",
+   "tests": 8,
+   "defends": "Covered by this module."
+  },
+  {
+   "module": "test_glider.py",
+   "tests": 8,
+   "defends": "The glider Source Adapter, and the finding it produces."
+  },
+  {
+   "module": "test_grid.py",
+   "tests": 7,
+   "defends": "Covered by this module."
+  },
+  {
+   "module": "test_profile_columns.py",
+   "tests": 6,
+   "defends": "The Source Adapter seam, tested where it actually bends."
+  },
+  {
+   "module": "test_field_specs.py",
+   "tests": 5,
+   "defends": "Which Fields may be cut by an isosurface, asserted across every declaration at once."
+  }
+ ]
+}

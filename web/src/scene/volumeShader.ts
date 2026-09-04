@@ -10,6 +10,8 @@
  * removes a matrix inverse per fragment, which is not free on integrated graphics.
  */
 
+import { TRANSFER_GLSL } from "../transfer";
+
 export const volumeVertexShader = /* glsl */ `
 out vec3 vWorldPosition;
 
@@ -30,6 +32,11 @@ uniform vec3  uBoxMin;
 uniform vec3  uBoxMax;
 uniform float uWindowMin;     // Transfer Function window, normalised into the encoded range
 uniform float uWindowMax;
+// 1 for a logarithmic colour scale. PS 26067 names log and linear by hand, and this was cut once
+// because the shader bent the water while the colourbar stayed straight - so the curve itself
+// lives in transfer.ts and is inlined below, and the panel draws its swatch through the very
+// same function. There is no second copy to drift.
+uniform float uLog;
 uniform float uOpacity;
 uniform float uSteps;
 uniform float uDepthFrom;     // depth-slice gate, 0 = surface, 1 = floor
@@ -43,6 +50,15 @@ uniform vec3  uFocusMax;
 uniform float uFocusStrength; // 0 = draw everything, 1 = draw only the Feature
 uniform float uIsoValue;      // normalised; ignored unless uIsoEnabled
 uniform float uIsoEnabled;
+// 1 on a diverging Field, where the isosurface has to be drawn on BOTH sides of the midpoint.
+//
+// A contour of departure at +0.3 degC used to enclose only the water that warmed, and drew
+// nothing at all for water that had cooled by two degrees - half the field invisible, with
+// nothing on screen saying so. On a diverging Field the encoded range is symmetric, so the
+// matching negative value is simply 1 - uIsoValue, and each skin takes its colour from its own
+// end of the palette. That also settles a second confusion: the two colours a reader saw were
+// one value under a hard light, and now they are two values.
+uniform float uIsoMirror;
 uniform float uVolumeEnabled;
 uniform float uEmphasis;   // how hard to favour where the field is changing
 uniform vec3  uLightDirection;
@@ -52,6 +68,25 @@ in vec3 vWorldPosition;
 out vec4 fragColor;
 
 const int MAX_STEPS = 384;
+
+/*
+ * How much ocean a cell needs before an isosurface may be drawn through it.
+ *
+ * The haze can be drawn anywhere there is any water at all, because it fades and nobody reads a
+ * position off it. A **surface** is different: it asserts "the value is exactly this, here", and
+ * near the coast that assertion is made out of a neighbouring cell's number. Masked cells are
+ * back-filled from their nearest real neighbour so that linear filtering stays physical - see
+ * pipeline/samudra/volume.py - and the coverage channel is filtered too, so it ramps from ocean
+ * to land over about one cell, which on this grid is 110 km. (No backticks in here: this whole
+ * shader is a template literal, and one would end the string.)
+ *
+ * At the old floor of 0.02 the surface therefore kept going almost a full cell past the real
+ * coast, drawn from borrowed values, which is what put those sheets over India and Sri Lanka.
+ * 0.6 keeps a crossing only where the sample is more than half ocean; the ramp to 0.9 stops that
+ * cut being a second staircase.
+ */
+const float ISO_COVERAGE_FLOOR = 0.6;
+const float ISO_COVERAGE_FULL  = 0.9;
 
 vec2 intersectBox(vec3 origin, vec3 direction) {
   vec3 inverseDir = 1.0 / direction;
@@ -80,10 +115,12 @@ vec3 toTexture(vec3 p) {
   return (fraction * (size - 1.0) + 0.5) / size;
 }
 
+${TRANSFER_GLSL}
+
 /** Value -> position along the Transfer Function, honouring the window and the scale. */
 float shape(float raw) {
   float t = (raw - uWindowMin) / max(uWindowMax - uWindowMin, 1e-5);
-  return clamp(t, 0.0, 1.0);
+  return applyScale(clamp(t, 0.0, 1.0));
 }
 
 /** Cheap hash, to dither the ray start and break up the wood-grain banding. */
@@ -120,6 +157,7 @@ void main() {
   vec4 accumulated = vec4(0.0);
   float t = hit.x + stepSize * hash(gl_FragCoord.xy + uTime);
   float previousIso = 0.0;
+  float previousIsoMirror = 0.0;
   bool haveIso = false;
 
   for (int i = 0; i < MAX_STEPS; i++) {
@@ -148,17 +186,37 @@ void main() {
         }
 
         if (uIsoEnabled > 0.5) {
+          float mirrorValue = 1.0 - uIsoValue;
           float signedDistance = sampled.r - uIsoValue;
-          if (haveIso && previousIso * signedDistance < 0.0 && inside > 0.5) {
+          float mirrorDistance = sampled.r - mirrorValue;
+          bool crossed = haveIso && previousIso * signedDistance < 0.0;
+          bool crossedMirror =
+            uIsoMirror > 0.5 && haveIso && previousIsoMirror * mirrorDistance < 0.0;
+
+          // A crossing in a cell that is mostly land is a crossing in a neighbour's value, so it
+          // is not drawn at all and the ray keeps going rather than stopping on it.
+          float isoCoverage = smoothstep(ISO_COVERAGE_FLOOR, ISO_COVERAGE_FULL, coverage);
+
+          if ((crossed || crossedMirror) && inside > 0.5 && isoCoverage > 0.004) {
             vec3 normal = -gradientAt(tc, texel);
-            float lambert = 0.35 + 0.65 * max(dot(normal, uLightDirection), 0.0);
-            vec3 isoColour = texture(uPalette, vec2(shape(uIsoValue), 0.5)).rgb;
-            vec3 lit = isoColour * lambert + vec3(0.25) * pow(max(dot(normal, uLightDirection), 0.0), 24.0);
-            accumulated.rgb += (1.0 - accumulated.a) * lit * coverage;
-            accumulated.a += (1.0 - accumulated.a) * coverage;
+            // A flatter light than before. At 0.35 ambient the unlit side of a pale surface came
+            // out dark brown while the lit side was cream, and a reader reasonably read those as
+            // two different values on a diverging palette. The surface still has to read as a
+            // surface, so the shading stays - it just no longer swamps the colour that carries
+            // the number.
+            float facing = max(dot(normal, uLightDirection), 0.0);
+            float lambert = 0.62 + 0.38 * facing;
+            // Whichever skin this ray actually hit takes its colour from its own value, so a
+            // warm contour and a cool contour are drawn in the palette's two ends.
+            float atValue = crossed ? uIsoValue : mirrorValue;
+            vec3 isoColour = texture(uPalette, vec2(shape(atValue), 0.5)).rgb;
+            vec3 lit = isoColour * lambert + vec3(0.18) * pow(facing, 24.0);
+            accumulated.rgb += (1.0 - accumulated.a) * lit * isoCoverage;
+            accumulated.a += (1.0 - accumulated.a) * isoCoverage;
             break;
           }
           previousIso = signedDistance;
+          previousIsoMirror = mirrorDistance;
           haveIso = true;
         }
 

@@ -54,6 +54,24 @@ class FieldSpec:
     # count: the field is a step function, so the "surface" is a set of axis-aligned slabs and
     # its shading normal is degenerate. False hides the control rather than drawing nonsense.
     isosurface: bool = True
+    # How this Field is drawn, because not every quantity is a body of water.
+    #
+    #   "volume" - a value at every depth. Ray-marched, as everything used to be.
+    #   "depth"  - a Field whose value IS a depth. Drawn as a warped sheet sitting inside the
+    #              block at that depth, so you watch the 26 degC isotherm dome up and collapse
+    #              across four months with the Floats sitting on it. No flat map can do that.
+    #   "column" - one number for the whole water column. Draped on the sea surface, because
+    #              that is honestly where a column total lives.
+    #   "vector" - a direction and a speed. Arrows on the chosen depth slice.
+    #
+    # A "depth" or "column" Field has no Volume at all and is never byte-quantised: it ships as
+    # float32 on the Grid's own horizontal axes. That is not an optimisation, it is the first
+    # rule - a sheet a user reads a depth off is answering a scientific question.
+    render: str = "volume"
+    # Which group of the Variable selector this belongs in. Thirteen Fields cannot be a flat
+    # list, and they are grouped the way a forecaster thinks rather than the way the data
+    # arrived: "state", "hazard", "circulation", "evidence", "change".
+    group: str = "state"
 
 
 @dataclass(frozen=True)

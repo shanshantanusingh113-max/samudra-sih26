@@ -3,26 +3,48 @@ import {
   BoxGeometry,
   BufferAttribute,
   BufferGeometry,
+  ClampToEdgeWrapping,
   Color,
   Data3DTexture,
+  DataTexture,
   DoubleSide,
   GLSL3,
+  LinearFilter,
   LineBasicMaterial,
   LineSegments,
   Mesh,
   PerspectiveCamera,
   Points,
+  RGBAFormat,
   Scene,
   ShaderMaterial,
   Texture,
+  UnsignedByteType,
   Vector2,
   Vector3,
   WebGLRenderer,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
-import type { AnomalyFeature, Manifest, OceanFloat } from "../types";
+import type {
+  AnomalyFeature,
+  FieldSpec,
+  Manifest,
+  OceanFloat,
+  SurfaceField,
+  VectorField,
+} from "../types";
 import type { Theme } from "../store";
+import { biasColour, colourOf, liftedPalette, surfacePixels } from "../palette";
+import { ParticleFlow } from "../particles";
+import { smoothSurface } from "../surface";
+import { isDiverging, transfer, type Scale } from "../transfer";
+import {
+  arrowFragmentShader,
+  arrowVertexShader,
+  sheetFragmentShader,
+  sheetVertexShader,
+} from "./fieldShaders";
 import {
   coastlineFragmentShader,
   coastlineVertexShader,
@@ -34,6 +56,20 @@ import { axisToDepth, boxBounds, depthToAxis, depthToY, latToZ, lonToX, makeFram
 import { freshness, positionAt, trackUpTo } from "../floatTime";
 import { morphedPosition } from "./morph";
 import { volumeFragmentShader, volumeVertexShader } from "./volumeShader";
+
+/**
+ * One instrument's residual, **and the position it was measured at**.
+ *
+ * The two travel together on purpose. A residual belongs to one cast on one date, so a map of
+ * residuals is a composite of every analysis in the bake and not a picture of the Timestep on
+ * screen. Carrying the position with the number is what stops the scene drawing the two apart.
+ */
+export interface BiasMark {
+  /** Signed, as a fraction of the Field's own encoded range. */
+  bias: number;
+  lon: number;
+  lat: number;
+}
 
 export interface ViewState {
   morph: number;
@@ -55,16 +91,72 @@ export interface ViewState {
   selectedFloatId: string | null;
   showFloats: boolean;
   showTracks: boolean;
-  /** 0 hides the Copernicus current overlay; 1 draws it at full strength. */
-  currentsOpacity: number;
   /** Which Field is drawn. The Anomaly Features belong to one of them and to no other. */
   fieldKey: string;
+  /**
+   * The Field's own spec and palette, needed because three of the render types colour themselves
+   * on the CPU rather than in a shader - see `fieldShaders.ts` for why that is the honest way
+   * round.
+   */
+  field: FieldSpec | null;
+  paletteColours: number[][];
+  /** Linear or logarithmic Transfer Function. One curve, shared with the colourbar. */
+  scale: Scale;
+  /** This Timestep's hazard Field, when one is selected. Not a Volume; float32 on the Grid. */
+  surface: SurfaceField | null;
+  /** This Timestep's current components, when the Currents Field is selected. */
+  vectors: VectorField | null;
+  /** Moving dots or arrows. Two styles of one layer; see `store.ts`. */
+  currentStyle: "particles" | "arrows";
   /** This Timestep's Anomaly Features, and which of them is open. */
   anomalies: AnomalyFeature[];
   showAnomalies: boolean;
   selectedAnomaly: number | null;
   /** Hide every part of the water except the selected Anomaly Feature. */
   isolateAnomaly: boolean;
+  /**
+   * Colour every instrument by how far the model sat from it, instead of by its own colour.
+   *
+   * The tint is computed on the CPU, in `palette.ts`, exactly like the Sheet's and the arrows' -
+   * so the dot in the water and the swatch in the panel go through one function and cannot
+   * disagree. Instruments with no comparison for the Field on screen are absent from the map
+   * and are drawn hollow rather than being given the palette's midpoint, which would say the
+   * model agreed with an instrument nothing compared.
+   */
+  biasMode: boolean;
+  /** Signed bias per instrument id, as a fraction of the Field's own range. Null off-mode. */
+  biasByInstrument: Map<string, BiasMark> | null;
+
+  /**
+   * Where the bias palette runs out, as a fraction of the Field's own range.
+   *
+   * The Field's own ninetieth percentile, measured by the bake. It is passed in rather than
+   * assumed because the scene once used the verdict threshold instead, and at that scale the
+   * median instrument sat 2% of the way along the palette: 90% of the markers came out the
+   * same pale midpoint and the whole map read as white.
+   */
+  biasSaturateAt?: number;
+  /**
+   * The drift trajectory from a dropped pin, as [lon, lat] pairs, and the pin itself.
+   *
+   * Integrated in `drift.ts` from the same float32 current files the arrows are drawn from -
+   * the Grid, never a Volume, because every step of it is a measurement.
+   */
+  driftPath: [number, number][] | null;
+  driftPin: { lon: number; lat: number } | null;
+  /**
+   * The selected Float's *predicted* track: where the analysed current says it should have gone
+   * from its own first Fix. Drawn against the observed Track already on screen, which is the
+   * whole point - it is the only drift demo in this competition with a measurement beside it.
+   */
+  predictedTrack: [number, number][] | null;
+  /**
+   * The line a vertical section is cut along: two points, or null.
+   *
+   * Drawn in the accent colour rather than the drift violet, because it is a different kind of
+   * claim: the drift lines are a prediction about water and this is only where a chart was cut.
+   */
+  sectionLine: [number, number][] | null;
   theme: Theme;
 }
 
@@ -78,7 +170,28 @@ export interface ViewState {
  * flat ocean straight over the water column - the volume rendered perfectly and was covered up.
  * Ordering the passes by hand is the fix; it is also simply what we mean.
  */
-const ORDER = { surface: 0, lines: 5, volume: 10, markers: 20, anomalies: 25 } as const;
+const ORDER = {
+  surface: 0,
+  lines: 5,
+  volume: 10,
+  // After the water and before the markers. A sheet sitting inside the block has to be drawn
+  // over the haze it is suspended in, or it is a sheet nobody can see; the Floats still draw
+  // over it, because a Float is a specific instrument and the sheet is a surface it sits on.
+  sheet: 12,
+  arrows: 14,
+  markers: 20,
+  anomalies: 25,
+} as const;
+
+/**
+ * The palette the bias map is drawn in.
+ *
+ * `balance` is cmocean's diverging scale and is already what the Temperature Anomaly and the
+ * Analysis Spread use, so a reader who has seen either of those already knows that the pale
+ * middle means "no departure" and the two ends mean opposite signs. A bias is the same shape of
+ * quantity, so it gets the same colours rather than a fourth convention.
+ */
+const BIAS_PALETTE = "balance";
 
 /** The Field the Anomaly Features were found in. Must match the FieldSpec key in bake.py. */
 const ANOMALY_FIELD = "temperature_anomaly";
@@ -102,10 +215,18 @@ const SCENE_COLOURS = {
     outline: new Color(0x07111d),
     frame: new Color(0x3d5a76),
     track: new Color(0xf0a04b),
+    // The drift the analysis implies, against the orange Track that was measured. Violet
+    // because it has to be unmistakable next to both the orange track and the pale blue
+    // coastline, and because a reader should never have to wonder which line is the model.
+    drift: new Color(0xc39bff),
+    // Where a vertical section was cut. A different claim from the drift lines - it is not a
+    // prediction about water, only where a chart was taken - so a different colour.
+    section: new Color(0x63e6c4),
     rim: new Color(0.1, 0.28, 0.42),
     shadeFloor: 0.62,
     coastOpacity: 0.75,
     trackOpacity: 0.5,
+    driftOpacity: 0.95,
   },
   light: {
     ocean: new Color(0xdff2f8),
@@ -114,10 +235,13 @@ const SCENE_COLOURS = {
     outline: new Color(0xffffff),
     frame: new Color(0x6f9cb0),
     track: new Color(0xc2621a),
+    drift: new Color(0x6b3fc4),
+    section: new Color(0x0b7a63),
     rim: new Color(0.0, 0.0, 0.0),
     shadeFloor: 0.88,
     coastOpacity: 1.0,
     trackOpacity: 0.7,
+    driftOpacity: 1.0,
   },
 } as const;
 
@@ -184,18 +308,35 @@ export class OceanScene {
   }
 
   /**
-   * The Copernicus current overlay for the Timestep on screen.
+   * Paint a Field that has no Volume onto the sea surface, or clear it.
    *
-   * Takes ownership and releases the one it replaces, the same contract `setPalette` has. Null
-   * clears it, which is what happens when the bake could not reach Copernicus at all - the
-   * manifest then carries no currents block and the control is never offered.
+   * Cyclone Heat Potential is one number for the whole water column, so there is nothing for a
+   * ray to march through and the globe would otherwise show whatever Volume happened to be on
+   * the GPU - which is the last Field's data under this Field's name, the worst failure
+   * available. The pixels arrive already coloured by `palette.ts`, through the same two
+   * functions that draw the colourbar.
+   *
+   * Takes ownership and releases the texture it replaces, the same contract `setPalette` has.
    */
-  setCurrents(texture: Texture | null): void {
+  private setSurfacePixels(pixels: Uint8Array | null, width: number, height: number): void {
     const material = this.surface?.material as ShaderMaterial | undefined;
-    const slot = material?.uniforms.uCurrents;
+    const slot = material?.uniforms.uSurface;
     if (!slot) return;
     (slot.value as Texture | null)?.dispose?.();
+
+    if (!pixels) {
+      slot.value = null;
+      this.setUniform(this.surface, "uSurfaceOn", 0);
+      return;
+    }
+    const texture = new DataTexture(pixels, width, height, RGBAFormat, UnsignedByteType);
+    texture.minFilter = LinearFilter;
+    texture.magFilter = LinearFilter;
+    texture.wrapS = ClampToEdgeWrapping;
+    texture.wrapT = ClampToEdgeWrapping;
+    texture.needsUpdate = true;
     slot.value = texture;
+    this.setUniform(this.surface, "uSurfaceOn", 1);
   }
 
   /** Debug hook so a screenshot harness can assert on real geometry rather than pixels. */
@@ -248,7 +389,33 @@ export class OceanScene {
   private boxFrame?: LineSegments;
   private floatPoints?: Points;
   private anomalyPoints?: Points;
+  private fieldSheet?: Mesh;
+  private arrows?: LineSegments;
+  private particleLines?: LineSegments;
+  private readonly flow = new ParticleFlow(PARTICLE_COUNT);
+  /** Which field, Level and Timestep the population is currently drifting through. */
+  private lastFlowKey = "";
+  /**
+   * What the dots need every frame, captured when the view state was last pushed.
+   *
+   * The trails move on the render loop rather than on a store change, so `advanceFlow` runs
+   * between pushes and cannot read `this.state` for a colour: a Field switch would recolour
+   * the dots a frame before the geometry that goes with it. Everything it needs is frozen here
+   * by `updateParticles` instead.
+   */
+  private flowContext: {
+    field: FieldSpec;
+    windowMin: number;
+    windowMax: number;
+    scale: Scale;
+    lifted: number[][];
+    trail: [number, number, number];
+  } | null = null;
   private trackLines?: LineSegments;
+  private driftLine?: LineSegments;
+  private predictedLine?: LineSegments;
+  private sectionLine?: LineSegments;
+  private driftPinPoints?: Points;
   private selectedColumn?: LineSegments;
 
   private currentVolume?: Data3DTexture;
@@ -256,7 +423,13 @@ export class OceanScene {
   private lastBoxKey = "";
   private lastColumnKey = "";
   private lastTrackTime = Number.NaN;
+  private lastDriftKey = "";
+  private lastPredictedKey = "";
+  private lastSectionKey = "";
   private lastAnomalyKey = "";
+  private lastSheetKey = "";
+  private lastArrowKey = "";
+  private lastDrapeKey = "";
   private lastTheme: Theme | null = null;
   private state?: ViewState;
   private frameId = 0;
@@ -301,6 +474,10 @@ export class OceanScene {
     this.buildFloats();
     this.buildAnomalies();
     this.buildTracks();
+    this.buildDrift();
+    this.buildFieldSheet();
+    this.buildArrows();
+    this.buildParticles();
   }
 
   // ---------------------------------------------------------------- geometry
@@ -357,8 +534,9 @@ export class OceanScene {
         uShadeFloor: { value: 0.62 },
         uRimStrength: { value: 1 },
         uRimColour: { value: SCENE_COLOURS.dark.rim.clone() },
-        uCurrents: { value: null },
-        uCurrentsOn: { value: 0 },
+        uLog: { value: 0 },
+        uSurface: { value: null },
+        uSurfaceOn: { value: 0 },
       },
     });
 
@@ -416,12 +594,14 @@ export class OceanScene {
         uBoxMax: { value: new Vector3() },
         uWindowMin: { value: 0 },
         uWindowMax: { value: 1 },
+        uLog: { value: 0 },
         uOpacity: { value: 0.012 },
         uSteps: { value: 128 },
         uDepthFrom: { value: 0 },
         uDepthTo: { value: 1 },
         uIsoValue: { value: 0.5 },
         uIsoEnabled: { value: 0 },
+        uIsoMirror: { value: 0 },
         uVolumeEnabled: { value: 1 },
         uEmphasis: { value: 0.85 },
         uFocusMin: { value: new Vector3(0, 0, 0) },
@@ -473,6 +653,15 @@ export class OceanScene {
       anchored[index] = item.kind === "mooring" ? 1 : 0;
     });
     geometry.setAttribute("anchored", new BufferAttribute(anchored, 1));
+    // The bias map, on the markers themselves. `biasTint` is an RGB the CPU computed through
+    // `palette.ts`, and `biasKnown` is 0 for an instrument the Field on screen has no
+    // comparison for - drawn hollow, because the palette's midpoint would claim agreement
+    // where there was no measurement at all.
+    geometry.setAttribute(
+      "biasTint",
+      new BufferAttribute(new Float32Array(this.floats.length * 3), 3),
+    );
+    geometry.setAttribute("biasKnown", new BufferAttribute(new Float32Array(this.floats.length), 1));
 
     const material = new ShaderMaterial({
       glslVersion: GLSL3,
@@ -485,23 +674,30 @@ export class OceanScene {
         uOutline: { value: SCENE_COLOURS.dark.outline.clone() },
         uSelectedColour: { value: SELECTED_COLOUR },
         uPulse: { value: 0 },
+        uBiasMode: { value: 0 },
       },
       vertexShader: /* glsl */ `
         in vec2 lonLat;
         in float selected;
         in float fresh;
         in float anchored;
+        in vec3 biasTint;
+        in float biasKnown;
         uniform float uMorph;
         uniform float uSize;
         out float vSelected;
         out float vFresh;
         out float vAnchored;
+        out vec3 vBiasTint;
+        out float vBiasKnown;
         const float PI = 3.141592653589793;
         const float EARTH_RADIUS = ${EARTH_RADIUS.toFixed(6)};
         void main() {
           vSelected = selected;
           vFresh = fresh;
           vAnchored = anchored;
+          vBiasTint = biasTint;
+          vBiasKnown = biasKnown;
           if (fresh <= 0.0) {
             // Not reporting near this Timestep: park it behind the camera so it never draws.
             gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
@@ -524,9 +720,12 @@ export class OceanScene {
         uniform vec3 uOutline;
         uniform vec3 uSelectedColour;
         uniform float uPulse;
+        uniform float uBiasMode;
         in float vSelected;
         in float vFresh;
         in float vAnchored;
+        in vec3 vBiasTint;
+        in float vBiasKnown;
         out vec4 fragColor;
         void main() {
           vec2 offset = gl_PointCoord - 0.5;
@@ -543,8 +742,15 @@ export class OceanScene {
           float core = 1.0 - smoothstep(0.17, 0.23, distance);
           float body = 1.0 - smoothstep(0.33, 0.39, distance);
 
-          vec3 fill = mix(uColour, uSelectedColour, vSelected);
-          vec3 colour = mix(uOutline, fill, core);
+          // On the bias map the fill carries the number, so it replaces the plain marker
+          // colour but never the selection colour - losing track of which instrument is open
+          // would cost more than the tint gains. An instrument with no comparison for this
+          // Field keeps its plain colour and loses its bright core, so it reads as "here, but
+          // not measured" rather than as a value.
+          vec3 mapped = mix(uColour, vBiasTint, uBiasMode * vBiasKnown);
+          vec3 fill = mix(mapped, uSelectedColour, vSelected);
+          float hollow = uBiasMode * (1.0 - vBiasKnown) * (1.0 - vSelected);
+          vec3 colour = mix(uOutline, fill, core * (1.0 - hollow));
           float alpha = body * (0.85 + 0.15 * core) * vFresh;
 
           // The selected Float breathes, so the eye can find it again after the camera moves.
@@ -665,6 +871,17 @@ export class OceanScene {
     floatMaterial?.uniforms.uColour?.value.copy(palette.float);
     floatMaterial?.uniforms.uOutline?.value.copy(palette.outline);
 
+    for (const object of [this.driftLine, this.predictedLine, this.driftPinPoints]) {
+      const material = object?.material as ShaderMaterial | undefined;
+      material?.uniforms.uColour?.value.copy(palette.drift);
+    }
+    (this.sectionLine?.material as ShaderMaterial | undefined)?.uniforms.uColour?.value.copy(
+      palette.section,
+    );
+    this.setUniform(this.sectionLine, "uOpacity", palette.driftOpacity);
+    this.setUniform(this.driftLine, "uOpacity", palette.driftOpacity);
+    this.setUniform(this.predictedLine, "uOpacity", palette.driftOpacity);
+
     if (this.boxFrame) (this.boxFrame.material as LineBasicMaterial).color.copy(palette.frame);
   }
 
@@ -674,7 +891,16 @@ export class OceanScene {
     const frame = makeFrame(this.manifest.volume, state.exaggeration);
     const { min, max } = boxBounds(frame);
 
-    for (const object of [this.surface, this.coastlines, this.trackLines, this.floatPoints]) {
+    for (const object of [
+      this.surface,
+      this.coastlines,
+      this.trackLines,
+      this.floatPoints,
+      this.driftLine,
+      this.predictedLine,
+      this.sectionLine,
+      this.driftPinPoints,
+    ]) {
       this.setUniform(object, "uMorph", state.morph);
     }
 
@@ -695,6 +921,8 @@ export class OceanScene {
     }
     this.setUniform(this.surface, "uWindowMin", state.windowMin);
     this.setUniform(this.surface, "uWindowMax", state.windowMax);
+    this.setUniform(this.surface, "uLog", state.scale === "log" ? 1 : 0);
+    this.updateDrape(state);
 
     if (this.volume) {
       const material = this.volume.material as ShaderMaterial;
@@ -708,15 +936,20 @@ export class OceanScene {
       material.uniforms.uDepthTo!.value = state.depthTo;
       material.uniforms.uIsoEnabled!.value = state.isoEnabled ? 1 : 0;
       material.uniforms.uIsoValue!.value = state.isoValue;
+      // Both skins on a diverging Field. `isDiverging` is the same test the panel uses to label
+      // the slider with a plus-or-minus, so the control and the water cannot disagree about how
+      // many surfaces are being drawn.
+      material.uniforms.uIsoMirror!.value = isDiverging(state.field) ? 1 : 0;
       material.uniforms.uVolumeEnabled!.value = state.volumeEnabled ? 1 : 0;
       material.uniforms.uEmphasis!.value = state.emphasis;
+      material.uniforms.uLog!.value = state.scale === "log" ? 1 : 0;
       this.applyFocus(material, state);
+      // A Field with no Volume has nothing here to march through, and the texture on the GPU is
+      // the last Field's. Drawing it would put one Field's data under another Field's name.
+      this.volume.visible = state.morph > 0.55 && !isSurfaceField(state.field);
 
       this.volume.position.set((min[0] + max[0]) / 2, (min[1] + max[1]) / 2, (min[2] + max[2]) / 2);
       this.volume.scale.set(max[0] - min[0], max[1] - min[1], max[2] - min[2]);
-      // The Volume only exists once the world has flattened; on the globe it would be a box
-      // floating incoherently off the limb.
-      this.volume.visible = state.morph > 0.55;
     }
 
     if (this.boxFrame) {
@@ -738,21 +971,70 @@ export class OceanScene {
       const selected = this.floatPoints.geometry.getAttribute("selected") as BufferAttribute;
       const fresh = this.floatPoints.geometry.getAttribute("fresh") as BufferAttribute;
       const lonLat = this.floatPoints.geometry.getAttribute("lonLat") as BufferAttribute;
+      const biasTint = this.floatPoints.geometry.getAttribute("biasTint") as BufferAttribute;
+      const biasKnown = this.floatPoints.geometry.getAttribute("biasKnown") as BufferAttribute;
+      this.setUniform(this.floatPoints, "uBiasMode", state.biasMode ? 1 : 0);
+
+      // The bias map draws every instrument where its *compared cast* was, not where it is at
+      // the Timestep on screen. A residual was measured at one position on one date; drawing it
+      // wherever the float has drifted to since would put a number on the wrong water, which is
+      // the same mistake `positions_from` exists to prevent on the pipeline side. The comment
+      // said this for a round while the line below still called `positionAt`.
+      //
+      // The map is therefore a **composite of all twelve analyses** and does not thin out with
+      // the timeline. That is the second half of the same fix: a marker gated on
+      // `freshness(fix.ageDays)` left 196 of 233 on screen at the step the app opens on, under
+      // a headline counting 233, and a row in the ranked list could point at nothing at all.
+      // The panel says the map is a composite; nothing else here may quietly disagree with it.
+      const biases = state.biasMode ? state.biasByInstrument : null;
 
       this.floats.forEach((item, index) => {
+        const mark = biases?.get(item.id);
         const fix = positionAt(item, state.timeMs);
         selected.setX(index, item.id === state.selectedFloatId ? 1 : 0);
-        fresh.setX(index, fix ? freshness(fix.ageDays) : 0);
-        if (fix) lonLat.setXY(index, fix.lon, fix.lat);
+
+        if (biases) {
+          // Where the comparison was taken, or - for an instrument this Field never compared -
+          // its newest Fix, so the hollow ring the map key names is on screen at every step.
+          if (mark) lonLat.setXY(index, mark.lon, mark.lat);
+          else lonLat.setXY(index, item.latest.lon, item.latest.lat);
+          fresh.setX(index, 1);
+        } else {
+          fresh.setX(index, fix ? freshness(fix.ageDays) : 0);
+          if (fix) lonLat.setXY(index, fix.lon, fix.lat);
+        }
+
+        const tint =
+          mark === undefined
+            ? null
+            : biasColour(
+                mark.bias,
+                this.manifest.palettes[BIAS_PALETTE] ?? [],
+                state.theme,
+                state.biasSaturateAt,
+              );
+        if (tint === null) {
+          // Either this Field never compared this instrument, or the bake shipped no scale to
+          // colour against. Both are "we cannot say", and both draw hollow - a colour on a
+          // scale nobody chose is what made the map read as white for a round.
+          biasKnown.setX(index, 0);
+        } else {
+          biasTint.setXYZ(index, tint[0] / 255, tint[1] / 255, tint[2] / 255);
+          biasKnown.setX(index, 1);
+        }
       });
       selected.needsUpdate = true;
       fresh.needsUpdate = true;
       lonLat.needsUpdate = true;
+      biasTint.needsUpdate = true;
+      biasKnown.needsUpdate = true;
     }
 
     this.updateAnomalies(state, frame);
-
-    this.setUniform(this.surface, "uCurrentsOn", state.currentsOpacity);
+    this.updateSheet(state, frame);
+    this.updateArrows(state, frame);
+    this.updateParticles(state, frame);
+    this.updateDrift(state);
 
     if (this.trackLines) {
       this.trackLines.visible = state.showTracks;
@@ -813,6 +1095,145 @@ export class OceanScene {
    * rather than discs so the water they are marking stays visible through them, and they draw
    * after everything - a marker hidden behind the haze it is labelling is not a marker.
    */
+  /**
+   * The two drift lines and the pin, all violet, all the same claim.
+   *
+   * One line is the trajectory from a dropped pin; the other is where the analysed current says
+   * the selected Float should have gone from its own first Fix. They are the same quantity - the
+   * drift the ocean analysis alone implies - so they are the same colour, and what distinguishes
+   * them is that one starts at a pin and the other starts at an instrument.
+   *
+   * They reuse the coastline shader, which is the one that already knows how to draw a lon/lat
+   * polyline through the globe-to-map morph. `renderOrder` is ORDER.lines, beside the Tracks
+   * they are meant to be read against - ADR 0006, because Three's centroid sort is meaningless
+   * for world-spanning geometry.
+   */
+  private buildDrift(): void {
+    const line = (colour = SCENE_COLOURS.dark.drift) => {
+      const geometry = new BufferGeometry();
+      geometry.setAttribute("lonLat", new BufferAttribute(new Float32Array(0), 2));
+      geometry.setAttribute("position", new BufferAttribute(new Float32Array(0), 3));
+      const object = new LineSegments(
+        geometry,
+        new ShaderMaterial({
+          glslVersion: GLSL3,
+          vertexShader: coastlineVertexShader,
+          fragmentShader: coastlineFragmentShader,
+          transparent: true,
+          uniforms: {
+            uMorph: { value: 0 },
+            uColour: { value: colour.clone() },
+            uOpacity: { value: SCENE_COLOURS.dark.driftOpacity },
+          },
+        }),
+      );
+      object.renderOrder = ORDER.lines;
+      object.frustumCulled = false;
+      object.visible = false;
+      this.scene.add(object);
+      return object;
+    };
+    this.driftLine = line();
+    this.predictedLine = line();
+    this.sectionLine = line(SCENE_COLOURS.dark.section);
+
+    // The pin itself: one point, drawn as a ring so it reads as a place rather than as an
+    // instrument. A filled disc here would be a fifth kind of dot on a map that already has
+    // floats, buoys, anomaly rings and the selected marker.
+    const geometry = new BufferGeometry();
+    geometry.setAttribute("lonLat", new BufferAttribute(new Float32Array(2), 2));
+    geometry.setAttribute("position", new BufferAttribute(new Float32Array(3), 3));
+    this.driftPinPoints = new Points(
+      geometry,
+      new ShaderMaterial({
+        glslVersion: GLSL3,
+        transparent: true,
+        depthWrite: false,
+        uniforms: {
+          uMorph: { value: 0 },
+          uColour: { value: SCENE_COLOURS.dark.drift.clone() },
+        },
+        vertexShader: /* glsl */ `
+          in vec2 lonLat;
+          uniform float uMorph;
+          const float PI = 3.141592653589793;
+          const float EARTH_RADIUS = ${EARTH_RADIUS.toFixed(6)};
+          void main() {
+            float phi = radians(lonLat.x);
+            float theta = radians(lonLat.y);
+            float r = EARTH_RADIUS + 0.16;
+            vec3 sphere = vec3(r * cos(theta) * sin(phi), r * sin(theta), r * cos(theta) * cos(phi));
+            vec3 plane = vec3(lonLat.x, 0.16, -lonLat.y);
+            vec4 view = viewMatrix * vec4(mix(sphere, plane, uMorph), 1.0);
+            gl_Position = projectionMatrix * view;
+            gl_PointSize = 18.0 * (60.0 / -view.z);
+          }
+        `,
+        fragmentShader: /* glsl */ `
+          precision highp float;
+          uniform vec3 uColour;
+          out vec4 fragColor;
+          void main() {
+            float d = length(gl_PointCoord - 0.5);
+            if (d > 0.5) discard;
+            float ring = smoothstep(0.24, 0.30, d) * (1.0 - smoothstep(0.42, 0.48, d));
+            float dot_ = 1.0 - smoothstep(0.08, 0.13, d);
+            float alpha = clamp(ring + dot_, 0.0, 1.0);
+            if (alpha < 0.02) discard;
+            fragColor = vec4(uColour, alpha);
+          }
+        `,
+      }),
+    );
+    this.driftPinPoints.renderOrder = ORDER.markers;
+    this.driftPinPoints.frustumCulled = false;
+    this.driftPinPoints.visible = false;
+    this.scene.add(this.driftPinPoints);
+  }
+
+  /** Rebuild a drift polyline only when its points actually changed. */
+  private updateDrift(state: ViewState): void {
+    const apply = (
+      object: LineSegments | undefined,
+      points: [number, number][] | null,
+      lastKey: "lastDriftKey" | "lastPredictedKey" | "lastSectionKey",
+    ) => {
+      if (!object) return;
+      object.visible = !!points && points.length > 1;
+      const key = points ? `${points.length}|${points[0]?.[0]},${points[0]?.[1]}|${points[points.length - 1]?.[0]},${points[points.length - 1]?.[1]}` : "";
+      if (key === this[lastKey]) return;
+      this[lastKey] = key;
+      const lonLat: number[] = [];
+      for (let i = 0; points && i < points.length - 1; i++) {
+        const a = points[i];
+        const b = points[i + 1];
+        if (!a || !b) continue;
+        lonLat.push(a[0], a[1], b[0], b[1]);
+      }
+      object.geometry.dispose();
+      const geometry = new BufferGeometry();
+      geometry.setAttribute("lonLat", new BufferAttribute(new Float32Array(lonLat), 2));
+      geometry.setAttribute(
+        "position",
+        new BufferAttribute(new Float32Array((lonLat.length / 2) * 3), 3),
+      );
+      object.geometry = geometry;
+    };
+
+    apply(this.driftLine, state.driftPath, "lastDriftKey");
+    apply(this.predictedLine, state.predictedTrack, "lastPredictedKey");
+    apply(this.sectionLine, state.sectionLine, "lastSectionKey");
+
+    if (this.driftPinPoints) {
+      this.driftPinPoints.visible = !!state.driftPin;
+      if (state.driftPin) {
+        const lonLat = this.driftPinPoints.geometry.getAttribute("lonLat") as BufferAttribute;
+        lonLat.setXY(0, state.driftPin.lon, state.driftPin.lat);
+        lonLat.needsUpdate = true;
+      }
+    }
+  }
+
   private buildAnomalies(): void {
     const material = new ShaderMaterial({
       glslVersion: GLSL3,
@@ -938,6 +1359,490 @@ export class OceanScene {
     points.geometry = geometry;
   }
 
+  // ------------------------------------------------------- Fields that are not Volumes
+
+  /**
+   * The mesh three hazard Fields share.
+   *
+   * Depth of 26 degrees, Mixed Layer Depth and Isothermal Layer Depth all report a depth, so
+   * they are drawn as a surface sitting at that depth inside the block. Build it once and three
+   * Fields have it; the two column totals reuse the same mesh at the sea surface, which is where
+   * a whole-column number honestly lives.
+   *
+   * Colour is per vertex and computed on the CPU, by the same `colourOf` the colourbar swatch
+   * uses. No shader here knows a unit or a range, so none of them can disagree with the legend.
+   */
+  private buildFieldSheet(): void {
+    const material = new ShaderMaterial({
+      glslVersion: GLSL3,
+      vertexShader: sheetVertexShader,
+      fragmentShader: sheetFragmentShader,
+      transparent: true,
+      depthWrite: false,
+      side: DoubleSide, // you fly under the 26 degree surface, and it has to still be there
+      uniforms: {
+        uMorph: { value: 0 },
+        uOpacity: { value: 0.92 },
+        uFade: { value: 0 },
+      },
+    });
+
+    this.fieldSheet = new Mesh(emptySheetGeometry(), material);
+    this.fieldSheet.renderOrder = ORDER.sheet;
+    this.fieldSheet.frustumCulled = false;
+    this.fieldSheet.visible = false;
+    this.scene.add(this.fieldSheet);
+  }
+
+  private buildArrows(): void {
+    const material = new ShaderMaterial({
+      glslVersion: GLSL3,
+      vertexShader: arrowVertexShader,
+      fragmentShader: arrowFragmentShader,
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        uMorph: { value: 0 },
+        uOpacity: { value: 0.95 },
+      },
+    });
+
+    this.arrows = new LineSegments(emptySheetGeometry(), material);
+    this.arrows.renderOrder = ORDER.arrows;
+    this.arrows.frustumCulled = false;
+    this.arrows.visible = false;
+    this.scene.add(this.arrows);
+  }
+
+  /**
+   * The dots, drawn with the arrows' own shader.
+   *
+   * A trail is a run of short line segments whose alpha falls off towards the tail, and the
+   * arrow shader already takes a per-vertex `tint` with an alpha in it - so the two styles of
+   * this layer share a material as well as a palette, and neither can drift out of step with the
+   * colourbar. The buffers are allocated once at their largest and written in place; only the
+   * draw range moves, because a few thousand `new Float32Array` a second is how a smooth
+   * animation becomes a stuttering one.
+   */
+  private buildParticles(): void {
+    const material = new ShaderMaterial({
+      glslVersion: GLSL3,
+      vertexShader: arrowVertexShader,
+      fragmentShader: arrowFragmentShader,
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        uMorph: { value: 0 },
+        uOpacity: { value: 0.95 },
+      },
+    });
+
+    // The flow owns these arrays; the geometry is a view onto them, so `build` writing into the
+    // population is the same thing as writing into the vertex buffer.
+    const empty = this.flow.build(() => null);
+    const vertices = empty.lonLat.length / 2;
+    const geometry = new BufferGeometry();
+    geometry.setAttribute("lonLat", new BufferAttribute(empty.lonLat, 2));
+    geometry.setAttribute("tint", new BufferAttribute(empty.tint, 4));
+    geometry.setAttribute("depthY", new BufferAttribute(new Float32Array(vertices), 1));
+    geometry.setAttribute("position", new BufferAttribute(new Float32Array(vertices * 3), 3));
+    geometry.setDrawRange(0, 0);
+
+    this.particleLines = new LineSegments(geometry, material);
+    this.particleLines.renderOrder = ORDER.arrows;
+    this.particleLines.frustumCulled = false;
+    this.particleLines.visible = false;
+    this.scene.add(this.particleLines);
+  }
+
+  /**
+   * The sea-surface painting for a Field that has no Volume.
+   *
+   * On the globe this is the whole picture - a map of Cyclone Heat Potential over the region -
+   * and in the Volume View it is what the sheet mesh takes over from, because the sea surface is
+   * cut away there so you can see into the water.
+   */
+  private updateDrape(state: ViewState): void {
+    if (!isSurfaceField(state.field) || !state.surface || !state.field) {
+      if (this.lastDrapeKey !== "") {
+        this.lastDrapeKey = "";
+        this.setSurfacePixels(null, 0, 0);
+      }
+      return;
+    }
+    const key = [
+      state.field.key,
+      state.timestepIndex,
+      state.windowMin.toFixed(3),
+      state.windowMax.toFixed(3),
+      state.scale,
+      state.theme,
+    ].join("|");
+    if (key === this.lastDrapeKey) return;
+    this.lastDrapeKey = key;
+
+    // The drape is resampled inside surfacePixels, so the texture is larger than the file. Its
+    // own dimensions come back with it rather than being read off the Grid.
+    const drape = surfacePixels(
+      state.surface,
+      state.field,
+      state.windowMin,
+      state.windowMax,
+      state.scale,
+      state.paletteColours,
+      state.theme,
+    );
+    this.setSurfacePixels(drape.pixels, drape.width, drape.height);
+  }
+
+  /**
+   * The sheet, rebuilt when anything it is made of changes.
+   *
+   * A quad is drawn only when all four of its corners carry a value. Mask is NaN and a value
+   * outside the Transfer Function window is dropped rather than clamped - the same rule the
+   * Volume follows, and the reason narrowing the range on Depth of 26 degrees to 80-150 m is a
+   * way of asking where the deep warm water is rather than just a recolouring.
+   *
+   * The lattice is resampled first, through the same `smoothSurface` the Drape goes through, so
+   * the two cannot disagree about where the coast is. Two things follow from that. The mesh
+   * stops looking like 110 km tiles, and the coast stops being a cliff: a corner's alpha is now
+   * the share of its source cells that held water, so the edge fades over about 28 km instead
+   * of dropping a quad. That ramp is only for Mask. A value the window excludes still leaves a
+   * hard edge, because that edge is the answer to the question the window asks.
+   */
+  private updateSheet(state: ViewState, frame: ReturnType<typeof makeFrame>): void {
+    const sheet = this.fieldSheet;
+    if (!sheet) return;
+
+    const field = state.field;
+    const surface = state.surface;
+    if (!isSurfaceField(field) || !surface || !field) {
+      sheet.visible = false;
+      this.lastSheetKey = "";
+      return;
+    }
+
+    sheet.visible = state.morph > 0.55;
+    this.setUniform(sheet, "uMorph", state.morph);
+    this.setUniform(sheet, "uFade", smoothLimit(state.morph));
+    if (!sheet.visible) return;
+
+    const key = [
+      field.key,
+      state.timestepIndex,
+      state.windowMin.toFixed(3),
+      state.windowMax.toFixed(3),
+      state.scale,
+      state.theme,
+      frame.boxHeight.toFixed(2),
+    ].join("|");
+    if (key === this.lastSheetKey) return;
+    this.lastSheetKey = key;
+
+    const volume = this.manifest.volume;
+    const lifted = liftedPalette(state.paletteColours, state.theme);
+    const smooth = smoothSurface(surface);
+    const { width, height } = smooth;
+    // A column total has no depth of its own, so it is drawn just under the sea surface rather
+    // than at 0 - exactly at the box top face it would fight the frame for the same pixels.
+    const drapeY = -0.004 * frame.boxHeight;
+
+    const lonLat = new Float32Array(width * height * 2);
+    const depthY = new Float32Array(width * height);
+    const tint = new Float32Array(width * height * 4);
+    const drawn = new Uint8Array(width * height);
+
+    for (let row = 0; row < height; row++) {
+      for (let column = 0; column < width; column++) {
+        const index = row * width + column;
+        const value = smooth.values[index] ?? NaN;
+        lonLat[index * 2] = volume.west + (column * (volume.east - volume.west)) / (width - 1);
+        lonLat[index * 2 + 1] = volume.south + (row * (volume.north - volume.south)) / (height - 1);
+
+        const colour = colourOf(value, field, state.windowMin, state.windowMax, state.scale, lifted);
+        if (!colour) continue;
+        depthY[index] = field.render === "depth" ? depthToY(frame, value) : drapeY;
+        tint[index * 4] = colour[0] / 255;
+        tint[index * 4 + 1] = colour[1] / 255;
+        tint[index * 4 + 2] = colour[2] / 255;
+        // The coast, as a ramp rather than a cliff. Full where four source cells held water,
+        // partial where some of them were land.
+        tint[index * 4 + 3] = Math.min(Math.max(smooth.coverage[index] ?? 0, 0), 1);
+        drawn[index] = 1;
+      }
+    }
+
+    const indices: number[] = [];
+    for (let row = 0; row < height - 1; row++) {
+      for (let column = 0; column < width - 1; column++) {
+        const a = row * width + column;
+        const b = a + 1;
+        const c = a + width;
+        const d = c + 1;
+        if (!drawn[a] || !drawn[b] || !drawn[c] || !drawn[d]) continue;
+        indices.push(a, c, b, b, c, d);
+      }
+    }
+
+    const geometry = new BufferGeometry();
+    geometry.setAttribute("lonLat", new BufferAttribute(lonLat, 2));
+    geometry.setAttribute("depthY", new BufferAttribute(depthY, 1));
+    geometry.setAttribute("tint", new BufferAttribute(tint, 4));
+    geometry.setAttribute("position", new BufferAttribute(new Float32Array(width * height * 3), 3));
+    geometry.setIndex(indices);
+    sheet.geometry.dispose();
+    sheet.geometry = geometry;
+  }
+
+  /**
+   * Current arrows on the depth the user has sliced to.
+   *
+   * Read from the float32 vector file - the Grid - and never from a Volume, so the length of
+   * every arrow is a measurement. The direction is corrected for the convergence of the
+   * meridians: a degree of longitude is shorter than a degree of latitude away from the equator,
+   * and without the correction an arrow at 25 N points about 10 degrees off true.
+   */
+  private updateArrows(state: ViewState, frame: ReturnType<typeof makeFrame>): void {
+    const arrows = this.arrows;
+    if (!arrows) return;
+
+    const field = state.field;
+    const vectors = state.vectors;
+    // Two styles of one layer, so the one that is not chosen draws nothing at all. Leaving both
+    // on would put two encodings of the same vector on screen at once, which is the confusion
+    // `describePalette` exists to prevent, one layer along.
+    if (!field || field.render !== "vector" || !vectors || state.currentStyle !== "arrows") {
+      arrows.visible = false;
+      this.lastArrowKey = "";
+      return;
+    }
+
+    arrows.visible = true;
+    this.setUniform(arrows, "uMorph", state.morph);
+
+    const volume = this.manifest.volume;
+    const levels = volume.levelMetres ?? [];
+    // Which depth the arrows sit on: the top of the depth slice in the Volume View, and the
+    // Level painted on the map on the globe. One control each way, no third slider.
+    const metres = axisToDepth(volume, state.morph > 0.55 ? state.depthFrom : state.surfaceLevel);
+    let level = 0;
+    for (let i = 1; i < levels.length; i++) {
+      if (Math.abs((levels[i] ?? 0) - metres) < Math.abs((levels[level] ?? 0) - metres)) level = i;
+    }
+
+    const key = [
+      state.timestepIndex,
+      level,
+      state.windowMin.toFixed(3),
+      state.windowMax.toFixed(3),
+      state.scale,
+      state.theme,
+      frame.boxHeight.toFixed(2),
+    ].join("|");
+    if (key === this.lastArrowKey) return;
+    this.lastArrowKey = key;
+
+    const lifted = liftedPalette(state.paletteColours, state.theme);
+    const { width, height } = vectors;
+    const y = depthToY(frame, levels[level] ?? volume.surfaceMetres);
+    const fastest = Math.max(field.range[1], 1e-3);
+
+    const lonLat: number[] = [];
+    const depthY: number[] = [];
+    const tint: number[] = [];
+
+    const push = (lon: number, lat: number, colour: [number, number, number]) => {
+      lonLat.push(lon, lat);
+      depthY.push(y);
+      tint.push(colour[0] / 255, colour[1] / 255, colour[2] / 255, 1);
+    };
+
+    for (let row = 0; row < height; row += ARROW_STRIDE) {
+      for (let column = 0; column < width; column += ARROW_STRIDE) {
+        const at = ((level * height + row) * width + column) * 2;
+        const u = vectors.values[at] ?? NaN;
+        const v = vectors.values[at + 1] ?? NaN;
+        if (!Number.isFinite(u) || !Number.isFinite(v)) continue;
+
+        const speed = Math.hypot(u, v);
+        const colour = colourOf(speed, field, state.windowMin, state.windowMax, state.scale, lifted);
+        if (!colour || speed < 1e-4) continue;
+
+        const lon = volume.west + (column * (volume.east - volume.west)) / (width - 1);
+        const lat = volume.south + (row * (volume.north - volume.south)) / (height - 1);
+        // A degree of longitude is shorter than a degree of latitude, so an eastward component
+        // has to be drawn longer to point the same way on a plate-carree map.
+        const stretch = 1 / Math.max(Math.cos((lat * Math.PI) / 180), 0.2);
+        // Length goes through the same curve the colour does.
+        //
+        // It used to be linear in `speed / fastest` while the colour went through `transfer`, so
+        // on a log scale one arrow encoded its own speed two different ways at once: short and
+        // dark. The guide entry for the scale sends people to Current Speed and tells them to
+        // switch to Log, so that contradiction was on the recommended path. Proportionality was
+        // never the argument for leaving it linear either - ARROW_MIN means a zero-speed arrow
+        // is already 0.45 degrees long.
+        const length =
+          ARROW_MIN +
+          (ARROW_MAX - ARROW_MIN) * transfer(Math.min(speed / fastest, 1), state.scale);
+
+        const east = (u / speed) * length;
+        const north = (v / speed) * length;
+        const tipLon = lon + east * stretch;
+        const tipLat = lat + north;
+
+        push(lon, lat, colour);
+        push(tipLon, tipLat, colour);
+        // Two barbs, swept back from the tip and rotated in true compass space before being
+        // stretched, so the head stays symmetrical at every latitude.
+        for (const angle of [2.5, -2.5]) {
+          const cos = Math.cos(angle);
+          const sin = Math.sin(angle);
+          const barbEast = (east * cos - north * sin) * 0.34;
+          const barbNorth = (east * sin + north * cos) * 0.34;
+          push(tipLon, tipLat, colour);
+          push(tipLon + barbEast * stretch, tipLat + barbNorth, colour);
+        }
+      }
+    }
+
+    const geometry = new BufferGeometry();
+    geometry.setAttribute("lonLat", new BufferAttribute(new Float32Array(lonLat), 2));
+    geometry.setAttribute("depthY", new BufferAttribute(new Float32Array(depthY), 1));
+    geometry.setAttribute("tint", new BufferAttribute(new Float32Array(tint), 4));
+    geometry.setAttribute("position", new BufferAttribute(new Float32Array(depthY.length * 3), 3));
+    arrows.geometry.dispose();
+    arrows.geometry = geometry;
+  }
+
+  /**
+   * Point the dots at the Timestep and depth on screen, and freeze what they need to colour
+   * themselves. Moving them is the render loop's job - see `advanceFlow`.
+   *
+   * The depth is the **same** one the arrows use, read from the same control, because these are
+   * two styles of one layer and not two layers. A dot and an arrow at the same place have to be
+   * describing the same water.
+   */
+  private updateParticles(state: ViewState, frame: ReturnType<typeof makeFrame>): void {
+    const lines = this.particleLines;
+    if (!lines) return;
+
+    const field = state.field;
+    const vectors = state.vectors;
+    if (!field || field.render !== "vector" || !vectors || state.currentStyle !== "particles") {
+      lines.visible = false;
+      this.lastFlowKey = "";
+      this.flowContext = null;
+      return;
+    }
+
+    lines.visible = true;
+    this.setUniform(lines, "uMorph", state.morph);
+
+    const volume = this.manifest.volume;
+    const levels = volume.levelMetres ?? [];
+    const metres = axisToDepth(volume, state.morph > 0.55 ? state.depthFrom : state.surfaceLevel);
+    let level = 0;
+    for (let i = 1; i < levels.length; i++) {
+      if (Math.abs((levels[i] ?? 0) - metres) < Math.abs((levels[level] ?? 0) - metres)) level = i;
+    }
+
+    this.flowContext = {
+      field,
+      windowMin: state.windowMin,
+      windowMax: state.windowMax,
+      scale: state.scale,
+      lifted: liftedPalette(state.paletteColours, state.theme),
+      trail: state.theme === "light" ? TRAIL_INK_LIGHT : TRAIL_INK_DARK,
+    };
+
+    // The plane the dots sit on, in world units. One value for every vertex, so it is written
+    // only when the depth or the exaggeration actually moves it.
+    const y = depthToY(frame, levels[level] ?? volume.surfaceMetres);
+    const depthY = lines.geometry.getAttribute("depthY") as BufferAttribute;
+    if (depthY.array[0] !== y) {
+      (depthY.array as Float32Array).fill(y);
+      depthY.needsUpdate = true;
+    }
+
+    // Re-seeding on a Timestep or depth change is the honest thing: a trail drawn half in one
+    // analysis and half in the next is a line no water ever took.
+    const key = `${state.timestepIndex}|${level}`;
+    if (key !== this.lastFlowKey) {
+      this.lastFlowKey = key;
+      this.flow.setField(vectors, volume, level);
+    }
+  }
+
+  /**
+   * Move the dots one frame and rewrite their vertices.
+   *
+   * Called from the render loop rather than from `update`, because the flow animates while
+   * nothing in the store is changing. It draws only what `updateParticles` last approved: with
+   * no context - another Field is selected, or the style is arrows - there is nothing to move.
+   */
+  private advanceFlow(seconds: number): void {
+    const lines = this.particleLines;
+    const context = this.flowContext;
+    if (!lines || !lines.visible || !context || !this.flow.ready) return;
+
+    this.flow.advance(seconds);
+    // The palette still decides **whether** a dot is drawn - a speed outside the Transfer
+    // Function window drops its trail, exactly as it drops an arrow - and then the trail is
+    // inked rather than tinted. See TRAIL_INK_DARK for why.
+    const built = this.flow.build((speed) =>
+      colourOf(
+        speed,
+        context.field,
+        context.windowMin,
+        context.windowMax,
+        context.scale,
+        context.lifted,
+      )
+        ? context.trail
+        : null,
+    );
+
+    const geometry = lines.geometry;
+    (geometry.getAttribute("lonLat") as BufferAttribute).needsUpdate = true;
+    (geometry.getAttribute("tint") as BufferAttribute).needsUpdate = true;
+    geometry.setDrawRange(0, built.vertices);
+  }
+
+  // ---------------------------------------------------------------- test hooks
+  //
+  // Four accessors that exist only for `web/probe-particles.mjs`. This project's rule is that a
+  // rendering claim is measured rather than looked at, and measuring the flow needs three things
+  // a probe cannot reach from outside: the population itself, the Level it is drifting on, and
+  // the ability to hide one layer **without touching the store**. A store change would rebuild
+  // the geometry and set `visible` back to true, which is exactly how a visible layer was once
+  // measured as invisible here.
+
+  /** The live population, so a probe can check every dot against the mask. */
+  particleFlowForTest(): ParticleFlow {
+    return this.flow;
+  }
+
+  /** Which Level the dots are drifting on, as an index into `levelMetres`. */
+  particleLevelForTest(): number {
+    return Number(this.lastFlowKey.split("|")[1] ?? 0);
+  }
+
+  /** Which of the two current styles is on screen. Exactly one of them should be. */
+  currentLayersForTest(): { arrows: boolean; dots: boolean } {
+    return {
+      arrows: this.arrows?.visible === true,
+      dots: this.particleLines?.visible === true,
+    };
+  }
+
+  /** Hide or show one layer for a frame pair, without going through the store. */
+  setLayerVisibleForTest(layer: "particles" | "arrows", visible: boolean): void {
+    const mesh = layer === "particles" ? this.particleLines : this.arrows;
+    if (mesh) mesh.visible = visible;
+  }
+
   /** Nearest Anomaly Feature to a screen point, as an index into this Timestep's list. */
   pickAnomaly(clientX: number, clientY: number, radiusPixels = 20): number | null {
     const state = this.state;
@@ -961,6 +1866,114 @@ export class OceanScene {
       }
     });
     return best;
+  }
+
+  /**
+   * The current under the cursor: a real speed and a real heading, read from the Grid.
+   *
+   * This is the sentence the old rendered overlay could not say. A tile physically cannot give
+   * you a number, so the layer that preceded this one carried arrows nobody could measure - and
+   * `CONTEXT.md` listed "current numbers" under what the platform deliberately did not do. It
+   * does now, and the number comes from the same float32 file the arrows are drawn from, never
+   * from a Volume.
+   *
+   * Only inside the Volume View, where the arrows sit on one horizontal plane and a ray through
+   * the pixel meets it exactly once. On the globe there is no plane to hit and the honest answer
+   * is no answer.
+   */
+  /**
+   * Where on the water a screen point lands, in degrees, or null off the block.
+   *
+   * A ray from the camera through the pixel, met against one horizontal plane inside the box.
+   * Done by hand rather than with a Raycaster because there is nothing to hit: the arrows are
+   * line segments a few pixels wide and the water is a ray march, and nobody can point at
+   * either. It is only meaningful inside the Volume View, where the world is a flat map with a
+   * box on it; on the globe the same pixel is a point on a sphere and this returns null rather
+   * than a plausible wrong answer.
+   *
+   * Both the current readout and the drift pin read this, so the number under the cursor and
+   * the place a pin lands cannot disagree about where the cursor is.
+   */
+  pickWater(clientX: number, clientY: number, metres?: number): { lon: number; lat: number } | null {
+    const state = this.state;
+    if (!state || state.morph <= 0.55) return null;
+    const volume = this.manifest.volume;
+    const frame = makeFrame(volume, state.exaggeration);
+    const planeY = depthToY(frame, metres ?? volume.surfaceMetres);
+
+    const rect = this.canvas.getBoundingClientRect();
+    const ndc = new Vector3(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -((clientY - rect.top) / rect.height) * 2 + 1,
+      0.5,
+    ).unproject(this.camera);
+    const direction = ndc.sub(this.camera.position);
+    if (Math.abs(direction.y) < 1e-6) return null;
+    const t = (planeY - this.camera.position.y) / direction.y;
+    if (t <= 0) return null;
+
+    const lon = this.camera.position.x + direction.x * t;
+    const lat = -(this.camera.position.z + direction.z * t);
+    if (lon < volume.west || lon > volume.east || lat < volume.south || lat > volume.north) {
+      return null;
+    }
+    return { lon, lat };
+  }
+
+  pickCurrent(clientX: number, clientY: number) {
+    const state = this.state;
+    if (!state?.vectors || state.field?.render !== "vector" || state.morph <= 0.55) return null;
+
+    const volume = this.manifest.volume;
+    const levels = volume.levelMetres ?? [];
+    const metres = axisToDepth(volume, state.depthFrom);
+    let level = 0;
+    for (let i = 1; i < levels.length; i++) {
+      if (Math.abs((levels[i] ?? 0) - metres) < Math.abs((levels[level] ?? 0) - metres)) level = i;
+    }
+
+    const at = this.pickWater(clientX, clientY, levels[level] ?? volume.surfaceMetres);
+    if (!at) return null;
+    const { lon, lat } = at;
+
+    const { width, height, values } = state.vectors;
+    const column = ((lon - volume.west) / (volume.east - volume.west)) * (width - 1);
+    const row = ((lat - volume.south) / (volume.north - volume.south)) * (height - 1);
+    // Bilinear, and a Masked corner makes the answer Masked rather than falling back to the
+    // corners that do have data - the same rule Grid.column_at follows in the pipeline, and for
+    // the same reason: near a coast the corners with data are the open ocean.
+    const c0 = Math.min(Math.floor(column), width - 2);
+    const r0 = Math.min(Math.floor(row), height - 2);
+    const fx = column - c0;
+    const fy = row - r0;
+
+    let u = 0;
+    let v = 0;
+    for (const [dr, dc, weight] of [
+      [0, 0, (1 - fy) * (1 - fx)],
+      [0, 1, (1 - fy) * fx],
+      [1, 0, fy * (1 - fx)],
+      [1, 1, fy * fx],
+    ] as const) {
+      const at = ((level * height + (r0 + dr)) * width + (c0 + dc)) * 2;
+      const cu = values[at];
+      const cv = values[at + 1];
+      if (cu === undefined || cv === undefined || !Number.isFinite(cu) || !Number.isFinite(cv)) {
+        return null;
+      }
+      u += cu * weight;
+      v += cv * weight;
+    }
+
+    // Compass heading: the direction the water is going to, clockwise from north.
+    const heading = (450 - (Math.atan2(v, u) * 180) / Math.PI) % 360;
+    return {
+      speed: Math.hypot(u, v),
+      heading,
+      lon,
+      lat,
+      metres: levels[level] ?? volume.surfaceMetres,
+    };
   }
 
   /** Nearest Float to a screen point, or null. See `morph.ts` for why this is done by hand. */
@@ -1081,9 +2094,13 @@ export class OceanScene {
       if (this.disposed) return;
       this.frameId = requestAnimationFrame(loop);
       const now = performance.now();
-      this.elapsed += (now - previous) / 1000;
+      const seconds = (now - previous) / 1000;
+      this.elapsed += seconds;
       previous = now;
 
+      // The dots move on the clock, not on a store change: nothing in the state changes between
+      // one frame of a flow and the next.
+      this.advanceFlow(seconds);
       this.setUniform(this.volume, "uTime", this.elapsed);
       this.setUniform(this.floatPoints, "uPulse", 0.5 + 0.5 * Math.sin(this.elapsed * 3));
       this.setUniform(this.anomalyPoints, "uPulse", 0.5 + 0.5 * Math.sin(this.elapsed * 3));
@@ -1121,6 +2138,61 @@ export class OceanScene {
     const uniform = material?.uniforms?.[name];
     if (uniform) uniform.value = value;
   }
+}
+
+/** How far apart the arrows are, in grid nodes. Every node is 2016 arrows and reads as texture. */
+const ARROW_STRIDE = 2;
+/** Arrow length in degrees, at zero speed and at the top of the Field range. */
+const ARROW_MIN = 0.45;
+const ARROW_MAX = 1.7;
+
+/**
+ * How many dots carry the flow.
+ *
+ * Measured on the software renderer the probes drive - the slowest thing this has to survive -
+ * 2,400 particles with a 20-segment trail is 96,000 vertices rebuilt a frame, and the buffers
+ * are written in place rather than reallocated. Fewer than about a thousand and the basin looks
+ * sparse; more and the open ocean turns into static and the coastline stops reading.
+ */
+const PARTICLE_COUNT = 2400;
+
+/**
+ * The colour of a trail, and the one place in this project where a mark is **not** coloured by
+ * its own value.
+ *
+ * Taking the colour from the palette is the obvious thing and it makes the layer illegible. The
+ * dot sits directly on top of water coloured by the same number through the same palette, so
+ * wherever the current is slow the dot is pale cream on pale cream: **zero contrast, by
+ * construction, over most of the basin.** Measured by eye and confirmed by the user on both
+ * themes - the fast water reads and the Arabian Sea interior draws nothing you can see.
+ *
+ * So the trail carries **direction** and the speed is carried three other ways that all still
+ * work: the water underneath it, how far a dot travels per frame, and the real number under the
+ * cursor. Colouring the trail by speed was a fourth copy of one fact, and it was the copy that
+ * cost the picture its legibility.
+ *
+ * This is what Copernicus's MyOcean Pro and earth.nullschool both do, for the same reason. The
+ * legend and the guide entry say so: the map key names the trails as flow and the *water* as
+ * speed, so nothing on screen claims the trail's colour means anything.
+ *
+ * The window still filters. A dot whose speed falls outside the Transfer Function window is
+ * dropped, not inked - the range control stays analytical.
+ */
+const TRAIL_INK_DARK: [number, number, number] = [240, 246, 247];
+const TRAIL_INK_LIGHT: [number, number, number] = [22, 30, 32];
+
+/** A Field with no Volume: its value is a depth, or a total for the whole water column. */
+function isSurfaceField(field: FieldSpec | null | undefined): boolean {
+  return field?.render === "depth" || field?.render === "column";
+}
+
+function emptySheetGeometry(): BufferGeometry {
+  const geometry = new BufferGeometry();
+  geometry.setAttribute("lonLat", new BufferAttribute(new Float32Array(0), 2));
+  geometry.setAttribute("depthY", new BufferAttribute(new Float32Array(0), 1));
+  geometry.setAttribute("tint", new BufferAttribute(new Float32Array(0), 4));
+  geometry.setAttribute("position", new BufferAttribute(new Float32Array(0), 3));
+  return geometry;
 }
 
 function smoothLimit(morph: number): number {

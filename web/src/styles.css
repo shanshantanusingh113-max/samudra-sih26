@@ -334,33 +334,67 @@ body {
   gap: 10px;
 }
 
-/* A readout tile: mono label above, mono value below, so the two never reflow each other. */
-.stamp {
+/*
+ * The two readouts, inline and unboxed.
+ *
+ * They used to be bordered tiles with the label stacked over the value. Two of them took about a
+ * third of the bar and read as form fields rather than as readouts - a box around a number
+ * implies you can edit it. Label and value now sit on one line in the console's own mono, with
+ * the label faint and letterspaced so the eye skips it and lands on the figure.
+ */
+.topbar-readouts {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 7px 13px;
-  border: 1px solid var(--outline-variant);
-  border-radius: var(--radius-sm);
-  background: var(--surface-low);
+  align-items: baseline;
+  gap: 20px;
+  margin: 0;
 }
 
-.stamp-label {
+.topbar-readouts > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.topbar-readouts dt {
   font-family: var(--mono);
-  font-size: 10.5px;
-  letter-spacing: 0.18em;
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--on-surface-faint);
+  white-space: nowrap;
 }
 
-.stamp-value {
+.topbar-readouts dd {
+  margin: 0;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--on-surface);
   white-space: nowrap;
 }
 
-.theme-toggle {
+/* The Field name is the one thing here that can be long. Let it truncate, not push the buttons. */
+.topbar-field {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 22ch;
+}
+
+/* Divides what the app is showing from what you can press. The only division on this bar that
+   carries meaning, so it is the only one drawn. */
+.topbar-rule {
+  width: 1px;
+  height: 22px;
+  background: var(--outline-variant);
+}
+
+/*
+ * Every control on this bar is 34 px tall.
+ *
+ * The theme circle was 34, the ghost button and the dive button were whatever their padding came
+ * to, so three buttons in a row sat on three different baselines. One height, set once.
+ */
+.icon-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -376,10 +410,21 @@ body {
   transition: color 0.16s var(--ease), border-color 0.16s var(--ease), transform 0.16s var(--ease);
 }
 
-.theme-toggle:hover {
+.icon-button:hover {
   color: var(--primary);
   border-color: var(--primary-edge);
   transform: translateY(-1px);
+}
+
+.topbar .ghost {
+  height: 34px;
+  padding: 0 14px;
+  white-space: nowrap;
+}
+
+.topbar .dive {
+  height: 34px;
+  padding: 0 18px;
 }
 
 /*
@@ -547,8 +592,18 @@ body {
   box-shadow: var(--shadow-panel);
   scrollbar-width: thin;
   scrollbar-color: var(--outline) transparent;
-  /* Keep the track's width reserved so the thumb never reflows the content when it appears. */
-  scrollbar-gutter: stable;
+  /*
+   * Keep the track's width reserved so the thumb never reflows the content when it appears -
+   * and reserve it on **both** edges, so the panel is not lopsided while it is doing so.
+   *
+   * `stable` alone reserves the track on the scrolling edge only. Measured at 1400x900 with the
+   * anomaly Field selected and nothing to scroll: the panel is 344 px wide with a 332 px client
+   * box, its contents sat 1 px from the left edge and 12 px from the right, and the strip on the
+   * right read as a gap beside every button in the panel a judge looks at first. `both-edges`
+   * costs the same 11 px again in content width, which the tab strip had already bought back -
+   * the fold figures in CLAUDE.md are re-measured after this change.
+   */
+  scrollbar-gutter: stable both-edges;
 }
 
 .panel::-webkit-scrollbar {
@@ -735,6 +790,230 @@ select:hover {
   font-weight: 500;
 }
 
+/*
+ * The Variable selector's five Field Groups, as one row of tabs.
+ *
+ * Fourteen Fields is a wall as a flat list, and the groups are the way a forecaster thinks -
+ * ocean state, hazard, circulation, evidence, change - rather than the way the data arrived.
+ * They used to be five stacked sub-headings with every button under them, about 640 px of
+ * panel; as tabs they are one 26 px row and the buttons below are only the active group's.
+ *
+ * The active tab is marked by an underline in the accent colour rather than by a filled
+ * background, because a filled tab and a filled Field button in the same colour, six pixels
+ * apart, read as the same kind of control and they are not.
+ */
+/*
+ * A two-way switch between the styles of one layer.
+ *
+ * Not a tab strip and not a checkbox. Tabs say "these are different contents"; a checkbox says
+ * "this thing is on or off". Currents drawn as moving dots and currents drawn as arrows are the
+ * same layer, the same data and the same depth shown two ways, and a segmented control is the
+ * mark that says so.
+ */
+.style-switch {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 10px;
+  padding: 2px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-sm);
+  background: var(--surface-low);
+}
+
+.style-switch button {
+  flex: 1 1 0;
+  padding: 6px 4px;
+  border: none;
+  border-radius: calc(var(--radius-sm) - 2px);
+  background: none;
+  color: var(--on-surface-faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.16s var(--ease), color 0.16s var(--ease);
+}
+
+.style-switch button:hover {
+  color: var(--on-surface);
+}
+
+.style-switch button.on {
+  background: var(--primary-wash);
+  color: var(--primary);
+}
+
+.field-tabs {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+/*
+ * Four tabs, and none of them may wrap or run into its neighbour.
+ *
+ * The first version had `flex: 1` and nothing else, so "OCEAN STATE" wrapped to two lines while
+ * the rest stayed on one - an uneven strip - and CIRCULATION ran straight into EVIDENCE and
+ * printed "CIRCULATIEVIDENCE". Three things fix it and all three are needed: nowrap so nothing
+ * takes a second line, ellipsis so the worst case degrades instead of colliding, and tighter
+ * tracking so the longest label fits at this width in the first place.
+ */
+.field-tabs button {
+  /*
+   * Sized to the label, not to a quarter of the panel.
+   *
+   * Equal-width tabs meant CIRCULATION and OCEAN STATE both ellipsised at this width while
+   * CHANGE sat in a third of the space it needed. Sizing to content also makes the underline the
+   * width of the word, which is what an underline is meant to mark.
+   */
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 6px 1px 7px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: none;
+  color: var(--on-surface-faint);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: color 0.16s var(--ease), border-color 0.16s var(--ease);
+}
+
+.field-tabs button:hover {
+  color: var(--on-surface);
+}
+
+.field-tabs button.on {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+/*
+ * A dot on the tab holding the Field that is actually on screen.
+ *
+ * Browsing tabs without switching Field is deliberate. With nothing marking where the live Field
+ * went, the panel showed OCEAN STATE selected, a readout saying "Temperature Anomaly" and no
+ * button lit, which reads as broken rather than as browsing.
+ */
+.field-tabs button.holds-live::after {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  margin-left: 4px;
+  border-radius: 50%;
+  vertical-align: middle;
+  background: var(--primary);
+}
+
+/*
+ * Cyclone mode, above the Variable group.
+ *
+ * Deliberately not shaped like a Field button and deliberately not inside the group: one press
+ * changes the Field, the Timestep, the render hints and the anomaly rings. Full-bleed accent
+ * when it is on, so there is never a question about which mode you are in.
+ */
+.mode-switch {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 11px 13px;
+  border: 1px solid var(--primary-edge);
+  border-radius: var(--radius-sm);
+  background: var(--primary-wash);
+  color: var(--primary);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.16s var(--ease), color 0.16s var(--ease),
+    border-color 0.16s var(--ease);
+}
+
+.mode-switch-mark {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  transition: background 0.16s var(--ease);
+}
+
+.mode-switch:hover {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.mode-switch.on {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+}
+
+.mode-switch.on .mode-switch-mark {
+  background: currentColor;
+}
+
+/* Log or linear. Two buttons, because it is a choice between two and not a slider. */
+.scale-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  margin-bottom: 12px;
+  background: var(--outline-variant);
+  border: 1px solid var(--outline-variant);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.scale-toggle button {
+  padding: 7px 6px;
+  border: none;
+  background: var(--surface-low);
+  color: var(--on-surface-variant);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.scale-toggle button.on {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+/* A live figure read off the data, rather than a caption. Monospaced so it does not jitter. */
+.readout-line {
+  margin: 4px 0 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 6px;
+  background: var(--surface-low);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--on-surface-variant);
+}
+
+.readout-line strong {
+  color: var(--on-surface);
+  font-weight: 500;
+}
+
 /* ---------------------------------------------------------------- colourbar */
 
 /* A button, because touching it asks the guide panel what the colours mean. */
@@ -768,19 +1047,6 @@ select:hover {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-size: 10.5px;
-}
-
-/*
- * A one-line statement of what the Field's colour scale encodes.
- *
- * It had a `.warn` variant, for when the user had put an oxygen scale on salinity. That is no
- * longer reachable: the palette belongs to the Field, so there is no mismatch left to flag.
- */
-.palette-note {
-  margin: 8px 0 12px;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--on-surface-faint);
 }
 
 .readout.muted { color: var(--on-surface-faint); }
@@ -888,6 +1154,283 @@ input[type="range"]::-moz-range-thumb {
   color: var(--on-surface-faint);
 }
 
+/* ---------------------------------------------------------------- bias map */
+
+/*
+ * The ranked list of instruments the analysis struggled with.
+ *
+ * A table in everything but markup: rank, colour, id, position, gap, verdict. It is a list of
+ * buttons rather than a <table> because every row is a control - clicking one moves the
+ * timeline, selects the instrument and flies the camera to it - and a table row that is secretly
+ * a button is unreadable to a screen reader.
+ */
+.bias-list {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bias-list button {
+  display: grid;
+  grid-template-columns: 14px 10px 1fr auto;
+  grid-template-areas:
+    "rank swatch id      gap"
+    ".    .      where   band"
+    ".    .      matched band";
+  align-items: center;
+  column-gap: 6px;
+  width: 100%;
+  padding: 5px 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: var(--surface-low);
+  color: var(--on-surface-variant);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms var(--ease), border-color 120ms var(--ease);
+}
+
+.bias-list button:hover {
+  background: var(--surface-mid);
+}
+
+.bias-list button.on {
+  border-color: var(--primary);
+  background: var(--surface-mid);
+}
+
+.bias-rank {
+  grid-area: rank;
+  color: var(--on-surface-faint);
+  text-align: right;
+}
+
+/* The instrument's colour on the map, so the list and the water read as one picture. */
+.bias-swatch {
+  grid-area: swatch;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--outline-variant);
+}
+
+.bias-id {
+  grid-area: id;
+  color: var(--on-surface);
+}
+
+.bias-where {
+  grid-area: where;
+  color: var(--on-surface-faint);
+}
+
+.bias-gap {
+  grid-area: gap;
+  color: var(--on-surface);
+  text-align: right;
+}
+
+.bias-band {
+  grid-area: band;
+  text-align: right;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* The same three tones as the Collocation verdict, because they are the same three thresholds. */
+.bias-band.close { color: var(--good); }
+.bias-band.moderate { color: var(--secondary); }
+.bias-band.large { color: var(--tertiary); }
+
+/* "We cannot say" is not a verdict and must not wear one's colours. */
+.bias-band.unknown { color: var(--on-surface-faint); }
+
+/* A swatch with no measurement behind it: hollow, never the palette's midpoint, which is the
+   colour that means the model and the instrument agreed. */
+.bias-swatch.unknown {
+  background: transparent;
+  border-style: dashed;
+}
+
+/* How many depths the gap on this row rests on. An Argo cast reports at a median 221 of this
+   model's levels; a row resting on three is a truncated dive and used to look identical. */
+.bias-matched {
+  grid-area: matched;
+  color: var(--on-surface-faint);
+  font-size: 10px;
+}
+
+/* The drift line's colour in the key. It has to match SCENE_COLOURS.drift in OceanScene.ts;
+   there is no way to share a Three.Color with CSS, so the two are named together here and in
+   the scene, and the map key is the only place the pairing is visible. */
+.swatch.drift {
+  width: 16px;
+  height: 3px;
+  background: #c39bff;
+  align-self: center;
+}
+
+:root[data-theme="light"] .swatch.drift { background: #6b3fc4; }
+
+/* A note that is a caution rather than a footnote. The drift panel's first line is the limit of
+   what the feature can claim, and it must not read like small print. */
+.note.caution {
+  border-left-color: var(--secondary);
+  background: var(--secondary-wash);
+  padding: 8px 10px;
+  color: var(--on-surface-variant);
+}
+
+/* ---------------------------------------------------------------- vertical section */
+
+/*
+ * The section sits along the bottom, above the timeline, rather than in the right-hand column.
+ *
+ * It is a wide, short figure - distance runs to two thousand kilometres and depth to two
+ * thousand metres, and the interesting structure is in the top few hundred - so a tall narrow
+ * panel would waste most of it. It also has to be readable against the block it was cut from,
+ * which means not covering the block.
+ */
+/* Centred in the gap between the two side panels, and never wider than the gap.
+   `min(720px, 100vw - 640px)` fitted a 1366 px laptop by 6 px on paper and did not fit at all in
+   a browser: measured, the figure ran 32 px under the left panel and 36 px under the right one,
+   and below 960 px the expression went negative - a figure with no width. The gap is what the
+   two panels leave: 344 + 18 on the left, 348 + 18 on the right, so 728 px of chrome plus 16 px
+   of air each side. Measured after the change at 1600, 1366, 1280 and 1024: the figure clears
+   both panels at every one of them.
+   Below 1180 px both panels narrow by 44 and 36 px, which the subtraction below does not need to
+   know about - it is the more conservative of the two and stays right either way. */
+.panel-section {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 84px;
+  width: clamp(320px, calc(100vw - 760px), 720px);
+  padding: 10px 14px 12px;
+  z-index: 6;
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.section-head label {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--on-surface);
+}
+
+.section-head .readout {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--on-surface-faint);
+}
+
+.section-close {
+  flex: none;
+  padding: 2px 6px;
+  border: 0;
+  background: none;
+  color: var(--on-surface-faint);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.section-close:hover { color: var(--on-surface); }
+
+.section-canvas {
+  display: block;
+  width: 100%;
+  height: 200px;
+  margin-top: 6px;
+}
+
+/* Where a section was cut, in the map key. Matches SCENE_COLOURS.section in OceanScene.ts. */
+.swatch.section {
+  width: 16px;
+  height: 3px;
+  background: #63e6c4;
+  align-self: center;
+}
+
+:root[data-theme="light"] .swatch.section { background: #0b7a63; }
+
+/* Two controls that belong together: "Move the pin" and "Remove". */
+.button-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+/* `width: auto` is load-bearing.
+   `.mode-switch` is `width: 100%`, and a flex item's `auto` basis falls back to its `width` - so
+   `flex: 0 0 auto` on the second button meant "exactly 100% of the row, and never shrink". The
+   "Remove" button took the whole row, the "Move the pin" button was squeezed into what was left
+   and wrapped onto three lines, and both looked like a layout that had given up. */
+.button-row .mode-switch {
+  margin-top: 0;
+  width: auto;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* A secondary action is as wide as its own words and no wider. */
+.button-row .mode-switch.compact {
+  flex: 0 1 auto;
+  white-space: nowrap;
+}
+
+/* The NetCDF drop target. Dashed, because a dashed outline is the one shape every reader
+   already knows means "put something here". */
+.dropzone {
+  margin: 8px 0 0;
+  padding: 18px 12px;
+  border: 1px dashed var(--outline);
+  border-radius: var(--radius-sm);
+  background: var(--surface-low);
+  text-align: center;
+  transition: border-color 120ms var(--ease), background 120ms var(--ease);
+}
+
+.dropzone.over {
+  border-color: var(--primary);
+  background: var(--surface-mid);
+}
+
+.dropzone p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--on-surface-variant);
+}
+
+/* A figure in running text that is also a control. Underlined, because a coloured word alone is
+   not a link to a reader who cannot separate the hues. */
+.note .link,
+.readout-line .link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
 /* ---------------------------------------------------------------- guide */
 
 .guide {
@@ -942,6 +1485,66 @@ input[type="range"]::-moz-range-thumb {
   color: var(--on-surface);
 }
 
+/* The definition. One sentence, no heading over it - a heading over a single line is noise. */
+.guide-does {
+  margin: 12px 14px 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--on-surface);
+}
+
+.guide-label {
+  margin: 16px 14px 0;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--on-surface-faint);
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+/*
+ * Bullets, not prose.
+ *
+ * The marker is drawn rather than inherited from the list, so it lines up with the first line
+ * of a point that wraps onto two - which most of them do at this width.
+ */
+.guide-points {
+  margin: 8px 14px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guide-points li {
+  position: relative;
+  margin-top: 6px;
+  padding-left: 13px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--on-surface-variant);
+}
+
+.guide-points li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 8px;
+  width: 4px;
+  height: 1px;
+  background: var(--on-surface-faint);
+}
+
+/*
+ * The Anomaly Feature panel's four labelled facts.
+ *
+ * A definition list, and it is the last thing in the app still shaped like one: `GuidePanel`
+ * moved from three prose blocks to bullets a round ago and these rules went with it, while
+ * `AnomalyPanel.tsx` kept using the class. With no styling a browser draws a bare `dl` - the
+ * label flush left, the value indented under it, no spacing, no rule between - which is exactly
+ * what was on screen. Nothing errored and nothing was missing; it simply reverted to 1994.
+ */
 .guide-body {
   margin: 12px 14px 0;
 }
@@ -966,6 +1569,17 @@ input[type="range"]::-moz-range-thumb {
   font-size: 12.5px;
   line-height: 1.6;
   color: var(--on-surface-variant);
+}
+
+/*
+ * The bullets inside a value sit flush with their label.
+ *
+ * `.guide-points` carries a 14 px side margin because on the guide panel it is a child of the
+ * panel itself. Inside `.guide-body`, which already has that margin, it would indent twice and
+ * the bullets would hang off the right edge of a 348 px column.
+ */
+.guide-body .guide-points {
+  margin: 2px 0 0;
 }
 
 .guide-try {
@@ -996,6 +1610,13 @@ input[type="range"]::-moz-range-thumb {
 
 /* ---------------------------------------------------------------- map key */
 
+/* The key grows: the bias map swaps in four rows of its own on top of floats, buoys, tracks,
+   currents, drift and section, so it can carry eight at 1366x768 with a pin down and a line
+   drawn. It scrolls rather than running off the bottom of the window.
+
+   It is also **foldable**, because it is a box drawn on top of the water it describes - it has
+   to be readable the first time somebody sees the scene and out of the way after that. Folded
+   it is the header and nothing else. */
 .mapkey {
   position: absolute;
   left: 18px;
@@ -1004,6 +1625,9 @@ input[type="range"]::-moz-range-thumb {
   display: flex;
   flex-direction: column;
   gap: 7px;
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 11px 14px;
   border: 1px solid var(--outline-variant);
   border-radius: var(--radius-sm);
@@ -1023,11 +1647,66 @@ input[type="range"]::-moz-range-thumb {
   left: 466px;
 }
 
+/* The header is the fold control, so it is a button rather than a span. Everything about how
+   it looks is unchanged; what is new is that it can be pressed. */
 .mapkey-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: -3px -4px;
+  padding: 3px 4px;
+  border: none;
+  border-radius: 4px;
+  background: none;
   font-family: var(--mono);
   font-size: 10.5px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
+  text-align: left;
+  color: var(--on-surface-faint);
+  cursor: pointer;
+  transition: color 0.16s var(--ease), background 0.16s var(--ease);
+}
+
+.mapkey-label:hover,
+.mapkey-label:focus-visible {
+  color: var(--on-surface);
+  background: var(--surface-mid);
+}
+
+/* The same disclosure triangle the control groups use, so the two folds read as one idea. */
+.mapkey-fold {
+  width: 0;
+  height: 0;
+  flex: none;
+  border-left: 4px solid currentColor;
+  border-top: 3.5px solid transparent;
+  border-bottom: 3.5px solid transparent;
+  transform: rotate(90deg);
+  transition: transform 0.18s var(--ease);
+}
+
+.mapkey.shut .mapkey-fold {
+  transform: rotate(0deg);
+}
+
+/* Folded it is the header and nothing else: no gap to collapse and no rows to scroll. */
+.mapkey.shut {
+  gap: 0;
+  padding: 9px 12px;
+  max-height: none;
+  overflow: visible;
+}
+
+/* A line of explanation rather than a swatch and a name. It carries the one thing about the
+   bias map a reader cannot work out from the picture: the dots are not where they were. */
+.mapkey-note {
+  max-width: 300px;
+  margin-top: 1px;
+  padding-top: 7px;
+  border-top: 1px solid var(--outline-variant);
+  font-size: 11.5px;
+  line-height: 1.5;
   color: var(--on-surface-faint);
 }
 
@@ -1055,6 +1734,22 @@ input[type="range"]::-moz-range-thumb {
   margin: 0 2px;
 }
 
+/* An instrument the bias map has no comparison for: drawn without its bright core in the scene,
+   so the key shows a ring rather than a disc. Absence, not a value of zero. */
+.swatch.float.hollow {
+  background: transparent;
+  box-shadow: 0 0 0 2px var(--swatch-float);
+}
+
+/* The bias map's three ends. Round, because they are the same discs the water carries. */
+.mapkey-item .swatch[style] {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin: 0 2px;
+  box-shadow: 0 0 0 1px var(--outline-variant);
+}
+
 /* A square, matching the marker shape in the scene. The shape carries the distinction, not the
    colour, so it survives on either theme and for a viewer who cannot separate the hues. */
 .swatch.mooring {
@@ -1071,26 +1766,11 @@ input[type="range"]::-moz-range-thumb {
   border-radius: 1px;
 }
 
-/* The Copernicus speed ramp, pale to dark green, as they draw it. */
+/* cmocean's speed ramp, which is what the arrows are actually coloured with. */
 .swatch.currents {
   height: 4px;
   border-radius: 2px;
-  background: linear-gradient(90deg, #fffdcd, #b9d96a, #46a36a, #14606c);
-}
-
-.legend-currents {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.currents-ramp {
-  flex: 1 1 auto;
-  height: 8px;
-  border-radius: 4px;
-  background: linear-gradient(90deg, #fffdcd, #b9d96a, #46a36a, #14606c);
-  border: 1px solid var(--outline-variant);
+  background: linear-gradient(90deg, #fffcf4, #a4d5a0, #3f9b8e, #24555f);
 }
 
 .swatch.coast {
@@ -1221,30 +1901,57 @@ input[type="range"]::-moz-range-thumb {
   color: var(--primary);
 }
 
-/* An aligned key/value block: someone scanning for one number should not read a sentence. */
-.kv {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 6px 14px;
-  margin: 14px;
+/*
+ * Position, date, count and depth, on one line.
+ *
+ * This was a four-row aligned key/value block. An aligned block is right when the labels are
+ * the point; here they are not - a coordinate pair, a date, a count and a depth in metres all
+ * read without one - and four rows of it pushed the chart, which is what the panel is for,
+ * below the fold on a 1366x768 laptop.
+ */
+.profile-facts {
+  margin: 10px 14px 12px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--on-surface-variant);
 }
 
-.kv dt {
+/*
+ * The caveats, closed.
+ *
+ * Two paragraphs that are worth saying and are not worth the space above the chart. A reader
+ * who has not yet read the chart has no question for them to answer, so the summary line names
+ * the question and the answer waits until it is asked.
+ */
+.why {
+  margin: 12px 14px 0;
+  border-top: 1px solid var(--outline-variant);
+}
+
+.why > summary {
+  padding: 9px 0 0;
   font-family: var(--mono);
   font-size: 10.5px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--on-surface-faint);
-  align-self: center;
+  cursor: pointer;
+  list-style: none;
 }
 
-.kv dd {
-  margin: 0;
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--on-surface);
-  text-align: right;
+.why > summary::-webkit-details-marker { display: none; }
+
+.why > summary::after {
+  content: " +";
+  color: var(--on-surface-faint);
 }
+
+.why[open] > summary::after { content: " 2"; }
+
+.why > summary:hover { color: var(--on-surface); }
+
+.why .note { margin-left: 0; margin-right: 0; }
 
 /* ---------------------------------------------------------------- chart */
 
@@ -1623,6 +2330,28 @@ input[type="range"]::-moz-range-thumb {
   color: var(--on-surface-variant);
 }
 
+/*
+ * How far through the tour you are, without a number.
+ *
+ * There are twenty-one steps. Printing "step 14 of 21" turns a walkthrough somebody started out
+ * of curiosity into a commitment; the chapter name above says where they are and this says how
+ * much is left, which between them is everything a reader wanted to know.
+ */
+.tour-progress {
+  height: 2px;
+  margin-top: 2px;
+  border-radius: 1px;
+  background: var(--outline-variant);
+  overflow: hidden;
+}
+
+.tour-progress span {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.3s var(--ease);
+}
+
 .tour-actions {
   display: flex;
   justify-content: flex-end;
@@ -1952,4 +2681,270 @@ input[type="range"]::-moz-range-thumb {
   margin: 14px 14px 0;
   border-left-color: var(--secondary);
   color: var(--on-surface-variant);
+}
+
+/* ============================================================================================
+ * Explore, and the exhibition screen behind it.
+ *
+ * PS 26067 names three audiences the console does not serve and three channels it has no answer
+ * for. Everything that answers them lives here rather than being scattered through a control
+ * panel that is already dense - see `src/ui/Explore.tsx` for why that is the design and not an
+ * accident of layout.
+ * ========================================================================================== */
+
+.explore {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  overflow-y: auto;
+}
+
+.explore-inner {
+  width: min(1080px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.explore-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.explore-kicker {
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.explore-title {
+  margin: 0;
+  font-size: clamp(22px, 3.2vw, 34px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--on-surface);
+}
+
+/*
+ * Two columns where there is room and one where there is not.
+ *
+ * `auto-fit` rather than a fixed count: the same grid has to work on a 1366 px laptop in a
+ * classroom and on whatever screen a stall has, and a question that wraps to three words a line
+ * is a question nobody reads.
+ */
+.explore-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 12px;
+}
+
+.explore-card {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 18px 20px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  background: var(--surface-low);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s var(--ease), background 0.16s var(--ease), transform 0.16s var(--ease);
+}
+
+.explore-card:hover {
+  border-color: var(--primary-edge);
+  background: var(--surface-mid);
+  transform: translateY(-1px);
+}
+
+.explore-question {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--on-surface);
+}
+
+.explore-why {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--on-surface-variant);
+}
+
+/*
+ * The caveat, styled so it cannot be mistaken for more of the answer.
+ *
+ * It travels with the question rather than behind it. A reader who needs the question simplified
+ * is exactly the reader who will not think to ask what the simplification cost.
+ */
+.explore-caution {
+  margin-top: 3px;
+  padding-left: 9px;
+  border-left: 2px solid var(--secondary);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--on-surface-faint);
+}
+
+.explore-foot {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+  border-top: 1px solid var(--outline-variant);
+}
+
+.explore-foot .primary {
+  padding: 9px 16px;
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.explore-note {
+  flex: 1 1 320px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--on-surface-faint);
+}
+
+/* ---- kiosk ------------------------------------------------------------------------------- */
+
+/*
+ * An exhibition screen is a screen with nobody standing at it.
+ *
+ * Everything a visitor cannot use without a keyboard and a mouse goes away, and what is left is
+ * the water and one caption at a size that reads from across a room. The panels are still
+ * mounted - Escape puts the console back instantly, which is what a stall's operator needs.
+ */
+.app.kiosk .panel-left,
+.app.kiosk .panel-right,
+.app.kiosk .topbar,
+.app.kiosk .timeline,
+.app.kiosk .tour,
+.app.kiosk .cue,
+.app.kiosk .attribution,
+.app.kiosk .mapkey {
+  display: none !important;
+}
+
+/*
+ * The caption sits on the right, because the depth ruler is on the left.
+ *
+ * On the console the ruler tucks in beside the control panel and the two never meet. With the
+ * panel hidden the ruler moves left and the caption would sit straight on top of it - measured,
+ * "a sperm whale hunting" ran underneath the question at 1400x800.
+ */
+.kiosk-caption {
+  position: fixed;
+  right: 48px;
+  bottom: 48px;
+  z-index: 30;
+  width: min(620px, calc(100vw - 96px));
+  padding: 26px 30px;
+  border: 1px solid var(--outline-variant);
+  border-top: 3px solid var(--primary);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.kiosk-kicker {
+  margin: 0 0 10px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.kiosk-question {
+  margin: 0 0 12px;
+  font-size: clamp(26px, 2.6vw, 40px);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--on-surface);
+}
+
+.kiosk-why {
+  margin: 0;
+  font-size: clamp(15px, 1.2vw, 19px);
+  line-height: 1.5;
+  color: var(--on-surface-variant);
+}
+
+.kiosk-caution {
+  margin: 12px 0 0;
+  padding-left: 12px;
+  border-left: 3px solid var(--secondary);
+  font-size: clamp(13px, 1vw, 16px);
+  line-height: 1.45;
+  color: var(--on-surface-faint);
+}
+
+.kiosk-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: 18px;
+}
+
+.kiosk-dots span {
+  width: 22px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--outline);
+}
+
+.kiosk-dots span.on {
+  background: var(--primary);
+}
+
+/*
+ * The depth ruler grows a second line on the exhibition screen.
+ *
+ * "1000 m" is a figure; "a sperm whale hunting" is the same figure said in a way a visitor
+ * feels. The console keeps the figure alone - its labels are 44 px wide and its reader is a
+ * forecaster who wants the number.
+ */
+.app.kiosk .ruler-label {
+  width: 240px;
+  transform: translateX(-256px);
+  font-size: 13px;
+}
+
+/*
+ * The landmark wraps; the figure above it never does.
+ *
+ * `.ruler-label` is `nowrap` because "1500 m" breaking over two lines would be absurd, and that
+ * cascades. Measured at 1400x800 before this: "past a recreational diver" is wider than the
+ * label box, and a right-aligned nowrap line overflows to the LEFT - so the landmarks ran off
+ * the edge of the screen while the figures beside them sat correctly.
+ */
+.ruler-landmark {
+  display: block;
+  margin-top: 1px;
+  font-size: 11.5px;
+  letter-spacing: 0;
+  line-height: 1.35;
+  white-space: normal;
+  color: var(--on-surface-faint);
 }

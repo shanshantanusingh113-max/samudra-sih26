@@ -1,6 +1,14 @@
-import { GUIDE, describeIsosurface, describePalette, describeView } from "../guide";
+import {
+  GUIDE,
+  describeIsosurface,
+  describePalette,
+  describeView,
+  fillFigures,
+  guideFigures,
+} from "../guide";
 import { axisToDepth } from "../scene/geography";
-import { useStore } from "../store";
+import { UPLOAD_GROUP, useStore } from "../store";
+import { isDiverging } from "../transfer";
 
 /**
  * The "what am I looking at" panel.
@@ -27,19 +35,34 @@ export function GuidePanel() {
   // over - otherwise changing the palette or the surface level from the globe explains nothing.
   // The Collocation and the Anomaly Feature panels both take this space, because at the moment
   // one is open it *is* the answer to "what am I looking at".
-  if (!manifest || !spec || selectedFloatId || selectedAnomaly !== null) return null;
+  // The right-hand panel answers whichever question was asked last.
+  //
+  // This used to return null whenever a Float was selected, full stop - so touching any control
+  // while a comparison was open produced no explanation at all, silently. Worst on the bias
+  // map, where clicking a row *is* selecting a float: the entry explaining the control could
+  // only be read by opening the group and then not using it. Selecting an instrument clears
+  // `touched`, so the comparison still wins the moment it is opened, and the guide's close
+  // button puts it back.
+  if (!manifest || !spec || selectedAnomaly !== null) return null;
+  if (selectedFloatId && !touched) return null;
   if (morph < 0.5 && !touched) return null;
 
   // The colourbar entry is built rather than written, because it names the palette the current
   // Field carries. Every other entry is a fixed piece of prose.
-  const entry =
+  // Every measured figure an entry quotes comes from the bake, not from the entry. See
+  // `guideFigures`: a token with nothing behind it takes its bullet out rather than printing
+  // a number from a bake that is no longer on disk.
+  const written =
     touched === "palette"
-      ? describePalette(spec.palette, spec.label)
+      ? describePalette(spec.palette, spec.label, spec.group === UPLOAD_GROUP)
       : touched === "isosurface"
         ? describeIsosurface(spec.key, spec.units)
         : touched
           ? GUIDE[touched]
           : undefined;
+  const entry = written
+    ? fillFigures(written, guideFigures({ manifest, anomalies: store.anomalies }))
+    : undefined;
   const volume = manifest.volume;
 
   return (
@@ -54,14 +77,30 @@ export function GuidePanel() {
           </div>
           <h2 className="guide-title">{entry.title}</h2>
 
-          <dl className="guide-body">
-            <dt>What it changes</dt>
-            <dd>{entry.does}</dd>
-            <dt>What that means</dt>
-            <dd>{entry.means}</dd>
-            <dt>What to look for</dt>
-            <dd>{entry.look}</dd>
-          </dl>
+          {/*
+            * One sentence, then two short lists.
+            *
+            * This was three <dd> blocks of prose, 40 to 70 words each, under the headings "What
+            * it changes", "What that means" and "What to look for" - about 170 words a control,
+            * which nobody reads while a demo is running. The definition keeps its sentence and
+            * loses its heading, because a heading over one line is noise; the other two became
+            * bullets under headings short enough to scan past.
+            */}
+          <p className="guide-does">{entry.does}</p>
+
+          <h3 className="guide-label">Why it matters</h3>
+          <ul className="guide-points">
+            {entry.means.map((point) => (
+              <li key={point}>{point}</li>
+            ))}
+          </ul>
+
+          <h3 className="guide-label">Look for</h3>
+          <ul className="guide-points">
+            {entry.look.map((point) => (
+              <li key={point}>{point}</li>
+            ))}
+          </ul>
 
           {entry.tryThis && <p className="guide-try">{entry.tryThis}</p>}
         </>
@@ -81,9 +120,13 @@ export function GuidePanel() {
               toDepth: axisToDepth(volume, store.depthTo),
               exaggeration: store.exaggeration,
               isoEnabled: store.isoEnabled,
-              isoValue: `${store.toValue(store.isoValue).toFixed(1)} ${spec.units}`,
+              isoValue: `${Math.abs(store.toValue(store.isoValue)).toFixed(1)} ${spec.units}`,
+              diverging: isDiverging(spec),
               floatsDrawn: store.reportingByKind().floats,
               mooringsDrawn: store.reportingByKind().moorings,
+              render: spec.render ?? "volume",
+              arrowDepth: axisToDepth(volume, morph > 0.55 ? store.depthFrom : store.surfaceLevel),
+              currentStyle: store.currentStyle,
             })}
           </p>
           <p className="guide-hint">

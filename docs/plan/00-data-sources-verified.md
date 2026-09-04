@@ -1,4 +1,32 @@
-# Verified data sources (empirically tested 2026-08-23 and 2026-08-27, from this machine)
+# Verified data sources (empirically tested 2026-08-23, 2026-08-27, 2026-09-01 and 2026-09-02, from this machine)
+
+## World Ocean Atlas 2023 - the 1991-2020 climatological normal (tested 2026-09-02)
+
+Host: https://www.ncei.noaa.gov  -  **anonymous, no account at any point.**
+
+Used as a **baseline and never as a value**: it is what the 2026 analysis is differenced against
+for the "Temperature vs Normal" Field. ADR 0016 records why that is a different decision from
+ADR 0010's refusal of dissolved oxygen.
+
+| Route | Result |
+| --- | --- |
+| `thredds-ocean/dodsC/woa23/DATA/temperature/netcdf/decav91C0/1.00/woa23_decav91C0_t07_01.nc.dds` | **HTTP 200**, 2,840 bytes, 0.90 s |
+| `data/oceans/woa/WOA23/DATA/temperature/netcdf/decav91C0/1.00/woa23_decav91C0_t07_01.nc` | **HTTP 206** on a range request, 2.0 s |
+
+- `decav91C0` is NOAA's name for the 1991-2020 averaging period; the `01` in the filename is the
+  grid resolution, not the month. The month is the two digits before it.
+- dims: time(1) x depth(57) x lat(180) x lon(360), one degree, **0 to 1500 m**
+- vars: `t_an` (objectively analysed mean, the one used), `t_mn`, `t_dd`, `t_sd` and more.
+  `s_an` is the salinity equivalent and the adapter already reads it.
+- **Node centres are -89.5, -88.5 ... and 45.5, 46.5 ...** - exactly the ones INCOIS use, which
+  is why the difference needs no horizontal regridding at all.
+- Fill value is 9.96921e36 and pydap does **not** mask it. Differenced against a real analysis
+  that is an anomaly of about 1e36; `sources/woa.py` turns it into NaN.
+- The OPeNDAP route is the one used, because it is the one that allows a subset: this region is
+  36 x 56 x 57, about 1.5% of the global field.
+
+Verified subset, from this machine on 2026-09-02: 6.2 s to open, 2.6 s for the region, surface
+temperatures 23.45 to 33.97 degC in July with 27.6% of the box masked as land.
 
 ## PRIMARY - INCOIS's own public ERDDAP. Real INCOIS data, not a substitute.
 

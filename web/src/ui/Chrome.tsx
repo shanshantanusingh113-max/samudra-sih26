@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { copyCurrentView } from "../deeplink";
 import { applyTheme, useStore } from "../store";
 
 export function LoadingScreen() {
@@ -12,6 +14,9 @@ export function LoadingScreen() {
 export function Chrome({ onDive }: { onDive: (into: boolean) => void }) {
   const store = useStore();
   const { manifest, stage, morph, field, timestepIndex, theme, touched, set } = store;
+  // What the copy button last did, so it can say so for a moment. A control that fires and
+  // shows nothing is a control a user presses three times.
+  const [copied, setCopied] = useState<"" | "copied" | "failed">("");
   if (!manifest) return null;
 
   const flipTheme = () => {
@@ -39,32 +44,76 @@ export function Chrome({ onDive }: { onDive: (into: boolean) => void }) {
         </div>
 
         <div className="topbar-right">
-          <div className="stamp">
-            <span className="stamp-label">Analysis</span>
-            <span className="stamp-value">
-              {stamp ? new Date(stamp).toISOString().slice(0, 10) : "-"}
-            </span>
-          </div>
-          <div className="stamp">
-            <span className="stamp-label">Field</span>
-            <span className="stamp-value">{spec?.label ?? "-"}</span>
-          </div>
+          {/*
+            * Two readouts, inline, with no boxes.
+            *
+            * These were bordered tiles with the label stacked over the value, which made two
+            * pieces of text look like two form fields and took about a third of the bar. They
+            * are readouts: a label and a number, on one line, in the same mono the rest of the
+            * console uses. The rule after them separates what the app is showing from what the
+            * user can press, which is the only division on this bar that means anything.
+            */}
+          <dl className="topbar-readouts">
+            <div>
+              <dt>Analysis</dt>
+              <dd>{stamp ? new Date(stamp).toISOString().slice(0, 10) : "-"}</dd>
+            </div>
+            <div>
+              <dt>Field</dt>
+              <dd className="topbar-field">{spec?.label.replace("Sea Water ", "") ?? "-"}</dd>
+            </div>
+          </dl>
+
+          <span className="topbar-rule" aria-hidden="true" />
+
           <button
-            className="theme-toggle"
+            className="icon-button"
             onClick={flipTheme}
             title={theme === "dark" ? "Switch to light console" : "Switch to dark console"}
             aria-label={theme === "dark" ? "Switch to light console" : "Switch to dark console"}
           >
             {theme === "dark" ? "☀" : "☾"}
           </button>
+          {/*
+            * The link to what is on screen.
+            *
+            * `applyDeepLink` has read these parameters since the requirements page was built and
+            * nothing could write one. That gap is the whole "e-learning initiatives" clause: a
+            * teacher's worksheet is six links, and a forecaster hands a colleague a view rather
+            * than a description of one. See `deeplink.ts`.
+            */}
+          <button
+            className="icon-button"
+            onClick={async () => {
+              const result = await copyCurrentView();
+              setCopied(result.copied ? "copied" : "failed");
+              window.setTimeout(() => setCopied(""), 2400);
+            }}
+            title="Copy a link to exactly this view"
+            aria-label="Copy a link to exactly this view"
+          >
+            {copied === "copied" ? "✓" : copied === "failed" ? "!" : "🔗"}
+          </button>
           {/* Offered on the top bar rather than buried, because the people it is for are the
               ones who would never find it in a panel. */}
           <button
             className="ghost tour-start"
             onClick={() => set("tourStep", 0)}
-            title="A five-step walk through what this shows"
+            title="A guided walk through every control, in six chapters"
           >
             Show me around
+          </button>
+          {/*
+            * The second door. PS 26067 names school students, the public and policymakers, and
+            * fifteen variables in five groups is the wrong first minute for all three. One
+            * button, and everything outreach lives behind it rather than in this bar.
+            */}
+          <button
+            className="ghost explore-start"
+            onClick={() => set("explore", true)}
+            title="The same platform, as a list of questions"
+          >
+            Explore
           </button>
           <button
             className={`dive ${inVolume ? "dive-up" : ""}`}

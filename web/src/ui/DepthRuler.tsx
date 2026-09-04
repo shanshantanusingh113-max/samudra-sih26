@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { OceanScene } from "../scene/OceanScene";
+import { DEPTH_LANDMARKS } from "../explore";
 import { depthTicks } from "../scene/geography";
 import { useStore } from "../store";
 
@@ -44,11 +45,22 @@ interface Tick {
 
 /** The label sits 58 px to the left of its tick and is 44 px wide; this clears both. */
 const LABEL_GUTTER = 70;
+/**
+ * Where the figures sit when there is no control panel to sit beside.
+ *
+ * Kiosk mode hides the panel, so the measurement below finds nothing and every label lands at
+ * x = 0 - which on the exhibition screen means half of "the last of the sunlight" hanging off
+ * the left edge of the display. This is the panel's own width plus the same gutter, so the
+ * column lands in the same strip either way.
+ */
+const KIOSK_LEFT = 300;
 /** How far below the deepest figure the caption sits. */
 const CAPTION_DROP = 20;
+/** Further, on the exhibition screen, where the deepest figure carries a landmark under it. */
+const CAPTION_DROP_KIOSK = 44;
 
 export function DepthRuler({ scene }: { scene: OceanScene | null }) {
-  const { manifest, exaggeration, morph } = useStore();
+  const { manifest, exaggeration, morph, kiosk } = useStore();
   const [ticks, setTicks] = useState<Tick[]>([]);
   const [caption, setCaption] = useState<{ x: number; y: number } | null>(null);
   const frame = useRef(0);
@@ -66,8 +78,12 @@ export function DepthRuler({ scene }: { scene: OceanScene | null }) {
     const update = () => {
       // Read the panel rather than hardcoding its width, so this cannot drift out of step with
       // the stylesheet the way a magic number would.
+      // A `display: none` element still has a rect - all zeros - so the panel being *present*
+      // is not the question. In kiosk mode the panel is hidden and every label landed at 70 px,
+      // which put the landmarks off the left edge of the screen while the figures beside them
+      // sat correctly. Width is what says whether there is a panel to sit beside.
       const panel = document.querySelector("aside.panel-left")?.getBoundingClientRect();
-      const clear = panel ? panel.right + LABEL_GUTTER : 0;
+      const clear = panel && panel.width > 0 ? panel.right + LABEL_GUTTER : KIOSK_LEFT;
 
       const next = marks.map((metres) => {
         const anchor = scene.rulerAnchor(exaggeration, metres);
@@ -81,13 +97,14 @@ export function DepthRuler({ scene }: { scene: OceanScene | null }) {
       // caption laid over it cannot be read at all. Below the column is background.
       const visible = next.filter((t) => t.visible);
       const foot = visible[visible.length - 1];
-      setCaption(foot ? { x: clear - 58, y: foot.y + CAPTION_DROP } : null);
+      const drop = kiosk ? CAPTION_DROP_KIOSK : CAPTION_DROP;
+      setCaption(foot ? { x: clear - 58, y: foot.y + drop } : null);
 
       frame.current = requestAnimationFrame(update);
     };
     frame.current = requestAnimationFrame(update);
     return () => cancelAnimationFrame(frame.current);
-  }, [active, scene, manifest, exaggeration]);
+  }, [active, scene, manifest, exaggeration, kiosk]);
 
   if (!active || ticks.length === 0) return null;
 
@@ -107,10 +124,28 @@ export function DepthRuler({ scene }: { scene: OceanScene | null }) {
               style={{ transform: `translate(${tick.x}px, ${tick.y}px)` }}
             >
               <span className="ruler-line" />
-              <span className="ruler-label">{tick.metres === 0 ? "0" : tick.metres} m</span>
+              <span className="ruler-label">
+                {tick.metres === 0 ? "0" : tick.metres} m
+                {/*
+                  * What that depth is, for a reader to whom "1000 m" is only a number.
+                  *
+                  * A school student and a policymaker both know how deep a sperm whale hunts and
+                  * neither has a feel for a kilometre of water; it is the same number said in a
+                  * way that lands. Shown on the exhibition screen only: the console's label is
+                  * 44 px wide and its reader wants the figure, not the story.
+                  */}
+                {kiosk && landmark(tick.metres) && (
+                  <span className="ruler-landmark">{landmark(tick.metres)}</span>
+                )}
+              </span>
             </div>
           ),
       )}
     </div>
   );
+}
+
+/** The landmark for a ruler tick, when one of them lands on that exact depth. */
+function landmark(metres: number): string | undefined {
+  return DEPTH_LANDMARKS.find((entry) => entry.metres === metres)?.label;
 }

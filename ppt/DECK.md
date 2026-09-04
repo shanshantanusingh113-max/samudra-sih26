@@ -1,18 +1,38 @@
 # Samudra 3D - SIH 2026 idea deck: the content, slide by slide
 
+
+> **Current as of 2026-09-04.** Every figure below was re-read off the running build on that
+> date, and every rendered board was re-rendered against it. **Do not adjust a number by
+> arithmetic.** If the bake changes, run `cd web && node render-diagrams.mjs`, then read the new
+> figures out of `web/public/data/manifest.json` and re-quote them here.
+>
+> The build this deck describes: **15 Fields in 5 groups, 9 Source Adapters** (8 providers plus
+> one that reads a NetCDF file a visitor drops on the page), **12 Timesteps**, **71.1 MB**
+> baked, **377 tests** and **13 browser probes**, all passing.
+>
+> **The screenshots were replaced on 2026-09-04 and are now the same build.** Twelve of them,
+> up from seven: the five features the September round added had no picture at all, and now do -
+> the moving current flow, the vertical section, cyclone heat potential, the Explore surface and
+> the exhibition screen. All light theme for the white template, except the exhibition screen,
+> which is a dark screen wherever it stands. `DESIGN-SPEC.md` section 10 is the table.
+
 **This file holds the exact words for every slide, where every picture goes, and the exact prompt
 to regenerate any picture with an image model.**
 
-Read [`DESIGN-SPEC.md`](DESIGN-SPEC.md) first for how it all looks - the palette, the type, the
-grid, and the full visual description of each of the nine rendered boards.
+Read [`README.md`](README.md) for what is in this folder and the order to use it, then
+[`DESIGN-SPEC.md`](DESIGN-SPEC.md) for how it all looks - the palette, the type, the grid, and
+the full visual description of each of the nine rendered boards.
+
+**Every figure quoted below is in [`FACTS.md`](FACTS.md), which is generated from the build.** If
+one has moved, re-run `pipeline/scripts/collect_facts.py`, diff that file, and change the
+sentence here before you say it out loud.
 
 - **Team:** Sigmoid &middot; Team ID `<FILL IN>`
 - **Problem Statement:** 26067 &middot; **Theme:** Disaster Management &middot; **Category:** Software
 - **Organisation:** Ministry of Earth Sciences &middot; **Department:** INCOIS, Ocean Valley
 - **Live prototype:** https://rak2315.github.io/samudra-sih26/
 
-**Every number below was measured against the running build on 27 August 2026.** Do not round
-them, do not soften them, and do not add one that is not here.
+**Every number below was re-measured against the running build on 4 September 2026.** Do not round them, do not soften them, and do not add one that is not here.
 
 ---
 
@@ -72,6 +92,26 @@ them, do not soften them, and do not add one that is not here.
 > block of water you fly into, with the Argo floats and moored buoys that measured the same water
 > drawn inside it - and the gap between the model and the measurement given as a number.
 
+> **If you are asked "what else is in it", these are the five things the four bullets below do
+> not name, each measured.** Say at most two of them out loud; the rest are for the questions.
+>
+> - **The bias map.** Every compared instrument recoloured by how far the analysis sat from it,
+>   ranked worst first. INCOIS assimilate Argo, so a float largely shows the model agreeing with
+>   itself - the nine moored buoys are the independent check, and the panel prints both rather
+>   than pooling them: **0.17 degC across 221 floats against 0.75 degC across 9 buoys**.
+> - **Drift, with a score.** Drop a pin and it is carried forward through the analysed currents.
+>   An Argo track *is* measured drift at the parking depth, so the same integrator run from every
+>   float's own position has an answer beside it: **median 38.5 km out over one Argo cycle**,
+>   1,908 cycles, 195 floats, at 1000 m. It is not a search-and-rescue forecast and says so.
+> - **A vertical section.** Draw a line on the water and cut the grid along it, with every cast
+>   within 150 km of the line on the same axes. The standard figure of physical oceanography.
+> - **Drop your own NetCDF file on the page** and its variables appear in the same selector,
+>   through the same adapter interface. The extensibility claim, falsifiable in front of a judge.
+> - **A real climatological normal.** The 2026 analysis differenced against NOAA's World Ocean
+>   Atlas 1991-2020 mean for the same calendar month, which is what a forecaster means by
+>   "warmer than usual" - as distinct from this build's own four-month average, which is a
+>   seasonal swing and is labelled as one.
+
 ### Left column - `images/S2-gapmap.png`
 
 This picture is the "how it addresses the problem" requirement. It quotes each of the five gaps
@@ -82,18 +122,25 @@ PS 26067 names and answers it with what is built. No extra text beside it.
 **Caption, one line, 9 pt, `#6E8898`:**
 
 > The running platform. INCOIS's 30 July 2026 analysis as a block of water 5 m to 2000 m deep,
-> 184 Argo floats and 5 moored buoys drawn where they actually were, and float 1902681's own cast
-> scored against the model at 522 depths.
+> the Argo floats and moored buoys drawn where they actually were, and float 7902384's own
+> 1 August cast scored against that analysis at 996 depths.
+>
+> *Re-captured 2026-09-04, light theme. Do not quote an instrument count off this frame: the
+> number drawn at any one Timestep is between 192 and 220 floats and 5 to 9 buoys, and this
+> caption used to name one of them as though it were the bake's.*
 
 ### Right column, bottom - native text box
 
 Section label above the box, mono caps, teal: `INNOVATION AND UNIQUENESS`
 
-- **The disagreement is a number.** On this float the model reads **0.72 °C** warm across **522**
-  depths, RMS **1.72 °C**. Every instrument carries its own verdict.
+- **Agreement is a number too, and so is disagreement.** The float in the picture agrees
+  closely: **0.17 °C** average gap over **996** depths, RMS **0.47 °C** - Argo 7902384, its
+  1 August cast against the 30 July analysis. Turn the bias map on and every instrument is
+  ranked by that same figure, worst first, and the worst in the basin is a moored buoy the
+  analysis never ingested at **1.66 °C**. *`images/spare-bias.jpg` is that list.*
 - **It shows where there is no evidence.** Observation Coverage is a variable of its own:
-  **6.0%** of the block has no Argo cast behind it, and the picture says exactly where.
-- **It finds the odd water for you.** **111** unusual bodies across 12 analyses, each with a
+  **9.9%** of the block has no Argo cast behind it, and the picture says exactly where.
+- **It finds the odd water for you.** **121** unusual bodies across 12 analyses, each with a
   z-score, a depth band and a footprint in km&sup2;. Isolate one and the rest of the block clips away.
 - **The picture and the truth are kept apart.** The GPU gets a quantised byte texture; every
   number a person reads, and every byte served over OPeNDAP, WMS or NetCDF, comes from the native
@@ -114,7 +161,7 @@ No native body text at all on this slide beyond the title. The boards carry thei
 
 ```
 +---------+  +--------------------------------------------------+
-|         |  |  images/S3-architecture.png    9.20 x 3.38 in    |
+|         |  |  images/S3-architecture.png    9.20 x 3.57 in    |
 | images/ |  |                                                  |
 | S3-     |  +--------------------------------------------------+
 | stack   |  |  images/S3-methodology.png     9.20 x 1.70 in    |
@@ -135,9 +182,17 @@ No native body text at all on this slide beyond the title. The boards carry thei
 ### The one thing that must not shrink
 
 The **green "Working prototype, on live INCOIS data" cell** at the bottom left of
-`S3-methodology.png`. Beside it the strip carries `rak2315.github.io/samudra-sih26`, **230** tests
+`S3-methodology.png`. Beside it the strip carries `rak2315.github.io/samudra-sih26`, **377** tests
 passing, and **0** network calls at demo time. That row is the reason a judge takes the rest of
 the deck at face value.
+
+### The architecture board is the same picture README section 5 shows
+
+`S3-architecture.png` is rendered once and used in both documents, so the deck and the repository
+cannot describe two different systems. It is **1700 x 660 CSS px, ratio 2.58** now that zone 1
+carries seven sources in two columns; place it **9.2 in wide by 3.57 in tall**. If you re-render
+it, re-check that height - the board grows when a source is added, and the sketch above has to
+follow it.
 
 ---
 
@@ -178,7 +233,7 @@ If the slide feels bare, drop `images/S4-coverage.jpg` in small (about 2.6 in wi
 of the left column with the caption:
 
 > Observation Coverage. The tool's own account of where there is no float data behind the
-> analysis - 6.0% of the block, shown rather than filled in.
+> analysis - 9.9% of the block, shown rather than filled in.
 
 ---
 
@@ -218,6 +273,15 @@ of the left column with the caption:
 > Unusual water, found automatically. Each ring marks one body that departed from its own
 > four-month average, with its depth band, its footprint and the number of casts behind it.
 
+Two alternatives for the same slot, both new on 2026-09-04 and both about the audience half of
+the problem statement rather than the forecasting half:
+
+- `images/spare-explore.jpg` - *"The same platform, asked in plain words. Eight questions, each
+  one a preset over controls that already exist, and each carrying the caveat its simplification
+  costs."*
+- `images/spare-kiosk.jpg` - *"The exhibition screen. No panels, type sized for reading across a
+  room, the questions on a loop, and a reset sixty seconds after the last visitor walks away."*
+
 ---
 
 # SLIDE 6 - RESEARCH AND REFERENCES
@@ -233,22 +297,39 @@ reference, not a read. No image needed.
 Analysis Methodology). Temperature and salinity, 24 levels, 5-2000 m. *This is the model field.*
 `erddap.incois.gov.in/erddap/griddap/incois_argo_10d_VAM.html`
 
-**2. Argo GDAC, Coriolis / Ifremer** - `ArgoFloats`. 221 floats, with per-value quality flags.
+**2. Argo GDAC, Coriolis / Ifremer** - `ArgoFloats`. 228 floats, with per-value quality flags.
 *These are the observations.*
 `erddap.ifremer.fr/erddap/tabledap/ArgoFloats.html`
 
-**3. Argo synthetic BGC, Ifremer** - `ArgoFloats-synthetic-BGC`. Chlorophyll from 49 floats.
+**3. Argo synthetic BGC, Ifremer** - `ArgoFloats-synthetic-BGC`. Chlorophyll from 52 floats.
 `erddap.ifremer.fr/erddap/tabledap/ArgoFloats-synthetic-BGC.html`
 
 **4. NOAA OSMC real-time (GTS)** - `OSMC_RealTime`. 9 moored buoys, including India's own OMNI
 network run by NIOT with INCOIS as data centre, and the MoES-NOAA RAMA array. Public domain.
 `erddap.aoml.noaa.gov/gdp/erddap/tabledap/OSMC_RealTime.html`
 
-**5. Copernicus Marine** - `GLOBAL_ANALYSISFORECAST_PHY_001_024`, surface currents over WMTS,
-carried as a labelled image layer and never as a number.
+**5. Copernicus Marine** - `GLOBAL_ANALYSISFORECAST_PHY_001_024`. Horizontal current velocity
+`uo` and `vo` at 1/12 degree, **as real numbers**, with a speed under the cursor read off the
+native grid. *One free Copernicus account rebuilds the data; no account is needed to view or use
+the platform, and the credential never leaves the bake machine.* ADR 0013.
 `data.marine.copernicus.eu/product/GLOBAL_ANALYSISFORECAST_PHY_001_024/description`
 
-**6. Natural Earth 1:50m coastlines** - public domain coastline geometry.
+**6. INCOIS ERDDAP, second analysis** - `incois_argo_10day_McCreary`, the Kessler-McCreary
+analysis of the *same* Argo floats, carrying INCOIS's own observation count, standard deviation
+and RMSE. The spread between the two analyses is an uncertainty signal that needs no new data.
+`erddap.incois.gov.in/erddap/griddap/incois_argo_10day_McCreary.html`
+
+**7. EGO glider GDAC, Ifremer** - `ftp.ifremer.fr/ifremer/glider/v2`, the glider archive PS 26067
+names. Read, and **empty for a reason worth reading**: 1 glider, 2 deployments, 2,876 casts in
+this box, newest **14 Oct 2022**, nothing since. The gap is India's glider programme, not the
+adapter, and the finding ships instead of the casts.
+
+**8. World Ocean Atlas 2023, NOAA NCEI** - `decav91C0`, the objectively analysed monthly
+climatological mean for **1991-2020**, one degree, on exactly the node centres INCOIS use. Read
+anonymously over OPeNDAP at bake time. ADR 0016.
+`ncei.noaa.gov/thredds-ocean/dodsC/woa23`
+
+**9. Natural Earth 1:50m coastlines** - public domain coastline geometry.
 `github.com/nvkelso/natural-earth-vector`
 
 **Live provenance page** - every figure in this deck read from the build's own manifest, beside
@@ -284,12 +365,15 @@ the exact request you can run yourself:
 
 ### Our own engineering record
 
-- **Twelve architecture decision records** covering the renderer choice, the data sourcing, the
-  depth warp, the volume encoding, the derived fields we built and deleted, and the open
-  standards. `github.com/RAK2315/samudra-sih26` &rarr; `docs/adr/`
+- **Seventeen architecture decision records** covering the renderer choice, the data sourcing,
+  the depth warp, the volume encoding, the derived fields we built and deleted, the open
+  standards, the scored drift model, the climatological baseline and the current flow.
+  `github.com/RAK2315/samudra-sih26` &rarr; `docs/adr/`
 - **Every unmet clause of PS 26067**, researched with dates and row counts, with the decision
   taken on each and the measurement behind it. `docs/plan/03-requirement-gaps.md`
-- **230 automated tests**, run in CI on every push.
+- **377 automated tests** on the science and on what we serve, plus **13 browser probes** that
+  drive the built app and measure what actually reaches the screen. Both run in CI on every
+  push.
 
 > **Before you export, click every link on this slide.** All four DOIs above were checked on
 > 1 September 2026 and resolve. Three references from an earlier draft were removed because they
@@ -642,7 +726,9 @@ A short list, because each of these was considered and rejected for a reason.
 | Say "no other tool does this" | We have not finished checking Argovis, Copernicus MyOcean and the EU Digital Twin Ocean. Say "co-visualisation in a browser, in 3D, with the comparison quantified" - the narrow claim is defensible, the absolute one is not. |
 | Claim gliders, CTD sections, HF-radar or ADCP | None are in the build, and each was refused with a measurement. The last glider left this basin on 14 Oct 2022. Saying so is a stronger answer than a vague promise. |
 | Claim machine learning anywhere | There is none, deliberately. Twelve timesteps is not a training set, and a neural gap-filler would paint over the 6% that is the most honest thing in the tool. |
-| Say "230 Argo floats" | It is 221 Argo floats **and** 9 moored buoys, and the number drawn on screen at any one timestep is between 184 and 210 floats and 5 to 9 buoys. Say "instruments" unless you mean floats. |
-| Put a speed number on the currents layer | It is Copernicus's own rendered image, carried under their attribution. It has no tooltip and no value under the cursor, and that is on purpose. |
+| Say "237 Argo floats" | It is 228 Argo floats **and** 9 moored buoys, and the number drawn on screen at any one timestep is between 192 and 220 floats and 5 to 9 buoys. Say "instruments" unless you mean floats. |
+| Say the currents are a picture | They **were**, and are not any more. ADR 0013 superseded 0011: currents are Copernicus's own `uo` and `vo` at 1/12 degree, a Field with a palette, arrows or moving dots on the chosen depth, and a real speed under the cursor read off the native grid. The old caveat is now the opposite of the truth. |
+| Call the moving current dots a simulation | They are 2,400 dots carried by the analysed field on one chosen depth, running the drift model's own step rule - measured 0.002 km from a drift pin after 724 km of travel. Not three-dimensional, and refused as such: neither provider publishes a vertical velocity. ADR 0017. |
+| Claim the platform predicts a drift track | It integrates the analysed currents and nothing else - no wind, no Stokes drift, no leeway. What makes it worth showing is that it is **scored**: median 38.5 km out over one Argo cycle. Say that number, not "it predicts". |
 | Add a stock photo of the ocean | Every picture in this deck is either the real architecture or the real software. That is itself the argument. |
 | Add a seventh slide | The portal caps it at six. |

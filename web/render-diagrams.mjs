@@ -6,6 +6,7 @@
  * arrow at the right box. See ppt/DESIGN-SPEC.md.
  */
 import { chromium } from "playwright";
+import { copyFile, mkdir } from "node:fs/promises";
 import path from "path";
 import { pathToFileURL } from "url";
 
@@ -31,9 +32,25 @@ const boards = {
   ben: "S5-benefits.png",
 };
 
+/**
+ * Boards that a document outside `ppt/` also shows, and where its copy goes.
+ *
+ * README section 5 is the architecture, in the same picture the deck uses. One board, two
+ * places - because two drawings of one system drift apart and nothing notices, which is the
+ * same failure `PUBLISH_MAP` in `capture.mjs` exists to stop for screenshots.
+ */
+const alsoInto = {
+  "S3-architecture.png": path.join(root, "docs", "images", "architecture.png"),
+};
+
 for (const [id, file] of Object.entries(boards)) {
   const box = await page.locator(`#${id}`).boundingBox();
   await page.locator(`#${id}`).screenshot({ path: path.join(out, file) });
   console.log(`rendered ${file}  ${Math.round(box.width)}x${Math.round(box.height)} css px`);
+  if (alsoInto[file]) {
+    await mkdir(path.dirname(alsoInto[file]), { recursive: true });
+    await copyFile(path.join(out, file), alsoInto[file]);
+    console.log(`  also copied to ${path.relative(root, alsoInto[file])}`);
+  }
 }
 await browser.close();

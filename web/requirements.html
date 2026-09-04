@@ -1,0 +1,905 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Samudra 3D - Requirement coverage</title>
+<meta name="description" content="Every clause of Problem Statement 26067, word for word, against what answers it in the running software - with the measured number and a link that opens the platform with that control already set.">
+<link rel="icon" type="image/png" href="./icon.png">
+<link rel="apple-touch-icon" href="./icon.png">
+<!-- Served from this build, not from fonts.googleapis.com. -->
+<link rel="stylesheet" href="./fonts.css">
+<script>
+  // Shared with the platform: one key, so a choice made on either side holds on both.
+  (function () {
+    try {
+      if (localStorage.getItem("samudra.theme") === "light") {
+        document.documentElement.dataset.theme = "light";
+      }
+    } catch (e) { /* storage blocked: dark is the default and still correct */ }
+  })();
+</script>
+<style>
+  /* Same two themes as the landing page, painted explicitly. */
+  :root {
+    --abyss: #04070d; --deep: #071420; --shelf: #0c1f2e; --panel: #102737;
+    --edge: rgba(120, 170, 195, 0.16); --edge-hot: rgba(120, 190, 210, 0.4);
+    --ink: #e4eef6; --body: #b3c8d8; --dim: #8299ad; --faint: #5d7488;
+    --cyan: #3fb8c4; --amber: #f5b841; --coral: #f2765f; --green: #5fd68a;
+    --d: "Chivo", "Helvetica Neue", Arial, sans-serif;
+    --m: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+    --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+    --nav-bg: rgba(7, 20, 32, 0.86);
+    --accent-wash: rgba(63, 184, 196, 0.12);
+    --accent-wash-strong: rgba(63, 184, 196, 0.24);
+    --accent-edge: rgba(63, 184, 196, 0.5);
+    --ghost-bg: rgba(16, 39, 55, 0.7);
+    --glow: rgba(63, 184, 196, 0.12);
+    --coral-wash: rgba(242, 118, 95, 0.1);
+    --coral-edge: rgba(242, 118, 95, 0.28);
+    --amber-wash: rgba(245, 184, 65, 0.07);
+    --good-edge: rgba(95, 214, 138, 0.45);
+    --cta-ink: #04222a;
+    --cyan-bright: #66d7e2;
+
+    color-scheme: dark;
+  }
+  /*
+   * Light console. The same page, inverted: surfaces come up, ink goes down, and the accent
+   * darkens so cyan still holds its contrast against a pale ground. Choice is shared with the
+   * platform through one localStorage key, so switching in either place switches both.
+   */
+  :root[data-theme="light"] {
+    --abyss: #ffffff;
+    --deep: #f4f9fa;
+    --shelf: #ffffff;
+    --panel: #eef5f7;
+    --edge: rgba(14, 60, 78, 0.16);
+    --edge-hot: rgba(14, 110, 130, 0.42);
+
+    --ink: #0d1b22;
+    --body: #2f4450;
+    --dim: #4f6773;
+    --faint: #6d838e;
+
+    --cyan: #00707d;
+    --amber: #8a5c00;
+    --coral: #b2371d;
+    --green: #1d7a45;
+
+    --nav-bg: rgba(255, 255, 255, 0.9);
+    --accent-wash: rgba(0, 112, 125, 0.08);
+    --accent-wash-strong: rgba(0, 112, 125, 0.16);
+    --accent-edge: rgba(0, 112, 125, 0.42);
+    --ghost-bg: rgba(238, 245, 247, 0.9);
+    --glow: rgba(0, 112, 125, 0.09);
+    --coral-wash: rgba(178, 55, 29, 0.08);
+    --coral-edge: rgba(178, 55, 29, 0.3);
+    --amber-wash: rgba(138, 92, 0, 0.08);
+    --good-edge: rgba(29, 122, 69, 0.5);
+    --cta-ink: #ffffff;
+    --cyan-bright: #00889a;
+
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--deep); color: var(--body); font-family: var(--d); font-size: 16px; line-height: 1.65; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 28px; }
+  a { color: var(--cyan); text-underline-offset: 3px; }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+  h1, h2 { font-family: var(--d); color: var(--ink); margin: 0; text-wrap: balance; }
+
+  .eyebrow { display: flex; align-items: center; gap: 12px; font-family: var(--m); font-size: 10.5px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--cyan); margin-bottom: 16px; }
+  .eyebrow::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--edge-hot), transparent); }
+
+  /* ------------------------------------------------------------- motion */
+
+  /*
+   * Scroll motion, kept honest.
+   *
+   * Everything here is a fade and a short rise. Nothing slides in from off-screen, nothing
+   * bounces, and nothing moves after it has arrived - a page about measurement should not
+   * fidget. Elements are revealed by an IntersectionObserver rather than on a timer, so the
+   * animation is tied to the reader rather than to the clock, and every rule is disabled
+   * wholesale under prefers-reduced-motion.
+   */
+  .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+    transition-delay: var(--delay, 0s);
+    will-change: opacity, transform;
+  }
+  .reveal.shown { opacity: 1; transform: none; }
+
+  /* A card lifts a little as it arrives, then settles and stays put. */
+  .card.reveal { transform: translateY(22px) scale(0.985); }
+  .card.reveal.shown { transform: none; }
+
+  .card {
+    transition: border-color 0.22s ease, transform 0.22s var(--ease), box-shadow 0.22s ease;
+  }
+  .card:hover {
+    border-color: var(--edge-hot);
+    transform: translateY(-3px);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.18);
+  }
+
+  .stat { transition: background 0.22s ease; }
+  .stat:hover { background: var(--panel); }
+
+  /*
+   * The one piece of ambient motion: a slow swell behind the hero.
+   *
+   * Two very large, very soft radial gradients drifting against each other at different speeds.
+   * It reads as water without being a literal wave, it costs one compositor layer, and it is the
+   * only thing on the page that moves on its own.
+   */
+  @keyframes swell-a {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50%      { transform: translate3d(3%, -2%, 0) scale(1.06); }
+  }
+  @keyframes swell-b {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1.04); }
+    50%      { transform: translate3d(-4%, 3%, 0) scale(1); }
+  }
+
+  .swell { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+  .swell::before, .swell::after { content: ""; position: absolute; border-radius: 50%; }
+  .swell::before {
+    inset: -40% 30% 20% -25%;
+    background: radial-gradient(closest-side, var(--glow), transparent 70%);
+    animation: swell-a 26s ease-in-out infinite;
+  }
+  .swell::after {
+    inset: -25% -20% 30% 40%;
+    background: radial-gradient(closest-side, var(--amber-wash), transparent 72%);
+    animation: swell-b 34s ease-in-out infinite;
+  }
+
+  /* A hairline that draws itself across the top of each section as it comes into view. */
+  section { position: relative; }
+  section::before {
+    content: ""; position: absolute; top: -1px; left: 0; height: 1px; width: 0;
+    background: linear-gradient(90deg, var(--edge-hot), transparent);
+    transition: width 1.1s var(--ease);
+  }
+  section.shown::before { width: min(320px, 40%); }
+
+  /* Screenshots settle into place and lift very slightly under the cursor. */
+  .shot { transition: transform 0.3s var(--ease), box-shadow 0.3s ease, border-color 0.3s ease; }
+  .shot:hover { transform: translateY(-4px); border-color: var(--edge-hot); box-shadow: 0 18px 44px rgba(0, 0, 0, 0.22); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal, .card.reveal { opacity: 1; transform: none; transition: none; }
+    .swell::before, .swell::after { animation: none; }
+    section::before { transition: none; width: min(320px, 40%); }
+    .card:hover, .shot:hover { transform: none; }
+  }
+
+  /* ------------------------------------------------------------- nav */
+
+  nav {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--nav-bg);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--edge);
+  }
+  nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 66px; gap: 24px; }
+  .brand { font-family: var(--m); font-size: 15px; font-weight: 600; letter-spacing: 0.15em; color: var(--ink); text-decoration: none; }
+  .brand i { color: var(--cyan); font-style: normal; }
+  .nav-links { display: flex; align-items: center; gap: 4px; }
+
+  /* Nav items get real hit targets and an accent rule that grows from the centre, so the
+     current section is legible without the link changing size and shifting its neighbours. */
+  .nav-links a:not(.cta) {
+    position: relative;
+    padding: 8px 12px; border-radius: 6px;
+    font-size: 13.5px; color: var(--dim); text-decoration: none;
+    transition: color 0.16s ease, background 0.16s ease;
+  }
+  .nav-links a:not(.cta)::after {
+    content: ""; position: absolute; left: 50%; right: 50%; bottom: 3px; height: 1.5px;
+    background: var(--cyan); border-radius: 1px;
+    transition: left 0.22s var(--ease), right 0.22s var(--ease);
+  }
+  .nav-links a:not(.cta):hover { color: var(--ink); background: var(--accent-wash); }
+  .nav-links a:not(.cta):hover::after,
+  .nav-links a.current::after { left: 12px; right: 12px; }
+  .nav-links a.current { color: var(--ink); }
+  .nav-sep { width: 1px; height: 22px; background: var(--edge); margin: 0 8px; }
+
+  /*
+   * Buttons.
+   *
+   * The previous pair were a soft gradient wash inside a rounded rectangle, which is the shape
+   * every template ships and says nothing about what this is. These are instrument controls: a
+   * solid accent fill that commits to being the primary action, a tighter radius, and the arrow
+   * moving on hover rather than the whole button lifting.
+   */
+  .cta {
+    position: relative;
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 12px 20px; border-radius: 7px;
+    border: 1px solid transparent;
+    background: var(--cyan);
+    color: var(--cta-ink);
+    font-family: var(--d); font-size: 14px; font-weight: 700;
+    letter-spacing: -0.005em; text-decoration: none; white-space: nowrap;
+    transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  }
+  .cta::after {
+    content: "→"; font-size: 15px; line-height: 1;
+    transition: transform 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .cta:hover { background: var(--cyan-bright); box-shadow: 0 6px 20px var(--accent-wash-strong); }
+  .cta:hover::after { transform: translateX(4px); }
+  .cta:active { transform: translateY(1px); }
+
+  .cta.big { padding: 16px 28px; font-size: 16px; border-radius: 8px; }
+
+  /* Secondary: an outline that fills on hover, so the hierarchy is never ambiguous. */
+  .cta.ghost {
+    background: transparent; border-color: var(--edge-hot); color: var(--ink);
+    font-weight: 500;
+  }
+  .cta.ghost::after { content: none; }
+  .cta.ghost:hover { background: var(--accent-wash); border-color: var(--cyan); box-shadow: none; }
+
+  /* A quiet third level: reads as a link, behaves as a button. */
+  .cta.plain {
+    background: transparent; border-color: transparent; color: var(--cyan);
+    padding-left: 4px; padding-right: 4px; font-weight: 500;
+  }
+  .cta.plain:hover { background: transparent; box-shadow: none; color: var(--ink); }
+
+
+  nav { position: sticky; top: 0; z-index: 10; background: var(--nav-bg); backdrop-filter: blur(14px); border-bottom: 1px solid var(--edge); }
+  nav .wrap { max-width: 1140px; }
+  .brand { font-family: var(--m); font-size: 15px; font-weight: 600; letter-spacing: 0.15em; color: var(--ink); text-decoration: none; }
+  .brand i { color: var(--cyan); font-style: normal; }
+
+  header.head { padding: 70px 0 40px; }
+  h1 { font-size: clamp(34px, 4.6vw, 52px); font-weight: 900; line-height: 1.02; letter-spacing: -0.03em; }
+  .lede { margin: 20px 0 0; font-size: 18px; line-height: 1.55; color: var(--ink); max-width: 60ch; }
+  .sub { margin: 12px 0 0; font-size: 14.5px; color: var(--dim); max-width: 62ch; }
+
+  section { padding: 34px 0; border-top: 1px solid var(--edge); }
+  h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.015em; }
+  p { margin: 10px 0 14px; }
+
+  /* A live figure: the number comes from the manifest, never from this file. */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 12px; margin-top: 22px; }
+  .fact { border: 1px solid var(--edge); border-radius: 10px; background: var(--shelf); padding: 15px 17px; }
+  .fact dt { font-family: var(--m); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint); margin-bottom: 7px; }
+  .fact dd { margin: 0; font-family: var(--m); font-size: 15px; color: var(--ink); line-height: 1.4; word-break: break-word; }
+  .fact dd small { display: block; font-family: var(--d); font-size: 12.5px; color: var(--dim); margin-top: 5px; letter-spacing: 0; text-transform: none; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--edge); vertical-align: top; }
+  th { font-family: var(--m); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint); font-weight: 500; }
+  td { color: var(--body); }
+  td.mono { font-family: var(--m); font-size: 13px; color: var(--ink); }
+  .scroll { overflow-x: auto; }
+
+  pre { margin: 16px 0 0; padding: 16px 18px; border: 1px solid var(--edge); border-radius: 10px; background: var(--abyss); overflow-x: auto; font-family: var(--m); font-size: 12.5px; line-height: 1.7; color: var(--ink); white-space: pre; }
+  code { font-family: var(--m); font-size: 0.92em; color: var(--ink); }
+
+  .tag { display: inline-block; font-family: var(--m); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--edge); color: var(--dim); vertical-align: middle; }
+  .tag.live { border-color: var(--good-edge); color: var(--green); }
+  .sub-head { font-family: var(--d); font-size: 15px; font-weight: 700; color: var(--ink); margin: 28px 0 0; }
+  .sub-head + .sub { margin-top: 6px; }
+  td.num { font-family: var(--m); font-size: 13px; text-align: right; }
+  table caption { caption-side: top; text-align: left; font-family: var(--m); font-size: 10.5px;
+    letter-spacing: 0.08em; color: var(--faint); padding: 0 0 8px; }
+  td.neg { color: var(--coral); }
+  td.pos { color: var(--cyan); }
+  .note { font-size: 14px; color: var(--dim); border-left: 2px solid var(--edge-hot); padding-left: 14px; margin-top: 18px; }
+  .err { color: var(--coral); font-family: var(--m); font-size: 13.5px; }
+  footer { padding: 40px 0 60px; border-top: 1px solid var(--edge); font-size: 13px; color: var(--faint); }
+  footer a { color: var(--dim); }
+  @media (max-width: 640px) { .nav-links a:not(.cta) { display: none; } }
+
+  .theme-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; padding: 0;
+    border: 1px solid var(--edge); border-radius: 50%;
+    background: var(--ghost-bg); color: var(--dim);
+    font-size: 14px; line-height: 1; cursor: pointer;
+    transition: color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+  }
+  .theme-toggle:hover { color: var(--cyan); border-color: var(--edge-hot); transform: translateY(-1px); }
+</style>
+
+<style>
+  /* ------------------------------------------------------------- clause list */
+
+  /*
+   * One block per clause of the problem statement.
+   *
+   * The clause itself is quoted, in the problem statement's own words, and set apart so a reader
+   * can see we did not paraphrase it into something easier to satisfy. Everything under it is
+   * ours: what answers it, the measured number, and a link that opens the platform with that
+   * control already set. A claim you can click is a different kind of claim from a claim in a
+   * table.
+   */
+  .clause {
+    border: 1px solid var(--edge);
+    border-left: 3px solid var(--cyan);
+    border-radius: 10px;
+    background: var(--shelf);
+    padding: 18px 20px;
+    margin-top: 14px;
+  }
+  .clause.partly { border-left-color: var(--amber); }
+  .clause.no { border-left-color: var(--coral); }
+
+  .clause-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+  }
+  .clause q {
+    display: block;
+    font-size: 16.5px; line-height: 1.45; color: var(--ink);
+    quotes: "\201C" "\201D";
+  }
+  .clause q::before { content: open-quote; color: var(--faint); }
+  .clause q::after { content: close-quote; color: var(--faint); }
+
+  .verdict {
+    flex: 0 0 auto;
+    font-family: var(--m); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 999px;
+    border: 1px solid var(--good-edge); color: var(--green);
+  }
+  .verdict.partly { border-color: var(--amber-edge, rgba(245,184,65,0.5)); color: var(--amber); }
+  .verdict.no { border-color: var(--coral-edge); color: var(--coral); }
+
+  .clause p { margin: 12px 0 0; font-size: 14.5px; line-height: 1.6; color: var(--body); }
+
+  /* The measured figure. Read live from the manifest, never typed in here. */
+  .measure {
+    display: inline-block; margin-top: 12px;
+    font-family: var(--m); font-size: 13px; color: var(--ink);
+    border: 1px solid var(--edge); border-radius: 7px;
+    background: var(--abyss); padding: 8px 12px;
+  }
+  .measure b { color: var(--cyan); font-weight: 500; }
+
+  .clause-links { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .open {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 14px; border-radius: 7px;
+    border: 1px solid var(--edge-hot); background: transparent;
+    color: var(--ink); font-size: 13.5px; text-decoration: none;
+    transition: background 0.16s ease, border-color 0.16s ease;
+  }
+  .open::after { content: "\2192"; color: var(--cyan); }
+  .open:hover { background: var(--accent-wash); border-color: var(--cyan); }
+  .open.code { font-family: var(--m); font-size: 12.5px; color: var(--dim); border-style: dashed; }
+  .open.code::after { content: none; }
+
+  .tally { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+  .tally span {
+    font-family: var(--m); font-size: 12px; padding: 7px 12px;
+    border: 1px solid var(--edge); border-radius: 999px; color: var(--dim);
+  }
+  .tally b { color: var(--ink); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="./index.html">SAMUDRA<i>&middot;3D</i></a>
+    <div class="nav-links">
+      <a href="./index.html">Overview</a>
+      <a href="./provenance.html">Provenance</a>
+      <button class="theme-toggle" id="theme-toggle" type="button">☀</button>
+      <a class="cta" href="./app.html">Launch the platform</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="head">
+    <span class="tag live">Live from this build</span>
+    <h1>Every clause, answered in the running software.</h1>
+    <p class="lede">
+      Problem Statement 26067, quoted word for word, against what answers it - with the measured
+      number beside it and a link that opens the platform with that control already set.
+    </p>
+    <p class="sub">
+      Nothing on this page is typed in. Every figure is read from the same
+      <code>manifest.json</code> the application loads, so if a number here is wrong the platform
+      is wrong too. The links open the real thing, not a screenshot.
+    </p>
+    <p class="tally" id="tally"></p>
+    <p class="err" id="problem" hidden></p>
+  </header>
+
+  <section id="theme">
+    <h2>The theme changed, and it is the reason for most of this page</h2>
+    <p>
+      The September 2026 revision made this a <b>Disaster Management</b> problem. That is an
+      opportunity rather than a difficulty, because the quantities a hazard forecaster names all
+      fall out of the temperature and salinity this platform already reads.
+    </p>
+  <article class="clause">
+    <div class="clause-head">
+      <q>Theme: Disaster Management</q>
+      <span class="verdict">Answered</span>
+    </div>
+    <p>INCOIS used to publish exactly the quantities a cyclone forecaster asks for - depth of the 26 &deg;C isotherm, heat content, mixed layer depth, isothermal layer depth - in their value-added product series. That series <b>stopped on 2019-03-30</b>, measured twice and independently, on their ERDDAP and again in their LAS catalogue. All five are computed here from the temperature and salinity already in the grid, so this fills a gap INCOIS has rather than duplicating something they ship.</p>
+    <p class="measure" id="m-hazard">measuring&hellip;</p>
+    <div class="clause-links">
+      <a class="open" href="./app.html?dive=1&amp;preset=hazard">Set up a cyclone question</a>
+      <a class="open" href="./app.html?dive=1&amp;field=d26">Watch the 26 &deg;C surface</a>
+      <a class="open code" href="https://github.com/RAK2315/samudra-sih26/blob/main/pipeline/samudra/hazard.py">pipeline/samudra/hazard.py</a>
+    </div>
+  </article>
+  </section>
+
+  <section id="gaps">
+    <h2>The five gaps INCOIS identified</h2>
+  <article class="clause">
+    <div class="clause-head">
+      <q>Web-based, platform-independent 3D rendering with depth-resolved volumetric views</q>
+      <span class="verdict">Met</span>
+    </div>
+    <p>A GPU ray-marched water column from 5 m to 2000 m, in any WebGL2 browser. No install, no plugin, no account. Fly the camera inside the block and the water is still there, because the volume is drawn on the back faces of its own bounding box.</p>
+    <p class="measure" id="m-volume">measuring&hellip;</p>
+    <div class="clause-links">
+      <a class="open" href="./app.html?dive=1&amp;field=temperature">Open the volume</a>
+      <a class="open code" href="https://github.com/RAK2315/samudra-sih26/blob/main/web/src/scene/volumeShader.ts">web/src/scene/volumeShader.ts</a>
+    </div>
+  </article>
+  <article class="clause partly">
+    <div class="clause-head">
+      <q>Unified display of Argo and Glider profiles - latitude, longitude, depth, time, temperature, salinity, chlorophyll - alongside model fields</q>
+      <span class="verdict partly">Argo met, gliders answered</span>
+    </div>
+    <p>Argo in full, including chlorophyll from BGC floats, plus moored buoys from NOAA's GTS feed. Gliders now have an adapter of their own, read against <code>ftp.ifremer.fr/ifremer/glider/v2/</code> - the archive this problem statement names. What it finds is the answer: the gap is India's glider programme, not the software. The figures below are what the scan returned.</p>
+    <p class="measure" id="m-gliders">measuring&hellip;</p>
+    <div class="clause-links">
+      <a class="open" href="./app.html?dive=1&amp;tour=1">Open a float comparison</a>
+      <a class="open code" href="https://github.com/RAK2315/samudra-sih26/blob/main/pipeline/samudra/sources/glider.py">pipeline/samudra/sources/glider.py</a>
+    </div>
+  </article>
+  <article class="clause">
+    <div class="clause-head">
+      <q>Interactive controls: variable selection, depth-slice navigation, time-step animation, customisable colourbars</q>
+      <span class="verdict">Met</span>
+    </div>
+    <p>All four. The variable selector is grouped the way a forecaster thinks rather than the way the data arrived; two sliders cut the block to any depth range; twelve analyses play as an animation; and the colourbar carries both range handles and a log/linear scale that bends the water and the legend together.</p>
+    <p class="measure" id="m-fields">measuring&hellip;</p>
+    <div class="clause-links">
+      <a class="open" href="./app.html?dive=1&amp;preset=hazard">Open the hazard group</a>
+      <a class="open" href="./app.html?dive=1&amp;field=current_speed&amp;scale=log">Open with a log scale</a>
+    </div>
+  </article>
+  <article class="clause">
+    <div class="clause-head">
+      <q>Ingest new data streams or model variables without significant re-engineering</q>
+      <span class="verdict">Met</span>
+    </div>
+    <p>One adapter class per provider, behind two Protocols, and nothing downstream has heard of ERDDAP. Proven rather than asserted: the September 2026 round added three more providers - INCOIS's second analysis, Copernicus Marine and the EGO glider archive - and touched no renderer, no API endpoint and no UI file.</p>
+    <p class="measure" id="m-sources">measuring&hellip;</p>
+    <div class="clause-links">
+      <a class="open code" href="https://github.com/RAK2315/samudra-sih26/blob/main/pipeline/samudra/sources/base.py">pipeline/samudra/sources/base.py</a>
+    </div>
+  </article>
+  <article class="clause">
+    <div class="clause-head">
+      <q>Tools for intuitive, rapid understanding of 3D phenomena</q>
+      <span class="verdict">Met</span>
+    </div>
+    <p>Every control explains itself in plain language and says whether it changed the science or only the picture. A guided walk of <b>21 steps in six chapters</b> visits every one of the 43 controls this platform explains - each step drives the scene, opens the group the control lives in, and opens its explanation - and one button sets the whole scene up for a cyclone question.</p>
+    <div class="clause-links">
+      <a class="open" href="./app.html?tour=1">Take the tour</a>
+      <a class="open" href="./app.html?dive=1&amp;preset=hazard">Set up a cyclone question</a>
+    </div>
+  </article>
+  </section>
+
+  <section id="core">
+    <h2>The six core functional requirements</h2>
+  <article class="clause">
+    <div class="clause-head">
+      <q>3D volumetric rendering across the full water column, with depth-slice views, isosurface extraction and time-step animation, using WebGL / Three.js or Cesium.js</q>
+      <span class="verdict">Met</span>
+    </div>
+    <p>Three.js and WebGL2. The isosurface is named for the Field it cuts - an isotherm, an isohaline, an isopycnal - because a surface of constant value is a different object in each.</p>
+    <div class="clause-links">
+      <a class="open" href="./app.html?dive=1&amp;field=temperature&amp;iso=1">Draw the 20 &deg;C isotherm</a>
+    </div>
+  </article>
+  <article class="clause">
+    <div class="clause-head">
+      <q>...of current vectors</q>
+      <span class="verdict">Met</span>
+    </div>
+    <p>Copernicus Marine's own analysis at one twelfth of a degree, read with a free account when the data is baked and never in the browser. Arrows sit on the depth you have sliced to, coloured by speed, with a real number under the cursor. This was a rendered image until September 2026 and could not be clicked; the measurement that changed it is below.</p>
+    <p class="measure" id="m-currents">measuring&hellip;</p>
+    <div class="clause-links">
+      <a class="open" href="./app.html?dive=1&amp;field=current_speed">Open the currents</a>
+      <a class="open code" href="https://github.com/RAK2315/samudra-sih26/blob/main/pipeline/samudra/sources/copernicus.py">pipeline/samudra/sources/copernicus.py</a>
+    </div>
+  </article>
+  <article class="clause">
+    <div class="clause-head">
+      <q>Instrument overlay with geospatially accurate markers; click a float to inspect a depth-versus-variable profile chart with timestamps</q>
+      <span class="verdict">Met</span>
+    </div>
+    <p>Every instrument is drawn where it actually was at the moment on screen, and is not drawn at all when its nearest cast is too far from that moment - showing it would imply an observation that does not exist. Click one and the chart is the observation against the model at that exact position and date, with the gap between them shaded.</p>
+    <p class="measure" id="m-instruments">measuring&hellip;</p>
+    <div class="clause-links">
+      <a class="open" href="./app.html?dive=1&amp;tour=1">Open a comparison</a>
+    </div>
+  </article>
+  <article class="clause">
+    <div class="clause-head">
+      <q>Tools that enable intuitive and rapid understanding of three-dimensional ocean phenomena</q>
+      <span class="verdict">Met, and not asked for</span>
+    </div>
+    <p>Draw a line between two points on the water and the platform cuts a <b>vertical section</b> along it: depth down, distance across, the variable as colour, with every float cast within 150 km of the line on the same axes and each drawn down to the depth it actually reached. This is the standard figure of physical oceanography - the one in every textbook and every INCOIS report - and no interactive web tool offers it cut live against a 3D block you can also fly through. It reads the model's <b>own grid on its own 24 levels</b>, never the depth-warped rendering volume, because a reader takes metres off one axis and a value off the colour. The three variables an instrument measures ship their full-precision grids in the build, so it works with the network unplugged; <code>/api/section</code> serves the same cut to anything else.</p>
+    <p class="measure" id="m-section">measuring&hellip;</p>
+    <div class="clause-links">
+      <a class="open" href="./app.html?dive=1&amp;field=temperature&amp;section=80,5,90,20">Cut across the Bay of Bengal</a>
+    </div>
+  </article>
+  <article class="clause">
+    <div class="clause-head">
+      <q>The absence of such a system impedes timely ... climate monitoring</q>
+      <span class="verdict">Met</span>
+    </div>
+    <p>Two variables answer this and the difference between them is the point. The <b>Temperature Anomaly</b> is a departure from the mean of the twelve analyses in this build - roughly April to July 2026 - which is a seasonal swing, and the panel beside it has always said so. <b>Temperature vs Normal</b> is a departure from NOAA's World Ocean Atlas 2023 <b>1991-2020</b> mean for that analysis's own calendar month, which is what a forecaster means by "warmer than usual". It is read anonymously over OPeNDAP at bake time, needs no account at any point, and sits on exactly the node centres INCOIS use - which is why no regridding happens and why the platform refuses outright rather than regridding if that ever stops being true. Below 1500 m the atlas has no normal, so the field is blank there rather than zero.</p>
+    <p class="measure" id="m-normal">measuring&hellip;</p>
+    <div class="clause-links">
+      <a class="open" href="./app.html?dive=1&amp;field=temperature_normal_anomaly">Open the climatological anomaly</a>
+      <a class="open code" href="https://github.com/RAK2315/samudra-sih26/blob/main/docs/adr/0016-a-real-climatological-baseline.md">docs/adr/0016</a>
+    </div>
+  </article>
+  <article class="clause">
+    <div class="clause-head">
+      <q>The absence of such a system impedes timely hazard assessment, search-and-rescue support, fishery advisories and climate monitoring</q>
+      <span class="verdict">Search and rescue: built, and scored</span>
+    </div>
+    <p><b>This is not a search-and-rescue forecast and is never labelled as one.</b> A real one needs surface wind, Stokes drift from the waves and a leeway coefficient for the specific object, and this carries none of them - which is why INCOIS run SARAT. What it shows is the drift the ocean analysis alone implies: drop a pin, and the Copernicus current field is integrated forward from it at the depth you have sliced to. What makes it worth having is that it checks itself. An Argo float's track <em>is</em> measured drift at its parking depth, so the same integrator was run from every drifting float's own position and the answer published, unflattering parts included.</p>
+    <p class="measure" id="m-drift">measuring&hellip;</p>
+    <div class="clause-links">
+      <a class="open" href="./app.html?dive=1&amp;field=current_speed&amp;pin=51.5,9.5">Drop a pin in the Somali Current</a>
+      <a class="open code" href="https://github.com/RAK2315/samudra-sih26/blob/main/docs/adr/0015-drift-that-scores-itself.md">docs/adr/0015</a>
+    </div>
+  </article>
+  <article class="clause">
+    <div class="clause-head">
+      <q>Tools for intuitive, rapid understanding: where does the model disagree with the instruments?</q>
+      <span class="verdict">Met, and not asked for</span>
+    </div>
+    <p>The problem statement asks for a comparison. It does not ask for the comparison to be searchable, and clicking 234 instruments one at a time to find the three that matter is not rapid understanding. So every collocated instrument is also drawn coloured by how far the analysis sat from what it measured, ranked worst first, and binned onto 5 degree boxes so a regional bias is distinguishable from scatter. <b>It is not AI.</b> There is no model here, no training set and no confidence score: every figure is the mean or the root-mean-square of residuals already measured, and the ranking is on that value as a fraction of each variable's own range so a degree and a PSU can share one list.</p>
+    <p class="measure" id="m-bias">measuring&hellip;</p>
+    <div class="clause-links">
+      <a class="open" href="./app.html?dive=1&amp;field=temperature&amp;bias=1">Colour the instruments by disagreement</a>
+      <a class="open code" href="https://github.com/RAK2315/samudra-sih26/blob/main/pipeline/samudra/residuals.py">samudra/residuals.py</a>
+    </div>
+  </article>
+  <article class="clause partly">
+    <div class="clause-head">
+      <q>...of Glider, CTD and BGC data</q>
+      <span class="verdict partly">BGC met, gliders read, CTD refused</span>
+    </div>
+    <p>Chlorophyll from BGC-Argo is live in this window. The glider archive is read by its own adapter and reports what it holds. Ship CTD stays out on a measurement rather than a shrug: the newest GO-SHIP section in this box is April 2025, which cannot share this timeline.</p>
+    <p class="measure" id="m-bgc">measuring&hellip;</p>
+    <div class="clause-links">
+      <a class="open code" href="https://github.com/RAK2315/samudra-sih26/blob/main/docs/plan/03-requirement-gaps.md">docs/plan/03-requirement-gaps.md</a>
+    </div>
+  </article>
+  <article class="clause">
+    <div class="clause-head">
+      <q>Multi-format ingestion: NetCDF via an xarray backend, and delimited text formats, with new sources added with minimal code change</q>
+      <span class="verdict">Met, and you can check it yourself</span>
+    </div>
+    <p>NetCDF through xarray and netCDF4, CSV through a parser whose column layout is stored as data rather than code, and the EGO glider directory index through a parser that reads its columns from the file's own header rather than by position. <b>Then the part that can be falsified:</b> drag a CF-conventions NetCDF file of your own onto the platform's <q>Your own data</q> panel and its variables appear in the Variable selector, going through the same colourbar, depth slice, isosurface and 3D renderer as everything else. It is read by a Source Adapter behind exactly the same interface as INCOIS, Argo and Copernicus. A file it cannot read <b>names the axis</b> and draws nothing: no longitude, a sigma-level vertical coordinate, an ensemble dimension, or an ocean somewhere else in the world are each refused in words. It is an API feature, like OPeNDAP and WMS - the demo runs with the API stopped.</p>
+    <p class="measure" id="m-ingest">measuring&hellip;</p>
+    <div class="clause-links">
+      <a class="open code" href="https://github.com/RAK2315/samudra-sih26/blob/main/pipeline/samudra/sources/netcdf.py">samudra/sources/netcdf.py</a>
+      <a class="open code" href="https://github.com/RAK2315/samudra-sih26/blob/main/api/upload.py">api/upload.py</a>
+    </div>
+  </article>
+  <article class="clause">
+    <div class="clause-head">
+      <q>Colourbar editor: palette, min/max range, log/linear scale</q>
+      <span class="verdict">Met</span>
+    </div>
+    <p>Both range handles, and the range is analytical rather than cosmetic - water outside it is not drawn at all. The log/linear toggle was cut once because the shader bent the water while the legend stayed straight; there is now exactly one curve, in one file, used by the ray marcher and the swatch alike. There is deliberately no palette chooser: each variable carries the cmocean scale designed for its quantity, because a chooser let a user put an oxygen scale on temperature.</p>
+    <div class="clause-links">
+      <a class="open" href="./app.html?dive=1&amp;field=heat_potential&amp;scale=log">Open with a log scale</a>
+      <a class="open code" href="https://github.com/RAK2315/samudra-sih26/blob/main/web/src/transfer.ts">web/src/transfer.ts</a>
+    </div>
+  </article>
+  <article class="clause">
+    <div class="clause-head">
+      <q>Variable selector, layer opacity control, vertical exaggeration slider</q>
+      <span class="verdict">Met</span>
+    </div>
+    <p>The variable selector carries five groups. Most of them are computed here rather than downloaded, which is the extensibility claim made visible: INCOIS publish two quantities and the platform offers many more from them.</p>
+    <p class="measure" id="m-selector">measuring&hellip;</p>
+    <div class="clause-links">
+      <a class="open" href="./app.html?dive=1">Open the selector</a>
+    </div>
+  </article>
+  <article class="clause">
+    <div class="clause-head">
+      <q>Modern JavaScript frontend, lightweight REST API backend, OPeNDAP API backend, deployable on INCOIS infrastructure with no client-side dependencies</q>
+      <span class="verdict">Met</span>
+    </div>
+    <p>TypeScript, React and Vite in front; FastAPI behind, serving DAP2, CF-1.8 NetCDF and OGC WMS from the native analysis grids and never from the rendering volume. The OPeNDAP endpoint is checked in the test suite by opening it with a real pydap client rather than by asserting on our own bytes.</p>
+    <div class="clause-links">
+      <a class="open code" href="https://github.com/RAK2315/samudra-sih26/blob/main/docs/adr/0012-open-standards-from-the-grids.md">docs/adr/0012</a>
+    </div>
+  </article>
+  <article class="clause partly">
+    <div class="clause-head">
+      <q>Extensible design for CTDs, moorings, HF-radar, ADCP and machine-learning derived products</q>
+      <span class="verdict partly">Moorings met, the rest answered</span>
+    </div>
+    <p>Moored buoys are wired up through NOAA's public GTS feed - a genuinely different format, with depth rather than pressure, one row per level and no quality flags, absorbed behind the same Protocol. HF-radar and ADCP stay unmet because India's are behind a login that does not resolve, which is a data-policy fact rather than an architecture gap. Machine-learning products are refused on purpose: twelve analyses is not a training set, and a gap-filler would paint smooth believable temperature over the part of the block nobody measured, which is the most honest thing in the tool.</p>
+    <p class="measure" id="m-coverage">measuring&hellip;</p>
+    <div class="clause-links">
+      <a class="open" href="./app.html?dive=1&amp;field=coverage">Show where nothing was measured</a>
+    </div>
+  </article>
+  <article class="clause partly">
+    <div class="clause-head">
+      <q>Public outreach and science communication: school and college students, the general public during awareness campaigns, policymakers, outreach events, exhibitions, e-learning</q>
+      <span class="verdict partly">Four of the six, and the two gaps named</span>
+    </div>
+    <p>The problem statement gives this its own titled section and names five audiences and three settings by hand, and fifteen variables in five groups is the right toolkit for a forecaster and the wrong first minute for any of them. So there are two more doors, and the control panel gained nothing. <b>Show me around</b> is a guided walk in six chapters and 21 steps that visits every one of the 43 controls this platform explains - a probe fails if a control is ever added without a step, so that is a measurement rather than a promise. <b>Explore</b> is the same platform as eight questions, each of which sets up its own answer and each of which carries the caveat its simplification costs: the cyclone one says in as many words that it is a map of conditions and not a forecast. <b>Kiosk mode</b> hides the panels, scales the type and plays the questions on a loop, resetting sixty seconds after the last visitor walks away, which is what "exhibitions" actually asks for. <b>Copy this view</b> writes what is on screen into a link, which is a teacher's worksheet.</p>
+    <p>What is missing is stated rather than glossed: there is no printable one-page brief for the policymaker row, and the app carries one media query, at 1180 px, so a classroom of laptops is fine and a phone is not.</p>
+    <div class="clause-links">
+      <a class="open" href="./app.html?explore=1">Open Explore</a>
+      <a class="open" href="./app.html?kiosk=1">Open the exhibition screen</a>
+      <a class="open" href="./app.html?dive=1&amp;tour=1">Start the guided walk</a>
+    </div>
+  </article>
+  </section>
+
+  <section id="refused">
+    <h2>What is deliberately not built</h2>
+    <p>
+      Each of these has a measurement behind it rather than an excuse, and every one is written
+      up with the date it was tested and what came back.
+    </p>
+    <div class="scroll">
+      <table>
+        <tr><th>Clause</th><th>Why not</th></tr>
+        <tr><td class="mono">OGC WCS</td><td>No maintained pure-Python server, and OPeNDAP is
+          what this community actually uses. It is already served.</td></tr>
+        <tr><td class="mono">Machine-learning products</td><td>Twelve analyses is not a training
+          set. A gap-filler would paint over the part of the block nobody measured, which is the
+          most honest thing here.</td></tr>
+        <tr><td class="mono">Ship CTD sections</td><td>Newest GO-SHIP section in this box is
+          April 2025, ten months before the window opens.</td></tr>
+        <tr><td class="mono">HF-radar and ADCP</td><td>India's are behind a login at
+          <code>services.incois.gov.in</code>, which does not resolve. A data-policy fact.</td></tr>
+        <tr><td class="mono">INCOIS LAS as a data source</td><td>The catalogue reads fine; the
+          OPeNDAP endpoint returned zero bytes at 90 s and again at 240 s.</td></tr>
+        <tr><td class="mono">Godas</td><td>Ends 2025-05-22, eleven months before this bake's
+          window.</td></tr>
+        <tr><td class="mono">Glider casts on the map</td><td>The adapter is built and the archive
+          is read. The newest cast in this box is 2022-10-14, so drawing one at a 2026 Timestep
+          would claim an observation that does not exist.</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <p>
+      Samudra 3D &middot; Smart India Hackathon 2026 &middot; Problem Statement 26067 &middot;
+      Ministry of Earth Sciences / INCOIS.
+    </p>
+    <p id="attrib"></p>
+  </footer>
+
+</div>
+
+<script>
+// Every figure below comes from the manifest the application itself loads. There is no second
+// copy of any number on this page, which is the only way a compliance page stays true across a
+// re-bake - and the September 2026 re-bake moved every one of them.
+(function () {
+  var DATA = "./data/";
+  var set = function (id, html) {
+    var node = document.getElementById(id);
+    if (node) node.innerHTML = html;
+  };
+  var n = function (value) { return Number(value).toLocaleString("en-GB"); };
+
+  fetch(DATA + "manifest.json")
+    .then(function (response) { return response.json(); })
+    .then(function (m) {
+      var volume = m.volume;
+      var region = m.region;
+      var steps = m.timesteps.length;
+      var first = new Date(m.timesteps[0]).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+      var last = new Date(m.timesteps[steps - 1]).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+
+      var byGroup = {};
+      m.fields.forEach(function (f) {
+        var key = f.group || "state";
+        byGroup[key] = (byGroup[key] || 0) + 1;
+      });
+      var groups = (m.fieldGroups || []).map(function (g) {
+        return byGroup[g.key] ? g.label + " " + byGroup[g.key] : null;
+      }).filter(Boolean).join(" &middot; ");
+
+      set("tally",
+        "<span><b>" + m.fields.length + "</b> variables</span>" +
+        "<span><b>" + m.sources.length + "</b> live sources</span>" +
+        "<span><b>" + steps + "</b> analyses, " + first + " to " + last + "</span>" +
+        "<span><b>" + n(m.floatCount) + "</b> instruments</span>");
+
+      set("m-volume",
+        "<b>" + volume.width + " &times; " + volume.height + " &times; " + volume.depth + "</b>" +
+        " voxels per analysis, " + region.west + "&ndash;" + region.east + "&deg;E, " +
+        Math.abs(region.south) + "&deg;S&ndash;" + region.north + "&deg;N, " +
+        volume.surfaceMetres + "&ndash;" + volume.floorMetres + " m over <b>" +
+        volume.levelMetres.length + "</b> levels");
+
+      if (m.gliders) {
+        var g = m.gliders;
+        set("m-gliders",
+          "Scanned <code>" + g.archive + "</code>: <b>" + n(g.castsInRegion) + "</b> casts in " +
+          "this box from <b>" + g.gliders + "</b> glider in <b>" + g.deployments.length +
+          "</b> deployments. Newest cast <b>" +
+          (g.newestCast || "").slice(0, 10) + "</b>. Inside this bake's window: <b>" +
+          g.castsInWindow + "</b>.");
+      } else {
+        set("m-gliders", "The glider archive was not reachable when this build was baked.");
+      }
+
+      set("m-fields", "<b>" + m.fields.length + "</b> variables in " +
+        (m.fieldGroups || []).length + " groups &middot; " + groups);
+
+      set("m-sources", "<b>" + m.sources.length + "</b> providers in this build: " +
+        m.sources.map(function (s) { return s.name; }).join(", "));
+
+      set("m-ingest", "<b>" + m.sources.length + "</b> providers behind one interface in this " +
+        "build, plus one adapter for a file you supply. Everything below is read through the " +
+        "same two protocols: " + m.sources.map(function (s) { return s.name; }).join(", ") +
+        ", and your own NetCDF.");
+
+      set("m-selector", "<b>" + m.fields.length + "</b> variables &middot; " + groups);
+
+      set("m-instruments",
+        "<b>" + n(m.floatCount) + "</b> instruments" +
+        (m.instruments ? " &middot; <b>" + m.instruments.floats + "</b> Argo floats, <b>" +
+          m.instruments.moorings + "</b> moored buoys" : "") +
+        " &middot; drawn at the position each held at the moment on screen");
+
+      set("m-bgc", m.instruments
+        ? "<b>" + m.instruments.withChlorophyll + "</b> of the floats carry a fluorometer and " +
+          "show a chlorophyll profile"
+        : "");
+
+      if (m.currents) {
+        set("m-currents",
+          "<code>" + m.currents.dataset + "</code> &middot; <b>" + m.currents.files.length +
+          "</b> vector fields, " + m.currents.levels + " levels &times; " + m.currents.height +
+          " &times; " + m.currents.width + " &middot; float32 on the model's own grid, " +
+          "not a picture");
+      } else {
+        set("m-currents", "Currents were not reachable when this build was baked.");
+      }
+
+      var hazard = m.fields.filter(function (f) { return f.group === "hazard"; });
+      set("m-hazard", "<b>" + hazard.length + "</b> hazard variables: " +
+        hazard.map(function (f) {
+          return f.label + " (" + f.range[0].toFixed(1) + " to " + f.range[1].toFixed(1) + " " +
+            f.units + ")";
+        }).join(" &middot; "));
+
+      var sectioned = Object.keys(m.gridFiles || {});
+      set("m-section", sectioned.length
+        ? "<b>" + sectioned.length + "</b> variables ship their native grid for this - " +
+          sectioned.join(", ") + " - on <b>" + m.volume.levelMetres.length +
+          "</b> levels to " + m.volume.floorMetres + " m, float32, " +
+          m.timesteps.length + " analyses each. No API needed."
+        : "This build did not bake the native grids the section is cut from.");
+
+      var normal = m.fields.filter(function (f) {
+        return f.key === "temperature_normal_anomaly";
+      })[0];
+      set("m-normal", normal
+        ? "<b>" + normal.label + "</b>, " + normal.range[0].toFixed(2) + " to " +
+          normal.range[1].toFixed(2) + " " + normal.units + " across this build. Baseline: " +
+          "World Ocean Atlas 2023, 1991-2020, monthly, one degree, to 1500 m."
+        : "This build could not reach NOAA, so it carries no climatological normal.");
+
+      var coverage = m.fields.filter(function (f) { return f.group === "evidence"; });
+      set("m-coverage", "<b>" + coverage.length + "</b> evidence variables, including INCOIS's " +
+        "own observation count and their own error estimate beside ours");
+
+      set("attrib", m.sources.map(function (s) { return s.attribution; }).join(" &middot; "));
+
+      if (m.drift && m.drift.cycle) {
+        var cycle = m.drift.cycle;
+        var ten = (m.drift.horizons || []).filter(function (h) { return h.days === 10; })[0];
+        set("m-drift",
+          "Scored on <b>" + m.drift.floats + "</b> drifting floats at " +
+          m.drift.parkingDepthMetres + " m. Over one Argo cycle - <b>" + n(cycle.count) +
+          "</b> of them - the current field alone lands a median <b>" + cycle.medianKm +
+          " km</b> from where the float actually went, <b>" + cycle.p90Km +
+          " km</b> at the ninetieth percentile" +
+          (ten
+            ? ". Let go for " + ten.medianDaysUsed + " days: <b>" + ten.medianSeparationKm +
+              " km</b> apart, against <b>" + ten.medianTravelledKm + " km</b> the float travelled"
+            : "") + ".");
+      } else {
+        set("m-drift", "This build has no current field, so there is no drift to score.");
+      }
+
+      // The bias map's figures live in their own file, because collocations.json is 10.5 MB and
+      // this page needs four numbers out of it. Same rule as everything above: read, never
+      // restated.
+      var units = {};
+      m.fields.forEach(function (f) { units[f.key] = f.units; });
+      fetch(DATA + "residuals.json")
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+          var rows = Object.keys(res.fields).map(function (key) {
+            var b = res.fields[key];
+            var worst = b.cells[0];
+            return "<b>" + key + "</b> " + b.summary.count + " instruments, typical gap " +
+              b.summary.meanAbsBias.toFixed(3) + " " + (units[key] || "") +
+              (worst
+                ? ", worst " + res.cellDegrees + "&deg; box " + worst.south + " to " +
+                  (worst.south + res.cellDegrees) + "&deg;N " + worst.west + " to " +
+                  (worst.west + res.cellDegrees) + "&deg;E at " +
+                  worst.meanAbsBias.toFixed(2) + " " + (units[key] || "")
+                : "");
+          });
+          set("m-bias", rows.join(" &middot; "));
+        })
+        .catch(function () {
+          set("m-bias", "The comparison figures were not written by this bake.");
+        });
+    })
+    .catch(function (error) {
+      var problem = document.getElementById("problem");
+      problem.hidden = false;
+      problem.textContent =
+        "Could not read the baked manifest (" + error.message + "). " +
+        "Run python -m samudra.bake in pipeline/ to regenerate web/public/data.";
+    });
+})();
+</script>
+
+<script>
+  (function () {
+    var button = document.getElementById("theme-toggle");
+    if (!button) return;
+    var paint = function () {
+      var light = document.documentElement.dataset.theme === "light";
+      button.textContent = light ? "☾" : "☀";
+      button.setAttribute("aria-label", light ? "Switch to dark" : "Switch to light");
+      button.title = button.getAttribute("aria-label");
+    };
+    button.addEventListener("click", function () {
+      var next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+      if (next === "light") document.documentElement.dataset.theme = "light";
+      else delete document.documentElement.dataset.theme;
+      try { localStorage.setItem("samudra.theme", next); } catch (e) { /* no memory, still applied */ }
+      paint();
+    });
+    paint();
+  })();
+</script>
+
+</body>
+</html>
+

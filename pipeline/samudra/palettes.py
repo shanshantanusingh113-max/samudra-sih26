@@ -29,11 +29,22 @@ import numpy as np
 # them as a second diverging scale with nothing to sit on.
 #
 # Each Field names its palette in its FieldSpec, so a Field and its colours cannot be separated.
+# The September 2026 revision made the theme Disaster Management and brought eight new Fields
+# with it. Each of the palettes added below arrives attached to a FieldSpec and to nothing else,
+# which is the rule ADR 0010 set: `deep` carries the three Fields whose value is a depth, `amp`
+# carries cyclone heat potential, `speed` is cmocean's own current-speed scale, `tempo` carries
+# INCOIS's cast count and `matter` carries their error estimate. None of them is offered to a
+# user to pick.
 AVAILABLE = {
     "thermal": "Temperature - cold and dark to warm and bright",
     "haline": "Salinity - fresh to saline",
     "dense": "Density",
-    "balance": "Diverging - anomalies and Residuals about zero",
+    "balance": "Diverging - anomalies, Residuals and layer differences about zero",
+    "deep": "A depth - shallow and pale to deep and dark",
+    "amp": "Heat content - none to a great deal",
+    "speed": "Current speed - still to fast",
+    "tempo": "A count of observations",
+    "matter": "An error estimate - small to large",
 }
 
 RESOLUTION = 256

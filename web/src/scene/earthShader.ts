@@ -16,6 +16,8 @@
  * to argue that the two views agree.
  */
 
+import { TRANSFER_GLSL } from "../transfer";
+
 export const EARTH_RADIUS = 180 / Math.PI;
 
 /** Shared by every morphing object: turns (lon, lat) into a world position. */
@@ -91,6 +93,7 @@ uniform vec4  uRegion;        // west, east, south, north
 uniform float uDepthFraction; // which Level is painted on the sea surface
 uniform float uWindowMin;
 uniform float uWindowMax;
+uniform float uLog;
 uniform float uFieldOpacity;
 uniform vec3  uOceanColour;
 uniform vec3  uLightDirection;
@@ -99,17 +102,22 @@ uniform float uRegionCutout;  // 1 = the study region is open, so you look into 
 uniform float uShadeFloor;    // how dark the unlit limb goes; higher keeps a pale globe pale
 uniform float uRimStrength;   // 0 on the light console: an additive glow on white is a smudge
 uniform vec3  uRimColour;
-// The Copernicus surface-current overlay: arrows on a transparent ground, covering exactly the
-// study region. A picture, and only ever a picture - see pipeline/samudra/currents.py. It is
-// composited here rather than drawn as its own mesh so it inherits the region mask and the
-// cutout, and so it cannot end up on the wrong side of the transparent draw order.
-uniform sampler2D uCurrents;
-uniform float uCurrentsOn;
+// A Field that is not a Volume, already coloured, covering exactly the study region.
+//
+// Cyclone Heat Potential and Barrier Layer Thickness are one number for the whole water column,
+// so a ray march has nothing to march through: they belong on the sea surface, which is where a
+// column total honestly lives. They arrive as RGBA bytes coloured in palette.ts by the same two
+// functions that draw the colourbar, so nothing here has to know their units - and alpha is 0
+// for Mask and for anything the Transfer Function window cut away.
+uniform sampler2D uSurface;
+uniform float uSurfaceOn;
 
 in vec2 vLonLat;
 in vec3 vNormal;
 in vec3 vWorld;
 out vec4 fragColor;
+
+${TRANSFER_GLSL}
 
 void main() {
   vec3 base = uOceanColour;
@@ -130,40 +138,32 @@ void main() {
   vec3 fieldColour = base;
 
   if (inset > 0.0) {
-    // Node centres, not texel edges - see the matching note in volumeShader.ts.
-    vec3 fraction = vec3(
+    vec2 plan = vec2(
       (vLonLat.x - uRegion.x) / (uRegion.y - uRegion.x),
-      (vLonLat.y - uRegion.z) / (uRegion.w - uRegion.z),
-      uDepthFraction
+      (vLonLat.y - uRegion.z) / (uRegion.w - uRegion.z)
     );
-    vec3 size = vec3(textureSize(uVolume, 0));
-    vec3 tc = (fraction * (size - 1.0) + 0.5) / size;
-    vec3 sampled = texture(uVolume, tc).rgb;
-    float t = clamp((sampled.r - uWindowMin) / max(uWindowMax - uWindowMin, 1e-5), 0.0, 1.0);
-    fieldColour = texture(uPalette, vec2(t, 0.5)).rgb;
-    fieldAlpha = sampled.g * uFieldOpacity * regionMask;
+
+    if (uSurfaceOn > 0.5) {
+      // Node centres here too: the file holds a value AT 45.5 E, not across a cell starting
+      // there, and row 0 is the southernmost latitude - the same way round as the Volume
+      // texture's v axis, which this project had to learn once the hard way.
+      vec2 size = vec2(textureSize(uSurface, 0));
+      vec4 sampled = texture(uSurface, (plan * (size - 1.0) + 0.5) / size);
+      fieldColour = sampled.rgb;
+      fieldAlpha = sampled.a * uFieldOpacity * regionMask;
+    } else {
+      // Node centres, not texel edges - see the matching note in volumeShader.ts.
+      vec3 fraction = vec3(plan, uDepthFraction);
+      vec3 size = vec3(textureSize(uVolume, 0));
+      vec3 tc = (fraction * (size - 1.0) + 0.5) / size;
+      vec3 sampled = texture(uVolume, tc).rgb;
+      float t = clamp((sampled.r - uWindowMin) / max(uWindowMax - uWindowMin, 1e-5), 0.0, 1.0);
+      fieldColour = texture(uPalette, vec2(applyScale(t), 0.5)).rgb;
+      fieldAlpha = sampled.g * uFieldOpacity * regionMask;
+    }
   }
 
   vec3 colour = mix(base, fieldColour, fieldAlpha);
-
-  if (uCurrentsOn > 0.001 && inset > 0.0) {
-    // The image spans the region box exactly, and its rows run north to south while latitude
-    // runs south to north - so v is flipped. The bake crops the stitched tiles to this box for
-    // precisely this reason; half a degree of error here draws the Somali Current over Somalia.
-    vec2 uv = vec2(
-      (vLonLat.x - uRegion.x) / (uRegion.y - uRegion.x),
-      (uRegion.w - vLonLat.y) / (uRegion.w - uRegion.z)
-    );
-    vec4 arrows = texture(uCurrents, uv);
-    float strength = uCurrentsOn * regionMask;
-    // Dim the field under the arrows before compositing them. Copernicus draws slow water in
-    // pale yellow and the thermal palette draws warm water in pale yellow, so at full strength
-    // the two are the same colour and the vector field reads as texture. Dimming the ground is
-    // the ordinary cartographic answer and it costs nothing that matters: the layer underneath
-    // is still the same field, and the colourbar still describes it.
-    colour *= 1.0 - 0.42 * strength * arrows.a;
-    colour = mix(colour, arrows.rgb, arrows.a * strength);
-  }
 
   // Gentle shading so the globe reads as a sphere, fading out as it flattens into a map.
   float lambert = uShadeFloor +

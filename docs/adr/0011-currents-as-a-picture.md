@@ -74,3 +74,20 @@ cannot ask this layer what the speed is at a point, cannot slice it by depth bey
 and cannot compare it against an instrument. Doing any of that needs the numbers, which needs an
 account. That remains the right upgrade if this platform is ever deployed rather than
 demonstrated, and it is a change to how the project is built rather than to what it contains.
+
+---
+
+## Superseded on 2026-09-01 by ADR 0013
+
+The last paragraph above named the condition under which this record should be reversed: get the
+numbers, which needs an account. A free Copernicus Marine account now exists and the credential
+lives on the bake machine, so that is what happened.
+
+Currents are a Field with real values in them, arrows on the chosen depth and a speed under the
+cursor, and the WMTS picture and its module are deleted rather than kept beside them. The
+measurement that cleared ADR 0010's bar - 2.94 m/s at 9.5 N, 51.5 E on 2026-07-30, against
+0.16 m/s in the wrong place from our own derivation - is in **ADR 0013**.
+
+Nothing above is retracted. Everything it says about *why a picture was the right answer while
+the values were behind an account* still holds, and the tile arithmetic it describes is the
+fallback if an anonymous route is ever needed again.
