@@ -111,7 +111,6 @@ if (PUBLISH_ONLY && !PUBLISH) {
  */
 const PUBLISH_MAP = [
   // ---- the README, light, because GitHub renders it on a white page ----------------------
-  ["hero", "docs/images/hero.jpg"],
   ["globe", "docs/images/globe.jpg"],
   ["volume", "docs/images/volume.jpg"],
   ["collocation", "docs/images/collocation.jpg"],
@@ -132,6 +131,9 @@ const PUBLISH_MAP = [
   ["explore", "docs/images/explore.jpg"],
 
   // ---- the landing page, dark, which is its default theme --------------------------------
+  // `hero` is published only here. The README's lead image is the collocation shot, which shows
+  // the block, the instruments and the quantified comparison in one frame - the whole argument
+  // in a picture, where the chrome-free block was only the pretty half of it.
   ["hero", "web/public/images/hero.jpg"],
   ["globe", "web/public/images/globe.jpg"],
   ["volume", "web/public/images/volume.jpg"],
