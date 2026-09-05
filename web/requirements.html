@@ -302,6 +302,36 @@
   footer a { color: var(--dim); }
   @media (max-width: 640px) { .nav-links a:not(.cta) { display: none; } }
 
+  /*
+   * Under 600 px even the compact nav is 85 px too wide: brand, toggle and the "Launch the
+   * platform" pill plus the 28 px gutters cannot share a 320-390 px phone. The pill keeps just
+   * "Launch" (its arrow already says go), the gutters drop to the landing's 16 px, and the gap
+   * tightens. The result fits a 320 px screen with room to spare and lands the page links on
+   * the footer rather than off the edge - same trade the landing page makes.
+   */
+  @media (max-width: 600px) {
+    nav .wrap { gap: 8px; }
+    .wrap { padding: 0 16px; }
+    .brand { letter-spacing: 0.11em; }
+    .cta { padding: 10px 13px; gap: 8px; }
+    .cta .cta-t { display: none; }
+    #theme-toggle { width: 30px; height: 30px; }
+  }
+  @media (max-width: 380px) {
+    .brand { font-size: 13px; }
+  }
+
+  /*
+   * On a phone the wider pills and the code links stop shrinking the same way the nav did:
+   * a 296 px verdict and a 315 px file path both blow past the 288 px gutted box. Letting each
+   * one shrink to the column and wrap its words keeps the clause readable instead of spilling.
+   */
+  @media (max-width: 600px) {
+    .verdict { min-width: 0; max-width: 100%; }
+    .measure { max-width: 100%; overflow-wrap: anywhere; }
+    .open { max-width: 100%; overflow-wrap: anywhere; }
+  }
+
   .theme-toggle {
     display: inline-flex; align-items: center; justify-content: center;
     width: 34px; height: 34px; padding: 0;
@@ -398,7 +428,7 @@
       <a href="./index.html">Overview</a>
       <a href="./provenance.html">Provenance</a>
       <button class="theme-toggle" id="theme-toggle" type="button">☀</button>
-      <a class="cta" href="./app.html">Launch the platform</a>
+      <a class="cta" href="./app.html">Launch<span class="cta-t"> the platform</span></a>
     </div>
   </div>
 </nav>

@@ -321,7 +321,7 @@
 
   /* ------------------------------------------------------------- cards */
 
-  .split { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-top: 44px; }
+  .split { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 18px; margin-top: 44px; }
 
   .card {
     padding: 26px 28px; border: 1px solid var(--edge); border-radius: 14px;
@@ -450,7 +450,7 @@
 
   /* ------------------------------------------------------------- stats */
 
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-top: 44px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr)); gap: 16px; margin-top: 44px; }
   .stat { padding: 24px 24px 22px; border: 1px solid var(--edge); border-radius: 14px; background: var(--card-bg); }
   .stat b { display: block; font-family: var(--m); font-size: 34px; font-weight: 600; color: var(--ink); letter-spacing: -0.03em; line-height: 1.1; }
   .stat span { display: block; margin-top: 8px; font-family: var(--m); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); }
@@ -464,7 +464,7 @@
 
   /* ------------------------------------------------------------- gallery */
 
-  .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 18px; margin-top: 44px; }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 18px; margin-top: 44px; }
   figure.shot { margin: 0; border: 1px solid var(--edge); border-radius: 14px; overflow: hidden; background: var(--card-bg); transition: transform 0.3s var(--ease), border-color 0.3s var(--ease), box-shadow 0.3s var(--ease); }
   figure.shot:hover { transform: translateY(-4px); border-color: var(--edge-hot); box-shadow: var(--shadow); }
   figure.shot img { width: 100%; height: auto; display: block; }
@@ -486,6 +486,12 @@
     padding: 44px 0 60px; border-top: 1px solid var(--edge);
     font-size: 12.5px; color: var(--faint); line-height: 1.75;
   }
+  .footer-nav {
+    display: flex; flex-wrap: wrap; gap: 6px 18px; margin-bottom: 14px;
+    font-family: var(--m); font-size: 12px;
+  }
+  .footer-nav a { color: var(--dim); text-decoration: none; }
+  .footer-nav a:hover { color: var(--ink); }
 
   @media (max-width: 900px) {
     section { padding: 76px 0; }
@@ -493,6 +499,25 @@
     .rail { padding-left: 20px; padding-right: 20px; scroll-padding-left: 20px; }
     .nav-links a[href^="#"] { display: none; }
     .hero { min-height: auto; padding: 80px 0 56px; }
+  }
+
+  /*
+   * The nav row is 499 px and cannot be shrunk onto an under-540 screen: brand, the two page
+   * links, the toggle and the Launch pill overflow the viewport with nothing to clip them.
+   * The page links move to the footer (shown below), the nav keeps brand + toggle + Launch,
+   * and nothing on a phone is left unreachable.
+   */
+  @media (max-width: 540px) {
+    nav .wrap { gap: 12px; }
+    .nav-links { gap: 0; }
+    .nav-links a[href$=".html"]:not(.cta) { display: none; }
+    #theme-toggle { width: 32px; height: 32px; margin-left: 4px; }
+  }
+  @media (max-width: 360px) {
+    .brand { font-size: 13px; letter-spacing: 0.1em; }
+    nav .wrap { gap: 10px; }
+    .cta { padding: 8px 11px; font-size: 12px; }
+    #theme-toggle { width: 30px; height: 30px; }
   }
 </style>
 </head>
@@ -1140,6 +1165,11 @@
 
 <footer>
   <div class="wrap">
+    <nav class="footer-nav">
+      <a href="./provenance.html">Provenance</a>
+      <a href="./requirements.html">Requirements</a>
+      <a href="./app.html">Launch the platform</a>
+    </nav>
     Argo data are collected and made freely available by the International Argo Program and the
     national programmes that contribute to it. The Argo Program is part of the Global Ocean
     Observing System.<br>
