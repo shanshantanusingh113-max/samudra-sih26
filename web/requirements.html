@@ -465,7 +465,7 @@
     <p>Argo in full, including chlorophyll from BGC floats, plus moored buoys from NOAA's GTS feed. Gliders now have an adapter of their own, read against <code>ftp.ifremer.fr/ifremer/glider/v2/</code> - the archive this problem statement names. What it finds is the answer: the gap is India's glider programme, not the software. The figures below are what the scan returned.</p>
     <p class="measure" id="m-gliders">measuring&hellip;</p>
     <div class="clause-links">
-      <a class="open" href="./app.html?dive=1&amp;tour=1">Open a float comparison</a>
+      <a class="open" href="./app.html?dive=1&amp;field=temperature&amp;float=7902384">Open a float comparison</a>
       <a class="open code" href="https://github.com/RAK2315/samudra-sih26/blob/main/pipeline/samudra/sources/glider.py">pipeline/samudra/sources/glider.py</a>
     </div>
   </article>
@@ -486,7 +486,7 @@
       <q>Ingest new data streams or model variables without significant re-engineering</q>
       <span class="verdict">Met</span>
     </div>
-    <p>One adapter class per provider, behind two Protocols, and nothing downstream has heard of ERDDAP. Proven rather than asserted: the September 2026 round added three more providers - INCOIS's second analysis, Copernicus Marine and the EGO glider archive - and touched no renderer, no API endpoint and no UI file.</p>
+    <p>One adapter class per provider, behind two Protocols, and nothing downstream has heard of ERDDAP. Proven rather than asserted: the September 2026 round added four more providers - INCOIS's second analysis, Copernicus Marine, the EGO glider archive and the World Ocean Atlas normal - and touched no renderer, no API endpoint and no UI file.</p>
     <p class="measure" id="m-sources">measuring&hellip;</p>
     <div class="clause-links">
       <a class="open code" href="https://github.com/RAK2315/samudra-sih26/blob/main/pipeline/samudra/sources/base.py">pipeline/samudra/sources/base.py</a>
@@ -537,7 +537,7 @@
     <p>Every instrument is drawn where it actually was at the moment on screen, and is not drawn at all when its nearest cast is too far from that moment - showing it would imply an observation that does not exist. Click one and the chart is the observation against the model at that exact position and date, with the gap between them shaded.</p>
     <p class="measure" id="m-instruments">measuring&hellip;</p>
     <div class="clause-links">
-      <a class="open" href="./app.html?dive=1&amp;tour=1">Open a comparison</a>
+      <a class="open" href="./app.html?dive=1&amp;field=temperature&amp;float=7902384">Open a comparison</a>
     </div>
   </article>
   <article class="clause">
@@ -683,7 +683,7 @@
           set. A gap-filler would paint over the part of the block nobody measured, which is the
           most honest thing here.</td></tr>
         <tr><td class="mono">Ship CTD sections</td><td>Newest GO-SHIP section in this box is
-          April 2025, ten months before the window opens.</td></tr>
+          April 2025, a full year before the window opens.</td></tr>
         <tr><td class="mono">HF-radar and ADCP</td><td>India's are behind a login at
           <code>services.incois.gov.in</code>, which does not resolve. A data-policy fact.</td></tr>
         <tr><td class="mono">INCOIS LAS as a data source</td><td>The catalogue reads fine; the

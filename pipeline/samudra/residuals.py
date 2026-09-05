@@ -26,8 +26,8 @@ drawn from one float, which is the same refusal `find_anomaly_features` makes wi
 and **split by kind of instrument**, which is the difference between a measurement and a
 tautology. INCOIS's analysis assimilates Argo, so a float's residual is largely the model
 agreeing with an observation it was fed. The nine moored buoys are not assimilated. Measured
-over this bake the moorings disagree 4.3x more on temperature (0.748 degC against 0.174), 3.8x
-on salinity and 5.2x on density, and pooled into one basin-wide figure they vanish into 224
+over this bake the moorings disagree 4.5x more on temperature (0.748 degC against 0.167), 4.9x
+on salinity and 6.4x on density, and pooled into one basin-wide figure they vanish into 221
 floats. The number a forecaster wants - how far the analysis sits from water nobody told it
 about - is the mooring one, and it is now reported beside the pooled one rather than instead of
 it, because 9 instruments is a small sample and saying so is part of the answer.

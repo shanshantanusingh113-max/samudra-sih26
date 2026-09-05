@@ -34,7 +34,7 @@ exhibition screen is dark wherever it stands.
 | Placed | |
 | --- | --- |
 | `S1-globe.jpg` | The globe: India's EEZ with the temperature field on it, floats and drift tracks |
-| `S2-app.jpg` | **The whole app.** The block, the instruments inside it, and the comparison panel. The most valuable single picture here - give it 6 in of width |
+| `S2-app.jpg` | **The whole app.** The block, the instruments inside it, and the comparison panel with its verdict and its three numbers. The most valuable single picture here - give it 6 in of width. **1600x857, not 16:9** |
 | `S4-coverage.jpg` | Observation coverage, four bands, with its key |
 | `S5-anomaly.jpg` | The temperature anomaly with the automatic feature rings |
 
@@ -58,9 +58,15 @@ exhibition screen is dark wherever it stands.
 To replace one: grab the frame from a real browser, then
 
 ```bash
-../.venv/Scripts/python scripts/normalise_screenshot.py <file.png> light <name>
+# both from the repository root
+.venv/Scripts/python scripts/normalise_screenshot.py <file.png> light <name>
 cd web && node capture.mjs --publish-only --publish
 ```
+
+Add `--no-crop` when the frame is wider than 16:9 and its subject is on the right: the crop keeps
+the **left**, so on a shot with the comparison panel down the right-hand side it would throw the
+subject away. `S2-app.jpg` and `spare-drift.jpg` are both `--no-crop`, so they are 1600x857 and
+1600x669 rather than 1600x900. Place them at their own ratio; do not stretch either to 16:9.
 
 ## Before you upload
 

@@ -109,7 +109,7 @@ export function Chrome({ onDive }: { onDive: (into: boolean) => void }) {
             * button, and everything outreach lives behind it rather than in this bar.
             */}
           <button
-            className="ghost explore-start"
+            className="ghost"
             onClick={() => set("explore", true)}
             title="The same platform, as a list of questions"
           >

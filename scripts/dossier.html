@@ -290,8 +290,9 @@
   <figure>
     <img src="../ppt/images/S2-app.jpg" alt="The 3D ocean block with one float highlighted, and a side panel showing the comparison chart and statistics.">
     <figcaption>
-      The comparison. Green is the instrument, dashed blue is the model, the shaded area is the
-      difference. The panel names what is plotted, in what units, and says which way is down.
+      The comparison. The solid line is the instrument, the dashed line is the model at that
+      exact position and date, and the band between them is the difference. The panel names
+      what is plotted, in what units, and says which way is down.
     </figcaption>
   </figure>
 
@@ -439,7 +440,7 @@
   <h2>How it works inside</h2>
 
   <figure>
-    <img src="../ppt/images/S3-architecture.png" alt="Architecture diagram showing data sources feeding source adapters, then grid and volume, then browser and API.">
+    <img src="../docs/images/architecture.png" alt="The architecture in four zones left to right: eight open sources, one source-adapter seam, two representations - the Grid which is the scientific truth and the Volume which is a picture for the GPU - and four ways the data leaves.">
     <figcaption>Data flows left to right. The Source Adapter layer is the only code that knows what an ERDDAP is.</figcaption>
   </figure>
 
@@ -571,11 +572,6 @@
     did about each.
   </p>
 
-  <figure>
-    <img src="../ppt/images/S4-risks.png" alt="A table of risks, what happened, and how each was resolved.">
-    <figcaption>Every row is something that actually happened during development, not a projected risk.</figcaption>
-  </figure>
-
   <h3>Risks and mitigations in detail</h3>
   <table>
     <thead><tr><th>Risk</th><th>What happened and how it was handled</th></tr></thead>
@@ -612,11 +608,6 @@
 <section class="page break" id="s9">
   <div class="eyebrow">Section 9</div>
   <h2>Impact and benefits</h2>
-
-  <figure>
-    <img src="../ppt/images/S5-benefits.png" alt="Impact summary showing four audiences and before-and-after comparisons.">
-    <figcaption>Who benefits, and what changes for them.</figcaption>
-  </figure>
 
   <h3>Operational impact</h3>
   <p>

@@ -23,7 +23,7 @@ not a point - see `CLAUDE.md`.
 | Volume lattice | **56 x 36 x 48**, 4 bytes a voxel | `manifest.volume` |
 | Depth range | 5 m to 2000 m over 24 uneven levels | `manifest.volume.levelMetres` |
 | Static bake | **71.1 MB**, committed, **0** network calls to run | `du web/public/data` |
-| HTTP routes on the API | **20** | `api/*.py` |
+| HTTP routes on the API | **21** | `api/*.py` |
 | Tests | **377** | `web/public/data/tests.json` |
 | Browser probes | **13** | the allowlist in `.gitignore` |
 

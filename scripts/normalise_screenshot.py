@@ -8,9 +8,8 @@ differently from the rest.
 
 So this does what the harness would have done and nothing more: crop to 16:9, resize to
 1600x900, encode JPEG at the harness's own quality of 82. **It never retouches.** No colour
-change, no sharpening, nothing painted out - `ppt/DESIGN-SPEC.md` section 8 is explicit that a
-screenshot is the deck's proof and cannot be edited, and cropping the browser's own chrome away
-is the one operation that rule allows.
+change, no sharpening, nothing painted out - a screenshot is the deck's proof, and cropping the
+browser's own chrome away is the one operation that leaves it proof.
 
 The crop keeps the **top-left**, because that is where the control panel is and the panel is half
 of what these pictures are for: a card showing the water with the controls cut off is a picture

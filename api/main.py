@@ -510,7 +510,7 @@ def _section_profiles() -> list:
     boundary keeps the science module free of this API's storage shape, which is the same
     division `sources/base.py` draws everywhere else.
 
-    Cached for the same reason `native_grid` is: this built 3,718 `Profile` objects on every
+    Cached for the same reason `native_grid` is: this built 3,077 `Profile` objects on every
     single `/api/section` request, and the answer only changes when the bake does.
     `_drop_caches_if_rebaked` clears it along with the rest.
     """

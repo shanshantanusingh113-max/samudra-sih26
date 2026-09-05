@@ -43,12 +43,18 @@ def day(stamp: str) -> str:
     return date.fromisoformat(stamp[:10]).strftime("%d %b %Y").lstrip("0")
 
 
+#: Every verb the API actually decorates a handler with. `delete` was missing for a round, so
+#: this said 20 against a real 21 and the README and the deck both repeated it. FastAPI's own
+#: router is the check: `len([r for r in app.routes if hasattr(r, "methods")])`.
+VERBS = ("get", "post", "put", "patch", "delete")
+
+
 def routes() -> int:
     """Every HTTP route the API declares, counted rather than remembered."""
     found = 0
     for name in ("main.py", "standards.py", "upload.py"):
         text = (ROOT / "api" / name).read_text(encoding="utf-8")
-        found += text.count("@app.get(") + text.count("@app.post(")
+        found += sum(text.count(f"@app.{verb}(") for verb in VERBS)
     return found
 
 
@@ -59,7 +65,7 @@ def tests() -> int:
 def probes() -> int:
     """The committed probes, read off `.gitignore`'s own allowlist.
 
-    Counting `web/probe-*.mjs` on disk gives 19, because most of that wildcard is throwaway
+    Counting `web/probe-*.mjs` on disk gives 20, because most of that wildcard is throwaway
     measurement scripts that answered one question once and were never deleted. The allowlist is
     the list of files that actually survive a clone, and it is maintained anyway.
     `probe-pixels.mjs` is on it and is not a probe - it is the PNG decoder the probes measure
@@ -144,15 +150,14 @@ def main() -> None:
 **Generated {date.today().isoformat()} by `pipeline/scripts/collect_facts.py`. Do not edit by
 hand.** Re-run it after a bake and diff this file: a figure that moved shows up as a line.
 
-`ppt/DECK.md` and `ppt/DESIGN-SPEC.md` are written by a person and quote these numbers. This file
-is the source they quote *from*, so "do not adjust a number by arithmetic" has somewhere to point.
+`ppt/DECK.md` is written by a person and quotes these numbers. This file is the source it quotes
+*from*, so "do not adjust a number by arithmetic" has somewhere to point.
 Every row names where the figure comes from, so a judge's question can be answered by opening a
 file rather than by remembering.
 
-**Two figures on the deck are not here, on purpose.** The share of the frame a rendered layer
-covers is measured by a probe against a randomly seeded particle population and is a range, not a
-point - see `CLAUDE.md`. And the pixel dimensions of the rendered boards come from
-`web/render-diagrams.mjs`'s own output, because they change whenever a board gains a line.
+**One figure on the deck is not here, on purpose.** The share of the frame a rendered layer
+covers is measured by a probe against a randomly seeded particle population, so it is a range and
+not a point - see `CLAUDE.md`.
 
 """
 

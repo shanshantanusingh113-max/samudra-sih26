@@ -11,8 +11,9 @@ web/shots/
 # raw PNGs are four times the size and nothing reads them again.
 finalimages/
 # Throwaway measurement scripts. Most of these answer one question once and are deleted, which
-# is why the wildcard is here - but three of them are the project's verification harness, are
-# named in CLAUDE.md's own Commands block, and have to survive a clone.
+# is why the wildcard is here - but thirteen of them are the project's verification harness, are
+# named in CLAUDE.md's own Commands block, and have to survive a clone. Anything negated below
+# is a probe except probe-pixels.mjs, which is the decoder they measure with.
 web/probe*.mjs
 !web/probe-hazard.mjs
 !web/probe-requirements.mjs

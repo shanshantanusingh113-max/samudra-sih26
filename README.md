@@ -23,11 +23,12 @@ and what the instruments in the water actually measured.**
 ![FastAPI](https://img.shields.io/badge/FastAPI-REST-009688?logo=fastapi&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-multi--page-646CFF?logo=vite&logoColor=white)
 
-<img src="docs/images/collocation.jpg" width="880" alt="The platform running: a three-dimensional block of Indian Ocean water from 5 m to 2000 m, warm yellow at the surface fading to deep violet, with Argo float markers and drift tracks across the top, the control panel on the left, and on the right a panel comparing one float's measured temperature against the model's at 996 depths.">
+<img src="docs/images/collocation.jpg" width="880" alt="The platform running: a three-dimensional block of Indian Ocean water from 5 m to 2000 m, warm yellow at the surface fading through orange to deep violet, with Argo float markers and drift tracks across the top; the control panel on the left, and on the right a panel plotting one float's measured temperature against the model's down the same depth axis, with the verdict and the three numbers under it.">
 
 *The whole thing in one frame. INCOIS's 30 July 2026 analysis as a block of water you fly into,
-the instruments drawn where they actually were, and Argo float 7902384's own cast scored against
-the model: **996 depths compared, 0.17 °C average gap, 0.47 °C RMS.***
+the instruments drawn where they actually were, and Argo float 2901907's 25 July cast scored
+against it: **54 depths compared, 0.08 °C average gap, 0.71 °C RMS - "moderate disagreement".**
+The tool puts a number on the comparison whichever way it comes out, which is the point.*
 
 </div>
 
@@ -275,12 +276,12 @@ through this pipeline:
 | **Chlorophyll** | Measured by 52 Argo floats that carry a fluorometer. Drawn on its own, because no gridded chlorophyll shares this timeline - INCOIS's own ocean-colour products end in 2006 and 2020 - so there is nothing to compare it against |
 
 
-### Three kinds of instrument in the water
+### Two kinds of instrument in the water
 
 | Instrument | Count | What it gives |
 | --- | --- | --- |
-| **Argo floats** | 228, of which 52 carry chlorophyll | A cast every ten days, drifting; 3,718 casts across the window |
-| **Moored buoys** | 9 - four from India's OMNI network, three RAMA | A water column at a *fixed point*, every few hours. Because they never move, their comparison follows the timeline: you watch one patch of ocean through the whole season, which an Argo float cannot show you |
+| **Argo floats** | 228, of which 52 carry chlorophyll | A cast every ten days, drifting; **3,077** casts across the window |
+| **Moored buoys** | 9 - four from India's OMNI network, three RAMA | A water column at a *fixed point*, every few hours, and **641** reports across the window. Because they never move, their comparison follows the timeline: you watch one patch of ocean through the whole season, which an Argo float cannot show you |
 
 The buoys arrive through NOAA's public GTS feed in a format that shares nothing with Argo's -
 depth instead of pressure, one row per level, the surface reading in a different column, no
@@ -294,9 +295,9 @@ This is not a mock-up with invented numbers. It reads:
 - **INCOIS's own public data server** for the model field - their 10-day gridded Argo analysis,
   temperature and salinity on 24 depth levels, updated continuously. Our demo data goes up to
   **30 July 2026**.
-- **The global Argo float network** for the real measurements - 228 floats and 3,718 casts
-  across the Arabian Sea, Bay of Bengal and equatorial Indian Ocean, of which 225 carry a
-  full model-versus-instrument comparison in all three collocated Fields. Argo's own quality flags are honoured per channel, so
+- **The global Argo float network** for the real measurements - 228 floats and **3,077** casts
+  across the Arabian Sea, Bay of Bengal and equatorial Indian Ocean, of which **225** carry a
+  model-versus-instrument comparison and **216** of those match on all three collocated Fields. Argo's own quality flags are honoured per channel, so
   a float whose salinity sensor has failed still contributes its good temperature.
 
 ## 3. Requirement coverage, clause by clause
@@ -319,7 +320,7 @@ each one that opens the platform with the control that answers it already set.
 | Web-based, platform-independent 3D rendering with depth-resolved volumetric views | **Met** | GPU ray-marched water column, 5 m to 2000 m, in any WebGL2 browser. No install, no plugin | `web/src/scene/volumeShader.ts` |
 | Unified display of Argo **and Glider** profiles (lat, lon, depth, time, temperature, salinity, chlorophyll) alongside model fields | **Argo met, gliders answered** | Argo fully, including **chlorophyll** from 52 BGC floats, plus 9 moored buoys. **Gliders now have an adapter of their own**, reading the exact FTP archive the problem statement names. What it finds is the answer rather than an excuse: every one of the **824,641** lines of the global index was scanned and this box holds **1 glider, 2 deployments, 2,876 casts**, newest **2022-10-14**, and nothing at all since. The gap is India's glider programme | `pipeline/samudra/sources/glider.py` |
 | Interactive controls: variable selection, depth-slice navigation, time-step animation, customisable colourbars | **Met** | All four, live | `web/src/ui/Controls.tsx`, `Timeline.tsx` |
-| Ingest new data streams or model variables without significant re-engineering | **Met** | One adapter class per provider. Proven rather than asserted, twice over: two Argo providers that disagree about every column name share one parser, and the September 2026 round added **three more providers** - INCOIS's second analysis, Copernicus Marine and the EGO glider archive - touching no renderer, no API endpoint and no UI file | `pipeline/samudra/sources/base.py` |
+| Ingest new data streams or model variables without significant re-engineering | **Met** | One adapter class per provider. Proven rather than asserted, twice over: two Argo providers that disagree about every column name share one parser, and the September 2026 round added **four more providers** - INCOIS's second analysis, Copernicus Marine, the EGO glider archive and the World Ocean Atlas normal - touching no renderer, no API endpoint and no UI file | `pipeline/samudra/sources/base.py` |
 | Tools for intuitive, rapid understanding of 3D phenomena | **Met** | Every control explains itself in plain language, and says whether it changed the science or only the picture | `web/src/guide.ts` |
 
 ### The six core functional requirements
@@ -348,7 +349,7 @@ each one that opens the platform with the control that answers it already set.
 | **Deployable on INCOIS infrastructure with no client-side dependencies** | **Met** | Static site plus one Python service. No tokens, no accounts, no plugins | `web/`, `api/` |
 | **Extensible design** for CTDs, moorings, HF-radar, ADCP | **Met for moorings and gliders** | Moored buoys are wired up through NOAA's public GTS feed - a genuinely different format (depth not pressure, one row per level, no quality flags) absorbed behind the same protocol - and the glider archive has its own adapter reading a 248 MB directory index. 9 buoys were reporting when this build was baked. HF-radar and ADCP stay unmet because India's are behind a login, not because the seam cannot carry them | `sources/osmc.py`, `sources/glider.py` |
 | **Vertical section** along a line you draw | **Met, and not asked for** | The standard figure of physical oceanography, cut live from the native grid along a great circle between two points you click, with every cast within a corridor of the line on the same axes and drawn to the depth it reached. Reads the model's own 24 levels, never the depth-warped rendering volume. The three collocated variables ship their full-precision grids in the build - 7.0 MB - so it works offline and on the static site, and `/api/section` serves the same cut to anything else. The browser's answer is checked against the pipeline's value by value: 1,102 values, worst gap **5.07e-5 °C** | `samudra/section.py`, `web/src/section.ts` |
-| **Search-and-rescue support**, named in the PS's own list of impeded mandates | **Built, and scored** | Drop a pin; the Copernicus current field is integrated forward from it at the depth you have sliced to. **Never labelled a search forecast**: a real one needs surface wind, Stokes drift and object-specific leeway, and this carries none of them, which is why INCOIS run SARAT. The reason it ships anyway is that it checks itself - an Argo track is measured drift at the parking depth, so the same integrator was run from **202** floats' own positions and the result published: median **39 km** out over one Argo cycle, 88 km at the ninetieth percentile, and by 30 days the separation is the same size as the distance travelled. `docs/adr/0015` | `pipeline/samudra/drift.py` |
+| **Search-and-rescue support**, named in the PS's own list of impeded mandates | **Built, and scored** | Drop a pin; the Copernicus current field is integrated forward from it at the depth you have sliced to. **Never labelled a search forecast**: a real one needs surface wind, Stokes drift and object-specific leeway, and this carries none of them, which is why INCOIS run SARAT. The reason it ships anyway is that it checks itself - an Argo track is measured drift at the parking depth, so the same integrator was run from **195** floats' own positions, over the days the current field actually covers, and the result published: median **38.5 km** out over one Argo cycle, 87.3 km at the ninetieth percentile across 1,908 cycles, and by 30 days the separation is the same size as the distance travelled. `docs/adr/0015` | `pipeline/samudra/drift.py` |
 | **Where the model disagrees**, found automatically | **Met, and not asked for** | Two scans, over two different questions. *Where did the field depart from its own average* is the Anomaly Features: 121 connected bodies across the twelve steps, each ringed and explained. *Where does the model depart from the instruments* is the bias map: every collocated instrument coloured by its gap and ranked worst first, with the region binned onto 5 degree boxes so a regional bias is distinguishable from scatter. **Neither is AI and neither is captioned as one** - there is no model, no training set and no confidence score, only the mean and the RMS of residuals already measured | `samudra/anomaly.py`, `samudra/residuals.py` |
 | ...and **machine-learning derived products** | **Not met** | Named as an extension point. Inventing one would be inventing a requirement | - |
 
@@ -358,7 +359,7 @@ each one that opens the platform with the control that answers it already set.
 | --- | --- | --- |
 | **CF Conventions for NetCDF** | **Met** | We read INCOIS's CF-1.6 and now write CF-1.8: `/api/netcdf/{field}/{index}` serves a self-describing file with real standard names. Fields with no standard name - the anomaly, coverage - carry a `long_name` and no invented one |
 | **OGC WMS / WCS** | **Partly** | WMS 1.3.0 is served, with both axis orders handled and tested. It publishes the fields that exist nowhere else - density and the anomaly - because INCOIS's own ERDDAP already serves WMS for their temperature, so re-serving that is re-publishing. **WCS is not built**, deliberately: no maintained Python server, and the numbers are already on OPeNDAP |
-| **Interoperability with data portals** | **Partly** | We read **8** independent sources through open APIs - INCOIS, Ifremer Coriolis, NOAA AOML, EMODnet Physics, Copernicus Marine, NOAA NCEI - each behind one adapter, plus a ninth that reads a NetCDF file a visitor supplies, and expose OPeNDAP and WMS so a sixth system could read us back. We are not listed in anybody's catalogue, which a prototype should not be |
+| **Interoperability with data portals** | **Partly** | We read **8** independent sources through open APIs - INCOIS ERDDAP twice, Ifremer Coriolis for Argo and for BGC, NOAA AOML's OSMC feed, Copernicus Marine, Ifremer's EGO glider archive and NOAA NCEI - each behind one adapter, plus a ninth that reads a NetCDF file a visitor supplies, and expose OPeNDAP, CF-1.8 NetCDF and WMS so another system can read us back. We are not listed in anybody's catalogue, which a prototype should not be |
 | **Climate monitoring**, named in the PS's own list of impeded mandates | **Met** | Two Change variables, and the difference between them is the point. The Temperature Anomaly is a departure from this bake's own four months and says so. **Temperature vs Normal** is a departure from NOAA's World Ocean Atlas 2023 1991-2020 mean for the same calendar month, which is what a forecaster means by "warmer than usual". Read anonymously over OPeNDAP at bake time - no account at any point. Measured across 349,692 cells: mean -0.014 °C, 95th percentile of the magnitude 2.104 °C. Below 1500 m the atlas has no normal and the field is blank rather than zero. `docs/adr/0016` |
 | **Public outreach and science communication** | **Partly** | The problem statement gives this its own section and names five audiences and three settings. Against them: **Show me around**, a guided walk in six chapters and 21 steps that visits all **43** explained controls, with a probe that fails if one is ever missed; **Explore**, the platform as eight questions each of which sets the whole scene up and each of which carries the caveat its simplification costs; **`?kiosk=1`**, an exhibition screen with no panels, the questions on a loop and a reset 60 seconds after the last visitor leaves; and **copy this view**, which writes what is on screen into a link a teacher can put on a slide. Still **Partly**, for two stated reasons: there is no printable one-page brief for the policymaker row, and the app has one media query, at 1180 px, so laptops are fine and phones are not |
 
@@ -476,22 +477,38 @@ landing page names no picture that is not there and keeps its headline readable 
 
 ## 5. Architecture
 
-<img src="docs/images/architecture.png" width="900" alt="The architecture in four zones: eight open sources, one source-adapter seam in Python, two representations of the same data - the Grid which is the scientific truth and the Volume which is a picture for the GPU - and four ways the data leaves: the browser, the static bake, the REST API and the open standards.">
+<img src="docs/images/architecture.png" width="900" alt="The architecture as a fork. Left to right: eight providers plus a NetCDF file a visitor drops on the page, one source-adapter seam in Python, then the Grid - float64 on the provider's own axes, the scientific truth - and four ways out. The Volume hangs below the Grid as a dashed box and its single arrow, labelled pixels only, never a reading, goes to the screen; a separate arrow labelled numbers, unchanged goes from the Grid to the API and the open standards.">
 
 *Rendered from [`scripts/ppt_diagrams.html`](scripts/ppt_diagrams.html) by
 `cd web && node render-diagrams.mjs`. It is drawn rather than generated because every label in it
 is a fact, and an image model cannot spell `incois_argo_10d_VAM` or be trusted to point an arrow
 at the right box.*
 
-### The shape of it, in one paragraph
+### The shape of it: a fork, not a pipeline
 
-**Nine adapters read nine formats and hand back one thing: a `Grid`.** Everything
-after that point is written against the `Grid` and has never heard of ERDDAP, of FTP, or of
-NetCDF.
-A build step called the **bake** reads the `Grid`, works out the fifteen `Field`s, and writes a
-folder of static files. The browser downloads that folder and draws it, and never asks a server
-for anything. A small Python service answers the questions a folder of files cannot answer, and
-speaks three open standards so other software can read the same numbers back out.
+Nine adapters read nine formats and hand back one thing: a **`Grid`**. Everything after that point
+is written against the `Grid` and has never heard of ERDDAP, of FTP, or of NetCDF. That is the
+whole of the left half of the picture.
+
+The right half is the part worth looking at twice, because it is a **fork rather than a chain**.
+From the `Grid`, *numbers* go straight out: to the REST API, to OPeNDAP, CF NetCDF and WMS, and to
+every panel and tooltip in the browser. The **`Volume`** is a *branch off* the `Grid` - the same
+field quantised to a byte a value and warped onto an even depth axis so a GPU can sample it - and
+its only arrow goes to the screen. Nothing reads a number back out of it. Drawn that way, the
+picture asserts the project's one hard rule instead of captioning it.
+
+### What travels along each arrow
+
+A box diagram says two things are connected. These say what moves.
+
+| From | To | What actually crosses |
+| --- | --- | --- |
+| Eight providers, plus a file a visitor drops | The adapter seam | Gridded NetCDF, delimited text and one FTP directory index, **subset at the server** so we pull one region and one window rather than a global file |
+| The adapter seam | The `Grid` | `Grid` and `Profile` objects on the provider's own axes, land already masked to `NaN`, quality flags already read per channel |
+| The `Grid` | The `Volume` | The **bake**: quantise to 4 bytes a voxel - value, coverage, gradient, spare - and warp 24 uneven levels onto 48 even ones |
+| The `Grid` | The API, the standards, the panels | **Numbers, unchanged.** float64 server-side, float32 for the three native grids that ship in the build |
+| The `Volume` | The screen | **Pixels only.** A ray-marched picture, and never a reading |
+
 
 ### Three layers, and the seam between each pair
 
@@ -538,7 +555,7 @@ behind it at all.
 **Path two - the API, for the questions a folder of files cannot answer.** Live, on demand.
 
 - `data/grids/*.npz` holds the same native `Grid` server-side.
-- **14 REST routes** - `/api/collocation/{id}`, `/api/column`, `/api/section`, `/api/floats` and
+- **15 REST routes** - `/api/collocation/{id}`, `/api/column`, `/api/section`, `/api/floats` and
   the rest - each one interpolating the `Grid` at a position the bake never precomputed.
 - **`POST /api/netcdf`** is the only endpoint on the service that accepts anything. A visitor's
   own CF-conventions NetCDF file, as the raw body, parsed by the ninth adapter, held in memory
@@ -583,7 +600,7 @@ of travel.
 | A Python or R user | **OPeNDAP DAP2** with constraint expressions - `.das`, `.dds`, `.dods` | The `Grid` |
 | Anything that wants a file | **CF-1.8 NetCDF**, self-describing, real standard names | The `Grid` |
 | A GIS | **OGC WMS 1.3.0** `GetCapabilities` and `GetMap` | The `Grid` |
-| Another program | 14 REST routes, JSON | The `Grid` |
+| Another program | 15 REST routes, JSON | The `Grid` |
 | Someone with their own data | `POST /api/netcdf`, and the drop target on the page | Their file, through the ninth adapter |
 
 The OPeNDAP endpoint is tested by *opening it with a real `pydap` client*
@@ -601,7 +618,7 @@ leaving the building is still science.
 | Volume lattice | **56 x 36 x 48**, 4 bytes a voxel |
 | Instruments | **237** - 228 Argo floats and 9 moored buoys, 52 of them carrying chlorophyll |
 | Static bake | **71.1 MB**, committed, **0** network calls to run |
-| HTTP routes on the API | **20** - 14 REST and 6 that speak an open standard |
+| HTTP routes on the API | **21** - 15 REST and 6 that speak an open standard |
 | Tests | **377**, all on the science and on what we serve |
 | Browser probes | **13**, measuring what actually reaches the screen |
 

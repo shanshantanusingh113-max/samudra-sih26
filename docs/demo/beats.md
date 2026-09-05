@@ -20,7 +20,8 @@ Point at the coloured region.
 
 > "This is India's ocean territory, coloured with INCOIS's own temperature analysis - their
 > public ERDDAP server, real data, current to the 30th of July. Every marker is an Argo float
-> that reported in the last 60 days. Eighty-eight of them."
+> that reported within five days of the date on screen - two hundred and seventeen of them at
+> this step, plus six moored buoys."
 
 *If a judge asks whether the data is real, this is the moment: the date and the source name are
 on screen, top right and bottom left.*
@@ -52,13 +53,13 @@ Point at the colour bands.
 
 Click a float. Use **2902306** if you can find it - Arabian Sea, off Oman.
 
-> "Now I click a float. Green is what the instrument actually measured on the way down. Blue
-> dashed is what the model said at that exact position and time. The shaded gap between them is
-> the disagreement."
+> "Now I click a float. The solid line is what the instrument actually measured on the way down.
+> The dashed line is what the model said at that exact position and time. The band between them
+> is the disagreement."
 
 Point at the numbers.
 
-> "119 depth levels matched. The model is running two degrees warm here, RMS 2.3."
+> "994 depth levels matched. The model is running half a degree warm here, RMS 0.63."
 
 Then the payoff:
 

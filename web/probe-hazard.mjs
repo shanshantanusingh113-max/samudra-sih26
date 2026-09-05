@@ -98,14 +98,13 @@ for (const [key, , , ] of fields) {
   );
 }
 console.log("ISOLEAK", JSON.stringify(isoLeak));
-console.log(
-  "ISOLEAK_OK",
-  JSON.stringify(
-    isoLeak
-      .filter((row) => row.allowed === false && (row.stateIsoEnabled || row.uIsoEnabled === 1))
-      .map((row) => row.key),
-  ),
-);
+const leaked = isoLeak
+  .filter((row) => row.allowed === false && (row.stateIsoEnabled || row.uIsoEnabled === 1))
+  .map((row) => row.key);
+console.log("ISOLEAK_OK", JSON.stringify(leaked));
+for (const key of leaked) {
+  problems.push(`${key} forbids an isosurface and the shader is still drawing one`);
+}
 
 const results = [];
 for (const [key, render] of fields) {
@@ -329,23 +328,49 @@ console.log(
 );
 
 // ---- the log scale bends the water and the bar together --------------------------------------
+//
+// The bar has to be **on screen** to be measured. This read `.colourbar` with the Colourbar
+// group shut, got null every time, printed `"barStops": null` and asserted nothing - under a
+// heading claiming to check the one thing that got this feature cut the first time round.
+// Open the Colourbar group and let React put it on screen before anything is measured off it.
+await page.evaluate(() =>
+  window.__store.setState((s) => ({ openGroups: { ...s.openGroups, palette: true } })),
+);
+await page.waitForTimeout(1200);
 const scaleCheck = await page.evaluate(() => {
   const before = window.__scene.volume.material.uniforms.uLog.value;
+  const barBefore = document.querySelector(".colourbar")?.style.background ?? null;
   window.__store.getState().set("scale", "log");
-  return { before };
+  return { before, barBefore };
 });
 await page.waitForTimeout(1500);
+const scale = {
+  ...scaleCheck,
+  after: await page.evaluate(() => window.__scene.volume.material.uniforms.uLog.value),
+  barAfter: await page.evaluate(
+    () => document.querySelector(".colourbar")?.style.background ?? null,
+  ),
+};
 console.log(
   "SCALE",
   JSON.stringify({
-    ...scaleCheck,
-    after: await page.evaluate(() => window.__scene.volume.material.uniforms.uLog.value),
-    barStops: await page.evaluate(() => {
-      const bar = document.querySelector(".colourbar");
-      return bar ? bar.style.background.slice(0, 120) : null;
-    }),
+    before: scale.before,
+    after: scale.after,
+    barChanged: scale.barBefore !== null && scale.barBefore !== scale.barAfter,
+    barStops: (scale.barAfter ?? "").slice(0, 120),
   }),
 );
+if (scale.before !== 0 || scale.after !== 1) {
+  problems.push(`uLog went ${scale.before} -> ${scale.after}, not 0 -> 1`);
+}
+if (scale.barAfter === null) {
+  problems.push("the colourbar is not on screen, so the bar could not be measured at all");
+} else if (scale.barBefore === scale.barAfter) {
+  problems.push("the shader bent and the colourbar beside it did not: one curve, two answers");
+}
 
 console.log("PROBLEMS", JSON.stringify(problems));
 await browser.close();
+
+console.log(problems.length ? `\nFAILED: ${problems.length}` : "\nPASS");
+process.exit(problems.length ? 1 : 0);

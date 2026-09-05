@@ -162,7 +162,8 @@ def casts_near_line(
     **Near in time as well as in space.** A section is cut at one Timestep and a reader takes
     the casts drawn on it as observations of the water it cuts through. With no time filter this
     took every fix of every float: measured on a line from 80 E, 5 N to 90 E, 20 N at the last
-    Timestep, 131 casts were drawn and 101 of them were from March to June. `when` and
+    Timestep, 127 casts were drawn and 98 of them were from March to June, against 8 with the
+    window on, all of them from July. `when` and
     `window_days` are the same refusal `floatTime.positionAt` already makes for the markers -
     a Float is not drawn when its nearest Fix is further away than the bake's own coverage
     window, because showing it would imply an observation that does not exist.

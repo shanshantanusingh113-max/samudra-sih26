@@ -29,10 +29,11 @@ fixed on the day, and a wrong word in one meant re-rendering an image. **If a th
 the words.**
 
 The one exception is a **genuine diagram** - boxes with arrows between them, where the shape
-carries meaning that a list does not. There are two of those here, and
-[Part 2](#part-2---diagram-prompts) has the exact prompt to generate each with Napkin AI or
-similar. Even then: generate the shape, and put the text on top yourself if the tool spells
-anything wrong.
+carries meaning that a list does not. There are two of those here. The **architecture** is
+already drawn, from real text at real pixels, and Slide 3 Block A says where the file is and
+exactly how to rebuild it in PowerPoint shapes if you would rather. The **methodology ribbon**
+has a generator prompt in [Part 2](#part-2---diagram-prompts). Even there: generate the shape
+only, and put the text on top yourself.
 
 ---
 
@@ -75,8 +76,8 @@ least 6 in of width.**
 **Caption:**
 
 > The running platform. INCOIS's 30 July 2026 analysis as a block of water 5 m to 2000 m deep,
-> the Argo floats and moored buoys drawn where they actually were, and float 7902384's own
-> 1 August cast scored against that analysis at 996 depths.
+> the Argo floats and moored buoys drawn where they actually were, and float 2901907's own
+> 25 July cast scored against that analysis: 54 depths, 0.08 °C average gap, 0.71 °C RMS.
 
 ### Strapline, directly under the slide title
 
@@ -101,10 +102,11 @@ the quote, is enough design.
 
 Section label, mono caps: `INNOVATION AND UNIQUENESS`. Four points, no more.
 
-- **Agreement is a number, and so is disagreement.** The float in the picture agrees to
-  **0.17 °C** over **996** depths, RMS **0.47 °C**. Turn the bias map on and all **230**
-  instruments are ranked by that same figure - the worst is a moored buoy the analysis never
-  ingested, at **1.66 °C**.
+- **Agreement is a number, and so is disagreement.** The float in the picture is **0.08 °C** off
+  over **54** depths, RMS **0.71 °C**, and the panel calls that *moderate disagreement* in as many
+  words rather than only reporting the wins. Turn the bias map on and all **230** instruments are
+  ranked on that same figure - the worst is a moored buoy the analysis never ingested, at
+  **1.66 °C**.
 - **It shows where there is no evidence.** Observation Coverage is a variable in its own right:
   **9.9%** of the block has no Argo cast behind it, and the picture says exactly where.
 - **It finds the odd water for you.** **121** unusual bodies across 12 analyses, each with a
@@ -125,26 +127,113 @@ Section label, mono caps: `INNOVATION AND UNIQUENESS`. Four points, no more.
 
 *Template heading: **TECHNICAL APPROACH***
 
-The template asks for two things: technologies, and methodology. Both are below as text. If you
-want one picture here, make it the architecture - the prompt is in Part 2 - and keep the rest
-typed.
+The template asks for two things: technologies, and methodology. Both are below as text. The one
+picture that belongs here is the architecture, and it is already rendered - Block A says where it
+is and exactly how to rebuild it by hand if you would rather. Keep everything else typed.
 
-### Block A - architecture, four zones left to right
+### Block A - the architecture diagram
 
-**Eight open sources &rarr; one adapter seam &rarr; two representations &rarr; four ways out.**
+**The shape is the argument, and the shape is a fork, not a pipeline.** Eight providers go through
+one seam into one Grid. From the Grid, *numbers* go straight out to the API, the standards and
+every panel in the browser. The Volume hangs **off** the Grid and its only arrow goes to the
+screen. Drawn that way, the picture itself says that nothing reads a number back out of the
+Volume, which is the rule the whole project is built on and the hardest one to assert in words.
 
-| Zone | What is in it |
+**It is already rendered.** [`docs/images/architecture.png`](../docs/images/architecture.png),
+3120 x 1122 px on white, every label real text. Regenerate it with
+`cd web && node render-diagrams.mjs`, which reads
+[`scripts/ppt_diagrams.html`](../scripts/ppt_diagrams.html). Place it full-bleed across the slide:
+at 2.78:1 it takes about **3.2 in of height at 9 in wide**. If that is all you need, stop here.
+
+**If you would rather rebuild it in PowerPoint shapes** - worth doing if you want a label editable
+on the day - it is 20 boxes, 5 arrows and one strip. Everything below is copy-paste, and no cell
+is a sentence.
+
+**Canvas.** Four columns with three arrow gutters between them, all top-aligned. Column widths in
+the render are 1.30 : 1.00 : 1.02 : 1.02, with a fixed 128 px gutter between each. Each column
+starts with a small mono heading over a 1 px rule.
+
+**Zone 1 - `1  PROVIDERS · PUBLIC, DATED`.** Nine cards, pale blue-grey fill, **3 px amber left
+stripe**. Two columns, reading across; the last spans both.
+
+| Card title | Mono sub-label |
 | --- | --- |
-| **1. Sources** | INCOIS ERDDAP, two analyses (`incois_argo_10d_VAM`, `_10day_McCreary`) &middot; Argo GDAC and synthetic BGC, Ifremer &middot; NOAA OSMC real-time, 9 moored buoys &middot; Copernicus Marine, `uo`/`vo` at 1/12° &middot; EGO glider GDAC &middot; World Ocean Atlas 2023 &middot; **a NetCDF file a visitor drops on the page** |
-| **2. Adapter seam** | `samudra/sources/base.py`. One class per provider, and **the only code in the project that has ever heard of ERDDAP.** Column layout is data, not code. Two layers of quality control. Land is masked, never filled. |
-| **3. Two representations** | **GRID** - float64, land is NaN, source-shaped. The scientific truth. **VOLUME** - 56 x 36 x 48, 4 bytes a voxel, quantised and depth-warped. A picture for the GPU. Depth sheets and column drapes ship unquantised on the Grid's own axes. |
-| **4. Delivery** | Browser (Three.js, WebGL2) &middot; static bake, **71.1 MB**, committed &middot; REST API, 14 routes &middot; OPeNDAP DAP2, CF-1.8 NetCDF, OGC WMS 1.3.0 |
+| INCOIS ERDDAP | `incois_argo_10d_VAM` |
+| INCOIS ERDDAP | `_10day_McCreary` |
+| Argo GDAC | `Ifremer · ArgoFloats` |
+| Argo BGC | `Ifremer · synthetic` |
+| NOAA OSMC | `GTS · moored buoys` |
+| Copernicus Marine | `uo, vo · 1/12°` |
+| EGO glider GDAC | `ftp.ifremer.fr` |
+| World Ocean Atlas 23 | `NOAA NCEI · OPeNDAP` |
+| **Your own NetCDF file, dropped on the page** *(full width)* | `the ninth adapter · POST /api/netcdf` |
 
-**The line to say out loud, and to put under the diagram:**
+**Zone 2 - `2  ADAPTER SEAM · PYTHON`.** Five cards, **full steel-blue border and a deeper fill**,
+no stripe. These read as one block on purpose: it is one seam, not five features.
 
-> **Every number a human or a machine reads comes from the Grid. The Volume is only ever a
-> picture.** This matters most at the API, because a consumer pulling NetCDF over the wire cannot
-> see they have been handed a quantised, depth-warped approximation.
+| Card title | Mono sub-label |
+| --- | --- |
+| GridSource / ProfileSource | `samudra/sources/base.py` |
+| One class per provider | `9 · the only code that knows ERDDAP` |
+| Column layout is data | `3 layouts, 1 parser` |
+| Quality control, per channel | `Argo flags + regional floor` |
+| Land masked, never filled | `absence stays absence` |
+
+**Zone 3 - `3  TWO REPRESENTATIONS`.** Two boxes, and they must not look alike. This is the only
+place in the picture where green and cyan appear, because those two are the opposites.
+
+| | GRID | VOLUME |
+| --- | --- | --- |
+| Border | **2 px solid green** | **2 px dashed cyan** |
+| Fill | pale green | pale cyan |
+| Title | `GRID`, heavy, green | `VOLUME`, heavy, cyan |
+| Mono lines | `float64 · land is NaN` / `24 levels · 56 x 36 · 1°` | `56 x 36 x 48 · 1 byte a value` / `value · coverage · gradient` |
+| One line under it | The scientific truth. Every collocation, tooltip, section, API response and served byte is read from here. | A picture for the GPU, and a dead end for numbers: nothing reads a value back out of it. |
+
+The VOLUME box sits **directly below** GRID, in the same column, joined by a short down arrow.
+
+**Zone 4 - `4  FOUR WAYS OUT`.** Four cards, pale fill, **3 px deep-teal left stripe**. The arrow
+in each title is the point: it names what that consumer reads.
+
+| Card title | Mono sub-label |
+| --- | --- |
+| Static bake ← both | `71.1 MB committed · 0 network calls` |
+| Browser ← both | `Three.js · WebGL2 · GLSL ES 3.00` |
+| REST API ← Grid | `FastAPI · 15 routes` |
+| Open standards ← Grid | `OPeNDAP DAP2 · CF-1.8 · WMS 1.3.0` |
+
+**The five arrows, and what each one carries.** A bare arrow says two boxes are connected; a
+labelled arrow says what travels. Label in mono caps, the second line smaller and sentence case.
+
+| # | From → to | Label | Second line | Colour |
+| --- | --- | --- | --- | --- |
+| 1 | Zone 1 → Zone 2 | `NETCDF · CSV · FTP INDEX` | subset at the server | steel blue |
+| 2 | Zone 2 → Zone 3 | `GRID & PROFILE OBJECTS` | the provider's own axes | steel blue |
+| 3 | GRID ↓ VOLUME | `BAKE: QUANTISE TO 4 BYTES, WARP THE DEPTH AXIS` | - | **amber** |
+| 4 | GRID → Zone 4 | `NUMBERS, UNCHANGED` | float64 and float32 | steel blue |
+| 5 | VOLUME → Zone 4 | `PIXELS ONLY` | never a reading | **cyan** |
+
+Arrows 4 and 5 start at their own box's centre line, so the fork is visible without either arrow
+crossing the other. Arrow 5 is cyan because it leaves the cyan box: the eye should follow it and
+notice it reaches only the screen.
+
+**Colours** - darker than the app's own, because this is printed on white and projected.
+
+| | |
+| --- | --- |
+| Amber (sources) `#B26A0C` &middot; Steel blue (arrows, seam) `#8FBACD` &middot; Deep teal (delivery) `#0B6E7F` | Green (the truth) `#12704A` on `#EEF7F2` &middot; Cyan (the picture) `#1291A6` on `#EAF5F8` |
+| Card fill `#F3F8FB` &middot; seam fill `#E8F1F6` &middot; border `#CBDCE6` | Ink `#0E1B26` &middot; body `#33505F` &middot; mono grey `#6E8898` |
+
+**The strip under the diagram, full width, pale green with a 3 px green left edge.** This is also
+the line to say out loud:
+
+> **Every number a human or a machine reads comes from the Grid. The Volume's only arrow goes to
+> the screen.** This matters most at the API, because a consumer pulling NetCDF over the wire
+> cannot see they have been handed a quantised, depth-warped approximation. **Two modules break
+> the one-copy rule and both are held to it:** the drift integrator and the vertical section run
+> in the browser as well as in Python, because the demo runs with the API off - and a probe runs
+> the shipped browser module against the pipeline's and fails on disagreement. Measured: drift
+> median **0.331 km** over 101 days, section worst gap **5.07e-5 degC** over 1,102 values.
 
 ### Block B - technologies used
 
@@ -366,43 +455,22 @@ the exact request you can run yourself:
 # PART 2 - DIAGRAM PROMPTS
 
 Only two things in this deck are genuinely diagrams rather than words in boxes. Everything else
-is typed. Give these to Napkin AI, Gemini, or any diagram tool, and **put the text on top
-yourself afterwards** - no tool spells `incois_argo_10d_VAM` correctly, and a wrong label in a
-picture tells a judge nobody checked.
+is typed. One of the two is already drawn and needs no prompt; the other is below. Give it to
+Napkin AI, Gemini, or any diagram tool, and **put the text on top yourself afterwards** - no tool
+spells `incois_argo_10d_VAM` correctly, and a wrong label in a picture tells a judge nobody
+checked.
 
-## Prompt 1 - the architecture
+## Prompt 1 - the architecture: there isn't one, and that is the point
 
-**Aspect ratio about 2.6 (wide). Use it on slide 3.**
+**Use [`docs/images/architecture.png`](../docs/images/architecture.png).** It is rendered from
+[`scripts/ppt_diagrams.html`](../scripts/ppt_diagrams.html) by `cd web && node render-diagrams.mjs`,
+which means every label in it is real text that was typed by someone who knew what it said. No
+generator can spell `incois_argo_10d_VAM`, and none of them can be trusted to put the arrow that
+says *pixels only* on the box that means it - which is the one relationship the picture exists to
+show. A diagram with a wrong label tells a judge nobody checked.
 
-```
-A wide technical architecture diagram on a pure white background, flat editorial style,
-no shadows, no gradients, no 3D, no isometric perspective.
-
-Four vertical zones arranged left to right, separated by three large right-pointing
-arrows in pale steel blue sitting on the vertical centre line between zones. Each zone
-has a thin horizontal rule across its top with a small label above it, then a stack of
-rounded rectangle cards beneath filling the zone's height.
-
-Zone 1 is seven cards in TWO columns, each with a 3 px amber stripe down its left edge.
-Zone 2 is four cards with a full steel-blue border and a slightly deeper fill, no
-  stripe - these read as the core.
-Zone 3 is exactly three cards and they must look different from the rest: two with a
-  pale GREEN tinted fill and a green left stripe, and one between them with a CYAN left
-  stripe on the standard pale fill.
-Zone 4 is four cards with a deep-teal left stripe.
-
-Beneath the whole four-zone diagram, spanning its full width, a single rounded strip
-with a pale green fill and a 3 px green left stripe.
-
-The visual argument that must survive: zone 3 is the only place in the picture where
-green and cyan appear, because those two are opposites - the truth and the picture.
-
-Leave every text area as clean empty space. Put NO text of any kind in the image - no
-labels, no headings, no numbers, no captions. I will add the words myself.
-```
-
-**The words to lay on top** are the four-zone table under Slide 3 Block A, and the green strip is
-the "every number comes from the Grid" line.
+If you want it as editable PowerPoint shapes instead, **Slide 3 Block A is the full build spec**:
+every box, every mono sub-label, all five arrows with what each one carries, and the hex colours.
 
 ## Prompt 2 - the methodology ribbon
 

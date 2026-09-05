@@ -1057,8 +1057,16 @@
       </div>
       <div class="stat">
         <b id="m-median">&hellip;</b>
-        <span>Median instrument, degC</span>
-        <p>The middle of the distribution rather than its mean, so one bad sensor cannot move it.</p>
+        <span>Median instrument RMS, degC</span>
+        <!--
+          Named for the statistic it actually is. It used to read "Median instrument" under
+          "the middle of the distribution rather than its mean", beside the 0.19 above - and it
+          is not the median of that distribution. 0.19 is the mean of each instrument's average
+          gap; this is the median of each instrument's RMS, which is a different and harsher
+          measure. The median of the 0.19 distribution is 0.10, so the old pair read as though
+          the typical instrument were worse than average when it is better.
+        -->
+        <p>Root-mean-square, so a big gap at one depth counts for more than the average gap does. Half the instruments sit under this and half above.</p>
       </div>
     </div>
 

@@ -39,8 +39,8 @@ Almost every tool draws flat maps, one depth at a time. But the ocean is four ki
 and the interesting things happen in the vertical. A cyclone does not feed on the surface. It
 feeds on the warm water underneath it."
 
-> _Point at the left-hand board. It quotes the five gaps the problem statement itself names, each
-> answered by what is built. Do not read them - let it be seen._
+> _Point at the five-row block on the left. It quotes the five gaps the problem statement itself
+> names, each answered by what is built. Do not read them - let it be seen._
 
 "So we built a block of water you can fly into. INCOIS's own analysis, five metres down to two
 kilometres, all rendered at once. Think of it as an MRI of the sea rather than a photograph of
@@ -52,9 +52,10 @@ the same time, and puts a number on the gap."
 
 > _Point at the screenshot, then at one figure in it. One, not four._
 
-"This float is the one in the picture. Nine hundred and ninety-six depths compared, and the
-analysis sits within **0.17 of a degree** of it. That is close agreement, and saying so is the
-point: the tool puts a number on the comparison whichever way it comes out.
+"This float is the one in the picture. Fifty-four depths compared, and the analysis sits
+**0.08 of a degree** from it on average with a root-mean-square gap of **0.71**. The panel calls
+that *moderate disagreement*, in those words. That is the point: the tool puts a number on the
+comparison whichever way it comes out, and it says so when the answer is unflattering.
 
 Turn on the bias map and all two hundred and thirty instruments are ranked by that same figure.
 The worst is a moored buoy, one point six six degrees out - and buoys matter here, because INCOIS
@@ -66,7 +67,7 @@ into one flattering average."
 
 ## A1:15 - Slide 3, technical approach (75 seconds)
 
-> _Read the architecture board left to right, in four moves._
+> _Read the architecture diagram left to right, in four moves._
 
 "Four zones, left to right.
 
@@ -161,7 +162,8 @@ server, real data, current to the thirtieth of July."
 > _Point at the white dots._
 
 "Every white dot is an Argo float. It sinks to two kilometres, drifts for ten days, then rises
-while measuring temperature and salinity the whole way up. Ninety-two of them reported here."
+while measuring temperature and salinity the whole way up. Two hundred and seventeen of them
+reported on this date."
 
 > _Point at the key, bottom-left._
 
@@ -199,8 +201,9 @@ proportional."
 
 "Now I click a float.
 
-Green is what the instrument actually measured on the way down. Blue dashed is what the model
-said at that exact position and time. The shaded gap between them is the disagreement."
+The solid line is what the instrument actually measured on the way down. The dashed line is
+what the model said at that exact position and time. The band between them is the
+disagreement, and the legend under the chart names all three."
 
 > _Point at the verdict line._
 
@@ -208,15 +211,17 @@ said at that exact position and time. The shaded gap between them is the disagre
 
 > _Point at the three numbers._
 
-"A hundred and nineteen depths compared. The model is running about two degrees warm here."
+"Nine hundred and ninety-four depths compared. The model is running half a degree warm here,
+and the panel calls that moderate disagreement."
 
 > _Pause. This is the payoff. Do not rush it._
 
 "That is not a bug. That is the tool working.
 
-This float is at twenty-one north, sixty east, off Oman, in July. That is the Arabian Sea
-upwelling season: the monsoon wind drags cold water up from below, and a one-degree gridded
-analysis smooths it away. A forecaster would want to know that before issuing an advisory."
+This float is at twenty-one north, sixty east, off Oman, on the first of August. That is the
+Arabian Sea upwelling season: the monsoon wind drags cold water up from below, and a one-degree
+gridded analysis smooths it away, so the model reads warm. A forecaster would want to know that
+before issuing an advisory."
 
 > _Optional, if you have the time: close it and click a different float to show a "Close
 > agreement" verdict, so they see the tool distinguishes good from bad._
@@ -300,11 +305,12 @@ questions afterwards, one per question. Reach for the one the question actually 
 
 "Every dot is now coloured by how far the analysis sat from what that instrument measured. Across
 230 instruments it reads 0.02 degrees off on average, and the typical gap is 0.19 degrees. The
-list underneath is worst-first - click one and its comparison opens. And all three variables put
-their worst five-degree box in the same water: 15 to 20 north, 85 to 90 east, the northern Bay of
-Bengal, where the Ganges and Brahmaputra come out. The gap there is 0.87 degrees against 0.20
-across the basin. That is the one place a one-degree analysis of this region should struggle, and
-it is where it does."
+list underneath is worst-first - click one and its comparison opens. And one box is in the worst
+three on all three variables: 15 to 20 north, 85 to 90 east, the northern Bay of Bengal, where
+the Ganges and Brahmaputra come out. It is the worst box on salinity, second on density and
+third on temperature, and the temperature gap there is 0.69 degrees against 0.19 across the
+basin. That is the one place a one-degree analysis of this region should struggle, and it is
+where it does."
 
 ### "Could you use this for a search and rescue?"
 
@@ -317,8 +323,8 @@ SARAT. What this shows is the drift the ocean analysis alone implies.
 
 What makes it worth having is that we can score it. An Argo float's track **is** measured drift at
 its parking depth, so we ran the same maths from 195 floats' own positions. Over one Argo cycle the
-current field alone lands a median 39 kilometres from where the float actually went, 88 at the
-ninetieth percentile. By thirty days the gap is the same size as the distance travelled. No other
+current field alone lands a median 38.5 kilometres from where the float actually went, 87.3 at
+the ninetieth percentile across 1,908 cycles. By thirty days the gap is the same size as the distance travelled. No other
 drift demo will tell you that number, because none of them has the observations in the same file."
 
 ### "Can it read our data?"

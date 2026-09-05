@@ -6,8 +6,11 @@
  * curve repainted every band of Observation Coverage under a key that still said otherwise, and
  * the isosurface kept drawing after the control that turned it on had gone.
  *
- * So this walks all fourteen and reports, per Field: whether each control is on screen, what the
+ * So this walks every Field and reports, per Field: whether each control is on screen, what the
  * shader is actually doing, and what the panel says it is doing. The two must agree.
+ *
+ * It also **fails** when they do not. For a round it built the `broken` list below, printed it,
+ * and exited 0 - so six checked rules could all have been violated and the run was still green.
  *
  *   node probe-controls.mjs        (needs a preview server on 4173)
  */
@@ -133,4 +136,15 @@ for (const r of rows) {
 console.log("FIELDS", JSON.stringify(rows, null, 1));
 console.log("BROKEN", JSON.stringify(broken, null, 1));
 console.log("PROBLEMS", JSON.stringify(problems));
+
+// Every Field in the manifest has to have been reached. A field that threw on its way onto
+// screen would otherwise leave a shorter list and six rules that vacuously held.
+if (rows.length !== fields.length) {
+  broken.push(`measured ${rows.length} Fields of ${fields.length}`);
+}
+for (const message of problems) broken.push(`console: ${message}`);
+
 await browser.close();
+
+console.log(broken.length ? `\nFAILED: ${broken.length}` : "\nPASS");
+process.exit(broken.length ? 1 : 0);

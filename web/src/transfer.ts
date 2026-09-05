@@ -47,12 +47,13 @@ export function inverseTransfer(position: number, scale: Scale): number {
 /**
  * A Field whose encoded range straddles zero, so its palette has a meaningful midpoint.
  *
- * Three of the fourteen: the temperature anomaly, the analysis spread and the barrier layer
- * thickness. Two things follow, and both are decided here so the control and the water cannot
- * disagree. A log scale is refused, because bending one half would move the midpoint off the
- * value that means "no departure". And an isosurface is drawn on **both** sides of that
- * midpoint, because a contour of departure at +0.3 degC that draws nothing for water which
- * cooled by two degrees is answering half the question with no sign that it has.
+ * Four of the fifteen: the temperature anomaly, the departure from the climatological normal,
+ * the analysis spread and the barrier layer thickness. Two things follow, and both are decided
+ * here so the control and the water cannot disagree. A log scale is refused, because bending one
+ * half would move the midpoint off the value that means "no departure". And an isosurface is
+ * drawn on **both** sides of that midpoint, because a contour of departure at +0.3 degC that
+ * draws nothing for water which cooled by two degrees is answering half the question with no
+ * sign that it has.
  */
 export function isDiverging(field: FieldSpec | null | undefined): boolean {
   return !!field && field.range[0] < 0 && field.range[1] > 0;

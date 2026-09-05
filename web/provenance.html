@@ -403,8 +403,8 @@
 dimensions:
         time = 12 ;          // 10-day analysis steps
         ZAX  = 24 ;          // depth levels, 5 m .. 2000 m, UNEVENLY spaced
-        latitude  = 36 ;     // 1 degree
-        longitude = 46 ;     // 1 degree
+        latitude  = 36 ;     // 1 degree, 10 S .. 25 N
+        longitude = 56 ;     // 1 degree, 45 E .. 100 E
 variables:
         float TEMP(time, ZAX, latitude, longitude) ;
                 TEMP:units = "degC" ;
@@ -604,6 +604,19 @@ python -m samudra.bake</pre>
     });
     fixes.sort(function (a, b) { return a - b; });
 
+    // What was actually compared, split the way the instruments split. A count of collocations
+    // is not a count of floats, and a collocation that matched on temperature alone is not a
+    // "full" comparison.
+    var comparedFloats = 0;
+    var comparedMoorings = 0;
+    var comparedAllThree = 0;
+    Object.keys(collocations).forEach(function (id) {
+      var item = collocations[id];
+      if (item.kind === "mooring") comparedMoorings++; else comparedFloats++;
+      var got = item.fields || {};
+      if (got.temperature && got.salinity && got.density) comparedAllThree++;
+    });
+
     var facts = el("facts");
     facts.appendChild(fact(
       "Baked",
@@ -646,12 +659,17 @@ python -m samudra.bake</pre>
           "Four are India's own OMNI array"
       ));
     }
+    // Currents are numbers, not a picture. This block said the opposite for a round - the
+    // sentence was ADR 0011's, which ADR 0013 superseded, and it printed `undefined m` besides,
+    // because it read a `depthMetres` key the manifest has never carried. Every field named
+    // here is one the manifest actually has.
     if (manifest.currents) {
+      var flow = manifest.currents;
       facts.appendChild(fact(
-        "Surface currents",
-        manifest.currents.files.length + " images",
-        "Copernicus Marine's own rendering, at " + manifest.currents.depthMetres +
-          " m. An image, not a field: nothing here can be queried for a speed"
+        "Current vectors",
+        flow.files.length + " x " + flow.levels + " levels",
+        "Copernicus Marine's own analysis at 1/12°, landed on this grid as float32 eastward and " +
+          "northward velocity. Numbers, not a picture: the speed under the cursor is read from them"
       ));
     }
     if (fixes.length) {
@@ -753,8 +771,12 @@ python -m samudra.bake</pre>
        voxels.toLocaleString() + " voxels x 4 bytes = " +
        (voxels * 4 / 1048576).toFixed(1) + " MB per field per step"],
       ["4 Render", "RGBA 3D texture", "Ray-marched in the browser, ~128 steps per pixel"],
+      // Not "floats": 9 of these are moored buoys, and "full" is only true of the ones that
+      // matched on all three collocated variables. An instrument is not always an Argo float.
       ["5 Compare", casts + " casts vs the Grid",
-       Object.keys(collocations).length + " floats with a full depth-by-depth comparison"]
+       comparedFloats + " floats and " + comparedMoorings + " buoys; " +
+       comparedAllThree + " of the " + (comparedFloats + comparedMoorings) +
+       " matched on all three variables"]
     ]);
 
     // ---- the test suite, by module -------------------------------------

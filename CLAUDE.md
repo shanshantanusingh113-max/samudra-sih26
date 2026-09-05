@@ -110,12 +110,14 @@ cd web && node capture.mjs --theme light --publish  # screenshots: shoot, encode
 cd web && node probe-hazard.mjs         # measures the sheet, the drape and the arrows
 cd web && node probe-guide.mjs          # every control has an entry, every figure in one is live
 cd web && node probe-controls.mjs       # every Field against its log and isosurface controls
+cd web && node probe-isolate.mjs        # the anomaly clip lands on the feature it points at
 cd web && node probe-bias.mjs           # the bias map: every marker's tint against palette.ts
 cd web && node probe-drift.mjs          # the browser's drift integrator against the pipeline's
 cd web && node probe-particles.mjs      # the moving flow: it is the drift model, it draws, no dot on land
 cd web && node probe-tour.mjs           # "Show me around" visits every control, and survives
 cd web && node probe-outreach.mjs       # every Explore question keeps its promise; kiosk; the copied link
 cd web && node probe-landing.mjs        # the landing page: no missing picture, an honest count, a readable hero
+cd web && node probe-requirements.mjs   # every figure filled, every deep link lands on what it promised
 cd web && node probe-section.mjs        # the browser's section against /api/section   (needs the API)
 cd web && node probe-upload.mjs         # drop a NetCDF in, and refuse one              (needs the API)
 ```
@@ -154,7 +156,7 @@ nothing pointed it out.
 `shots/` wholesale, so nothing may reference it. `--ingest` is what copies a shot into
 `assets/screenshots/`, it is **opt-in**, and it refuses to overwrite anything in `HANDPICKED`
 without `--force` - because the harness shoots one camera angle per state and cannot tell that
-its own flow shot has no Somali Current in it. Seventeen of the nineteen light pictures were
+its own flow shot has no Somali Current in it. Most of the eighteen light pictures were
 grabbed from a real browser for exactly that reason. `scripts/normalise_screenshot.py` crops a
 grab to 16:9 and resizes it to the harness's own 1600x900 at quality 82 - **crop and resize
 only**, because a screenshot is the deck's proof and may not be retouched. `--no-crop` exists for one real case: a frame wider than 16:9 whose
@@ -274,6 +276,22 @@ drawn. It passed, because it printed those numbers and asserted on neither. It n
 `currentStyle: "arrows"` before measuring arrows, hides **both** styles for the off-frame, and
 fails on a vector Field that builds no arrow geometry. Correctly paired the arrows are **0.59%**
 of the frame, which is the figure this file has quoted all along.
+
+**A probe that collects, prints and exits 0 is a log, not a check - and it reads as green.** Four
+of the thirteen had no `process.exit`, no `exitCode`, no `throw` and no assertion of any kind, so
+they passed whatever they measured. They were not quiet about it: `probe-controls.mjs` built a
+`broken` array against six rules and only logged it; `probe-requirements.mjs` followed all 21 deep
+links, printed the state each one landed in, and never compared it with the `href` - which is why
+two links labelled **"Open a float comparison"** pointed at `?dive=1&tour=1` and started the
+guided tour instead, through a run that followed both. `probe-hazard.mjs`'s scale check read
+`.colourbar` with the Colourbar group **shut**, got `null` every time, and printed
+`"barStops": null` under a heading claiming to check that the water and the legend bend together.
+`probe-isolate.mjs` wrote two frames to `shots/` and compared neither. All four assert now, and
+two of the four needed the *measurement* rethinking rather than an `exit` bolted on: the isolate
+diff was 83% Anomaly-panel fade-in until it was bounded to the band between the panels, and a
+pixel test could never have caught the mirrored clip anyway - the camera compresses 35 degrees of
+latitude into about 3 px a degree, so the 8-degree bug moves the water 27 px. It reads the clip
+box back **in degrees** instead. **Before adding a probe, make it fail on purpose once.**
 
 **"Show me around" walks every control, and that is a measurement.** It was five steps against 43
 explained controls - a demo, not a tour, and the four the user's teammates would present from were
