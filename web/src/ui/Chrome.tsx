@@ -1,6 +1,38 @@
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { copyCurrentView } from "../deeplink";
 import { applyTheme, useStore } from "../store";
+
+/**
+ * Publish the source credits' measured height, so the timeline can sit above them.
+ *
+ * The two shared the foot of the screen and overlapped in every state - 8,078 px2 at 1600x900
+ * and 19,041 px2 at 1366x768, where the credits wrap to a second line. Attribution for Argo,
+ * INCOIS, Copernicus and NOAA is a licence obligation, so it is the last thing that should be
+ * sitting under a control.
+ *
+ * The height is measured rather than written down because it changes with the window: the
+ * credits wrap, and how many lines they take depends on the width and on how many sources the
+ * bake holds. A number chosen for one viewport is wrong at the next.
+ */
+function usePublishedHeight() {
+  const watcher = useRef<ResizeObserver | null>(null);
+  // A callback ref, not an effect. The footer only exists once the manifest has loaded, so an
+  // effect with no dependencies would re-create the observer on every render - and `Chrome`
+  // re-renders on every store change, which during playback is every frame.
+  return useCallback((el: HTMLElement | null) => {
+    watcher.current?.disconnect();
+    if (!el) return;
+    const publish = () => {
+      document.documentElement.style.setProperty(
+        "--attribution-height",
+        `${Math.ceil(el.getBoundingClientRect().height)}px`,
+      );
+    };
+    publish();
+    watcher.current = new ResizeObserver(publish);
+    watcher.current.observe(el);
+  }, []);
+}
 
 export function LoadingScreen() {
   return (
@@ -17,6 +49,8 @@ export function Chrome({ onDive }: { onDive: (into: boolean) => void }) {
   // What the copy button last did, so it can say so for a moment. A control that fires and
   // shows nothing is a control a user presses three times.
   const [copied, setCopied] = useState<"" | "copied" | "failed">("");
+  // Before the early return: a hook cannot be called conditionally.
+  const credits = usePublishedHeight();
   if (!manifest) return null;
 
   const flipTheme = () => {
@@ -141,7 +175,7 @@ export function Chrome({ onDive }: { onDive: (into: boolean) => void }) {
         </div>
       )}
 
-      <footer className="attribution">
+      <footer className="attribution" ref={credits}>
         {manifest.sources.map((source) => (
           <span key={source.name} title={source.attribution}>
             {source.name}

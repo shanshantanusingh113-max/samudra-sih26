@@ -520,12 +520,38 @@ body {
 
 /* ---------------------------------------------------------------- attribution */
 
+/*
+ * The source credits, kept out from under the timeline.
+ *
+ * This was `right: 18px` with no width, so eight source names ran 1,582 px wide at a 1,600 px
+ * viewport - past the left edge of the screen and straight under the centred timeline, which
+ * covered 8,078 px2 of it at 1600x900 and 19,041 px2 at 1366x768. Attribution for Argo, INCOIS,
+ * Copernicus and NOAA is a licence obligation; it is the last thing on the canvas that should
+ * be sitting under a control.
+ *
+ * Squeezing it into the gap beside the timeline was tried first and was worse: capped at
+ * (50% - half the timeline) it became a 370 px column **217 px tall** at 1366x768, which then
+ * covered 33,500 px2 of the map key. One overlap traded for another.
+ *
+ * What actually works is the other axis. The timeline sits 22 px off the foot, so the band
+ * below it is free across the whole width - the credits only ever collided with it by being
+ * tall enough to reach up into it. So the credits keep the full width and wrap to as few lines
+ * as that allows, and the **timeline is lifted to clear whatever height they end up**, from
+ * their measured height published by `Chrome`. Neither has to guess at the other's size.
+ *
+ * It wraps rather than truncates, because a credit that has been cut off is not a credit.
+ */
 .attribution {
   position: absolute;
+  left: 18px;
   right: 18px;
   bottom: 8px;
   z-index: 3;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  row-gap: 2px;
+  line-height: 1.35;
   gap: 14px;
   font-family: var(--mono);
   font-size: 11px;
@@ -551,12 +577,13 @@ body {
   z-index: 5;
   width: 344px;
   overflow-x: hidden;
-  /* The timeline sits 22 px off the foot and is about 58 px tall. It is also centred, and at
-     every viewport width its left end starts well to the right of the panel, so the panel only
-     has to clear the timeline in *height* by enough to look deliberate rather than by enough to
-     avoid a collision. 118 px does that and gives a 1280x720 laptop the whole panel. It was
-     186 px, which threw away 68 px of a panel that is already taller than a short screen. */
-  max-height: calc(100% - 118px);
+  /* The timeline is centred and its left end starts well to the right of the panel, so the panel
+     never has to clear *it*. What the panel does have to clear is the source credits, which run
+     the full width along the foot: at 118 px the panel reached 44 px off the bottom and sat on
+     2,752 px2 of them once every group was open. The credits wrap, so their height is measured
+     and published by `Chrome` rather than assumed - 74 px of top offset, the credits' own
+     height, their 8 px inset and a 12 px gap. */
+  max-height: calc(100% - 94px - var(--attribution-height, 20px));
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0;
@@ -1621,7 +1648,18 @@ input[type="range"]::-moz-range-thumb {
   position: absolute;
   left: 18px;
   bottom: 104px;
-  z-index: 4;
+  /*
+   * Above the panels, not below them.
+   *
+   * At 4 it sat under `.panel` at 5, so a tall control panel did not merely crowd the key, it
+   * erased it - measured at 33,768 px2 of a 33,768 px2 key, which is all of it. `MapKey` now
+   * steps the key clear of the panel by measuring, and this raise is the second half of the
+   * same fix: a legend that has been moved out of the way must not then be painted over by the
+   * thing it moved for.
+   */
+  z-index: 6;
+  /* Draggable, so a reader can put it wherever the water they care about is not. */
+  cursor: grab;
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -1645,6 +1683,41 @@ input[type="range"]::-moz-range-thumb {
    about 374-450 px belongs to the depth figures, and the key starts after it. */
 .mapkey.in-volume {
   left: 466px;
+}
+
+/* While it is being dragged the key follows the pointer, so it must not also animate to each
+   new position, and text must not select under the drag. */
+.mapkey.dragging {
+  cursor: grabbing;
+  user-select: none;
+  transition: none;
+}
+
+.mapkey button {
+  cursor: pointer;
+}
+
+/* Only rendered once the key has been moved. Sized to sit on the label's own row without
+   changing its height. */
+.mapkey-reset {
+  align-self: flex-start;
+  margin: -4px 0 0;
+  padding: 2px 5px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 4px;
+  background: none;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--on-surface-faint);
+  transition: color 0.16s var(--ease), border-color 0.16s var(--ease);
+}
+
+.mapkey-reset:hover,
+.mapkey-reset:focus-visible {
+  color: var(--on-surface);
+  border-color: var(--outline);
 }
 
 /* The header is the fold control, so it is a button rather than a span. Everything about how
@@ -2405,7 +2478,13 @@ input[type="range"]::-moz-range-thumb {
 .timeline {
   position: absolute;
   left: 50%;
-  bottom: 22px;
+  /*
+   * Lifted clear of the source credits rather than sitting on them. `--attribution-height` is
+   * measured and published by `Chrome`, so this follows the credits when they wrap to a second
+   * line on a narrower window instead of needing a number picked per viewport. The fallback
+   * covers the single frame before that measurement lands.
+   */
+  bottom: calc(var(--attribution-height, 20px) + 20px);
   transform: translateX(-50%);
   z-index: 5;
   display: flex;

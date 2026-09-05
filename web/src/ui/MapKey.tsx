@@ -1,9 +1,189 @@
-import { useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { biasColour } from "../palette";
 import { useStore } from "../store";
 
 /** Remembered per browser, so a reader who folds it away keeps it folded. */
 const OPEN_KEY = "samudra.mapkey";
+/** And where they dragged it to, for the same reason. */
+const POS_KEY = "samudra.mapkey.pos";
+
+/** How far clear of the control panel the key sits once it has to move. */
+const CLEARANCE = 12;
+/** Never let a dragged key leave the window; keep this much of it reachable. */
+const MARGIN = 8;
+
+type Spot = { left: number; top: number };
+
+function readSpot(): Spot | null {
+  try {
+    const raw = window.localStorage.getItem(POS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Spot;
+    return Number.isFinite(parsed?.left) && Number.isFinite(parsed?.top) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Where the key sits, and why it is not simply pinned to a corner.
+ *
+ * It used to be `left: 18px; bottom: 104px` - the same column as the control panel, which grows
+ * downwards as groups open. Measured at 1600x900 and at 1366x768 with every group open, the
+ * panel covered **33,768 px2 of a 268 x 126 key: all of it**, and the panel wins on z-index, so
+ * the legend for everything drawn on the water was simply gone. `DepthRuler` already solves the
+ * neighbouring problem by measuring the panel rather than assuming its size, and this is the
+ * same measurement: when the panel's own box reaches the key's box, the key steps to the right
+ * of the panel, which is where it already sits in the volume view.
+ *
+ * The test has to run against the key's **natural** left, not its current one, or the shift
+ * removes the overlap that caused it and the two positions oscillate for ever.
+ */
+function usePlacement(inVolume: boolean, folded: boolean) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  /** Where the key sits with nothing applied. Re-read whenever the view changes. */
+  const natural = useRef<{ left: number; top: number; height: number } | null>(null);
+  const [shift, setShift] = useState<{ left?: number; bottom?: number } | null>(null);
+  const [spot, setSpot] = useState<Spot | null>(readSpot);
+
+  useLayoutEffect(() => {
+    natural.current = null;
+    setShift(null);
+  }, [inVolume]);
+
+  const place = useCallback(() => {
+    const el = ref.current;
+    if (!el || spot) return;
+    const panel = document.querySelector(".panel-left");
+    if (!panel) return;
+    const now = el.getBoundingClientRect();
+    if (shift === null) natural.current = { left: now.left, top: now.top, height: now.height };
+    const base = natural.current;
+    if (!base) return;
+
+    const hits = (b: DOMRect, left: number, top: number) =>
+      Math.min(b.right, left + now.width) - Math.max(b.left, left) > 0 &&
+      Math.min(b.bottom, top + base.height) - Math.max(b.top, top) > 0;
+
+    // 1. Clear the control panel by stepping to its right, which is where the key already sits
+    //    in the volume view.
+    const panelBox = panel.getBoundingClientRect();
+    const left = hits(panelBox, base.left, base.top)
+      ? Math.round(panelBox.right + CLEARANCE)
+      : base.left;
+
+    // 2. That can walk the key into the timeline on a short window, so check the place it is
+    //    actually going rather than the place it came from.
+    const rail = document.querySelector(".timeline")?.getBoundingClientRect();
+    const bottom =
+      rail && hits(rail, left, base.top)
+        ? Math.round(window.innerHeight - rail.top + CLEARANCE)
+        : undefined;
+
+    const next =
+      left === base.left && bottom === undefined ? null : { left, bottom };
+    // Only re-render when the answer actually moved, or this settles into a loop.
+    setShift((was) =>
+      was?.left === next?.left && was?.bottom === next?.bottom ? was : next,
+    );
+  }, [shift, spot]);
+
+  // Bounded to when the answer can change. Without the dependency this ran on every render,
+  // and two forced layout reads per frame during playback is a real cost for a legend that
+  // moves about twice a session. Everything that *can* move it is observed below.
+  useLayoutEffect(place, [place]);
+
+  /*
+   * Re-measure when the layout settles, not only when something is resized.
+   *
+   * The panel *slides in* over 0.42 s, so a measurement taken on mount reads its animated
+   * position, not its resting one - at 1280x720 that cached a panel right edge of 344 instead
+   * of 358 and left the key 2 px inside the panel. A ResizeObserver never corrects it either,
+   * because the panel is *moving*, not changing size.
+   */
+  useEffect(() => {
+    const panel = document.querySelector(".panel-left");
+    const observer = new ResizeObserver(place);
+    if (panel) {
+      observer.observe(panel);
+      panel.addEventListener("animationend", place);
+    }
+    const rail = document.querySelector(".timeline");
+    if (rail) observer.observe(rail);
+    const settle = window.setTimeout(place, 700);
+    window.addEventListener("resize", place);
+    return () => {
+      observer.disconnect();
+      if (panel) panel.removeEventListener("animationend", place);
+      window.clearTimeout(settle);
+      window.removeEventListener("resize", place);
+    };
+  }, [place, folded]);
+
+  /** Drag from anywhere on the key that is not itself a control. */
+  const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if ((event.target as HTMLElement).closest("button, a, input")) return;
+    const el = ref.current;
+    if (!el) return;
+    const box = el.getBoundingClientRect();
+    const grabX = event.clientX - box.left;
+    const grabY = event.clientY - box.top;
+    el.setPointerCapture(event.pointerId);
+    el.classList.add("dragging");
+
+    const move = (e: PointerEvent) => {
+      setSpot({
+        left: Math.min(
+          Math.max(e.clientX - grabX, MARGIN),
+          window.innerWidth - el.offsetWidth - MARGIN,
+        ),
+        top: Math.min(
+          Math.max(e.clientY - grabY, MARGIN),
+          window.innerHeight - el.offsetHeight - MARGIN,
+        ),
+      });
+    };
+    const up = () => {
+      el.classList.remove("dragging");
+      el.removeEventListener("pointermove", move);
+      el.removeEventListener("pointerup", up);
+      try {
+        const landed = el.getBoundingClientRect();
+        window.localStorage.setItem(
+          POS_KEY,
+          JSON.stringify({ left: Math.round(landed.left), top: Math.round(landed.top) }),
+        );
+      } catch {
+        // Remembering is a convenience; failing to must never cost the drag.
+      }
+    };
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerup", up);
+  };
+
+  const reset = () => {
+    setSpot(null);
+    setShift(null);
+    natural.current = null;
+    try {
+      window.localStorage.removeItem(POS_KEY);
+    } catch {
+      // As above.
+    }
+  };
+
+  // A dragged key is pinned to the window, so it takes both axes and gives up `bottom`.
+  const style: React.CSSProperties = spot
+    ? { left: `${spot.left}px`, top: `${spot.top}px`, bottom: "auto" }
+    : shift
+      ? {
+          left: `${shift.left}px`,
+          ...(shift.bottom === undefined ? {} : { bottom: `${shift.bottom}px` }),
+        }
+      : {};
+
+  return { ref, style, onPointerDown, reset, moved: spot !== null };
+}
 
 /**
  * A key for the things drawn on the water.
@@ -37,6 +217,8 @@ export function MapKey() {
   };
 
   const { manifest, morph, showFloats, showTracks, timestepIndex, fieldKey } = store;
+  // Before the early return: a hook cannot be called conditionally.
+  const placement = usePlacement(morph > 0.5, !open);
   if (!manifest) return null;
   const moorings = manifest.instruments?.moorings ?? 0;
 
@@ -62,7 +244,12 @@ export function MapKey() {
   const when = stamp ? new Date(stamp).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
 
   return (
-    <div className={`mapkey ${morph > 0.5 ? "in-volume" : "on-globe"}${open ? "" : " shut"}`}>
+    <div
+      ref={placement.ref}
+      className={`mapkey ${morph > 0.5 ? "in-volume" : "on-globe"}${open ? "" : " shut"}`}
+      style={placement.style}
+      onPointerDown={placement.onPointerDown}
+    >
       <button
         type="button"
         className="mapkey-label"
@@ -73,6 +260,18 @@ export function MapKey() {
         <span className="mapkey-fold" aria-hidden="true" />
         On the water
       </button>
+      {/* Only offered once the key has actually been moved: a reset for a thing that is where
+          it has always been is a control that does nothing. */}
+      {placement.moved && (
+        <button
+          type="button"
+          className="mapkey-reset"
+          onClick={placement.reset}
+          title="Put the key back where it started"
+        >
+          reset
+        </button>
+      )}
       {!open ? null : (
         <>
 
