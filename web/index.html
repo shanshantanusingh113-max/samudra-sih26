@@ -316,7 +316,13 @@
     background: linear-gradient(90deg, var(--scrim-side) 0%, transparent 62%);
   }
 
-  .hero .wrap { position: relative; z-index: 1; }
+  .hero .wrap {
+    position: relative; z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 40%);
+    column-gap: clamp(32px, 5vw, 84px);
+    align-items: center;
+  }
   .hero h1 {
     margin: 0;
     font-size: clamp(40px, 6.6vw, 92px);
@@ -346,6 +352,54 @@
   }
   @keyframes bob { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 6px); } }
   @media (prefers-reduced-motion: reduce) { .scroll-hint { animation: none; } }
+
+  /*
+   * The globe: the same ocean seen as a turning sphere, in its own column of the hero grid, so
+   * no text element box ever spreads over it. `.sphere` is a real CSS fallback - a radial
+   * gradient over globe.jpg - so the hero gets a sphere even with WebGL absent or a script
+   * stuck. `src/landingGlobe.ts` mounts a Three.js canvas over it (pushed in only once the
+   * browser is idle and the hero is in view), labels the canvas `.ready`, hands the fallback
+   * `.handoff`, and the crossfade happens there. The texture and gradient are theme-agnostic,
+   * like the hero band itself, so light and dark keep agreeing. Hidden on narrow screens,
+   * where the type owns the hero and the stats strip has no right-hand neighbour.
+   */
+  .sphere-wrap {
+    grid-column: 2; grid-row: 1 / -1;
+    align-self: center; justify-self: stretch;
+    width: 100%; max-width: 520px; margin-left: auto;
+    aspect-ratio: 1;
+    pointer-events: none; /* the hero's clicks stay on the type and the actions */
+    clip-path: circle(0% at 50% 50%);
+    animation: iris-open 1.6s var(--ease) 0.15s forwards;
+    overflow: hidden;
+  }
+  @keyframes iris-open {
+    to { clip-path: circle(52% at 50% 50%); }
+  }
+  .sphere {
+    position: absolute; inset: 0; border-radius: 50%;
+    background:
+      radial-gradient(circle at 34% 30%,
+        #e3f6fc 0%, #98cbEA 24%, #2f6fa8 55%, var(--deep) 88%),
+      url("./images/globe.jpg") center / cover no-repeat;
+    background-blend-mode: multiply;
+    box-shadow: inset 0 -28px 60px rgba(3, 12, 20, 0.55);
+    transition: opacity 1s var(--ease);
+  }
+  .sphere.handoff { opacity: 0; }
+  #globeCanvas {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    border-radius: 50%;
+    opacity: 0; transition: opacity 1s var(--ease);
+  }
+  #globeCanvas.ready { opacity: 1; }
+  @media (max-width: 1180px) {
+    .sphere-wrap { display: none; }
+    .hero .wrap { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sphere-wrap { clip-path: none; animation: none; }
+  }
 
   /* ------------------------------------------------------------- cards */
 
@@ -604,6 +658,18 @@
       <div><b id="m-depth">&hellip;</b><span>Depth range</span></div>
       <div><b id="m-latest">&hellip;</b><span>Analysis to</span></div>
       <div><b>0</b><span>Network calls to run</span></div>
+    </div>
+    <!--
+      The same ocean, as a globe you can watch turn. A real column of the hero, so no text
+      element box ever sits over it: the type keeps its own column and the globe keeps its own.
+      The CSS sphere paints instantly (no JS, no WebGL), and `src/landingGlobe.ts` mounts a Three.js
+      globe over it once the browser is idle and the hero is in view, textured with the same
+      globe.jpg used on the page below - so it is the real product, not a decoration. Hidden on
+      narrow screens, where the type owns the hero and a globe would crowd the stats.
+    -->
+    <div class="sphere-wrap" id="sphereWrap" aria-hidden="true">
+      <div class="sphere" id="sphereFallback"></div>
+      <canvas id="globeCanvas"></canvas>
     </div>
   </div>
   <div class="scroll-hint" aria-hidden="true">Scroll</div>
@@ -1492,6 +1558,14 @@
     paint();
   })();
 </script>
+
+<!--
+  The globe is a progressive enhancement, so it is a module and not part of the inline paint
+  path: vite bundles it (and its one dynamic `three` chunk) into the landing build, and zero
+  requests leave the deployment - the texture is the same baked ./images/globe.jpg the page
+  already uses. It is the only module on this page on purpose.
+-->
+<script type="module" src="/src/landingGlobe.ts"></script>
 
 </body>
 </html>
