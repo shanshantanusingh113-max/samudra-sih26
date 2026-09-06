@@ -116,6 +116,9 @@
   * { box-sizing: border-box; }
 
   html { scroll-behavior: smooth; }
+  /* Anchor targets clear the 66 px sticky nav instead of sliding under it. Chromium's smooth
+     hash scroll lands about 22 px shy of the requested margin, so allow a little headroom. */
+  header[id], section[id] { scroll-margin-top: 110px; }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
   body {
