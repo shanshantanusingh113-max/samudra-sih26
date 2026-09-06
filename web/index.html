@@ -62,6 +62,7 @@
 
     --card-bg: rgba(16, 39, 55, 0.6);
     --shadow: 0 22px 60px rgba(0, 0, 0, 0.4);
+    --top-lit: rgba(150, 205, 225, 0.16);
 
     color-scheme: dark;
   }
@@ -109,6 +110,7 @@
      */
     --card-bg: rgba(255, 255, 255, 0.72);
     --shadow: 0 18px 44px rgba(12, 40, 55, 0.12);
+    --top-lit: rgba(14, 110, 130, 0.2);
 
     color-scheme: light;
   }
@@ -147,6 +149,16 @@
   a { color: var(--cyan); text-underline-offset: 3px; }
   a:focus-visible, button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
 
+  /* Reading a console means selecting one. Selection takes the accent instead of the default
+     blue so it matches the page, and the scrollbar is drawn in the panel tone rather than the
+     OS chrome, which is what a terminal already looks like. */
+  ::selection { background: var(--accent-wash-strong); color: var(--ink); }
+  html { scrollbar-color: var(--edge-hot) var(--shelf); scrollbar-width: thin; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--edge-hot); border-radius: 6px; border: 2px solid var(--deep); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent-edge); }
+  ::-webkit-scrollbar-track { background: transparent; }
+
   h1, h2, h3 { font-family: var(--d); color: var(--ink); margin: 0; text-wrap: balance; }
 
   .eyebrow {
@@ -156,6 +168,18 @@
     margin-bottom: 16px;
   }
   .eyebrow::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--edge-hot), transparent); }
+
+  /*
+   * The chapters carry their place in a deck of cards, like the cabinet lights on a console.
+   * Every content section numbers itself from one, the hero stays unnumbered because it is the
+   * cover, and the closing panel is a panel rather than a chapter.
+   */
+  body { counter-reset: chapter 0; }
+  section { counter-increment: chapter; }
+  section .eyebrow::before {
+    content: counter(chapter, decimal-leading-zero) " \00b7 ";
+    color: var(--dim);
+  }
 
   section { position: relative; padding: 104px 0; }
   section h2 { font-size: clamp(28px, 3.4vw, 44px); font-weight: 800; letter-spacing: -0.025em; line-height: 1.1; }
@@ -311,6 +335,7 @@
     background: var(--edge); border: 1px solid var(--edge); border-radius: 12px; overflow: hidden;
   }
   .hero-stats div { background: var(--card-bg); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 16px 18px; }
+  .hero-stats div:hover { background: var(--accent-wash); }
   .hero-stats b { display: block; font-family: var(--m); font-size: 21px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; }
   .hero-stats span { font-family: var(--m); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint); }
 
@@ -329,9 +354,10 @@
   .card {
     padding: 26px 28px; border: 1px solid var(--edge); border-radius: 14px;
     background: var(--card-bg);
+    box-shadow: inset 0 1px 0 var(--top-lit);
     transition: transform 0.25s var(--ease), border-color 0.25s var(--ease), box-shadow 0.25s var(--ease);
   }
-  .card:hover { transform: translateY(-3px); border-color: var(--accent-edge); box-shadow: var(--shadow); }
+  .card:hover { transform: translateY(-3px); border-color: var(--accent-edge); box-shadow: inset 0 1px 0 var(--top-lit), var(--shadow); }
   .card h3 { font-size: 20px; font-weight: 700; letter-spacing: -0.015em; margin-bottom: 10px; }
   .card p { margin: 0; font-size: 15px; }
   .card .tag {
@@ -383,10 +409,11 @@
     display: flex; flex-direction: column;
     padding: 0; overflow: hidden;
     border: 1px solid var(--edge); border-radius: 16px; background: var(--card-bg);
+    box-shadow: inset 0 1px 0 var(--top-lit);
     color: inherit; font: inherit;
     transition: transform 0.25s var(--ease), border-color 0.25s var(--ease), box-shadow 0.25s var(--ease);
   }
-  .feature:hover { transform: translateY(-5px); border-color: var(--accent-edge); box-shadow: var(--shadow); }
+  .feature:hover { transform: translateY(-5px); border-color: var(--accent-edge); box-shadow: inset 0 1px 0 var(--top-lit), var(--shadow); }
   .feature img { width: 100%; height: 168px; object-fit: cover; display: block; background: var(--panel); }
   .feature .feature-body { padding: 20px 22px 22px; }
   .feature h3 { font-size: 18px; font-weight: 700; letter-spacing: -0.012em; margin-bottom: 8px; }
@@ -428,6 +455,7 @@
   .step {
     display: grid; grid-template-columns: 58px 1fr; gap: 22px; align-items: start;
     padding: 24px 26px; border: 1px solid var(--edge); border-radius: 14px; background: var(--card-bg);
+    box-shadow: inset 0 1px 0 var(--top-lit);
     transition: border-color 0.25s var(--ease);
   }
   .step:hover { border-color: var(--accent-edge); }
@@ -454,7 +482,7 @@
   /* ------------------------------------------------------------- stats */
 
   .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr)); gap: 16px; margin-top: 44px; }
-  .stat { padding: 24px 24px 22px; border: 1px solid var(--edge); border-radius: 14px; background: var(--card-bg); }
+  .stat { padding: 24px 24px 22px; border: 1px solid var(--edge); border-radius: 14px; background: var(--card-bg); box-shadow: inset 0 1px 0 var(--top-lit); }
   .stat b { display: block; font-family: var(--m); font-size: 34px; font-weight: 600; color: var(--ink); letter-spacing: -0.03em; line-height: 1.1; }
   .stat span { display: block; margin-top: 8px; font-family: var(--m); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); }
   .stat p { margin: 12px 0 0; font-size: 13.5px; color: var(--dim); }
@@ -468,8 +496,8 @@
   /* ------------------------------------------------------------- gallery */
 
   .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 18px; margin-top: 44px; }
-  figure.shot { margin: 0; border: 1px solid var(--edge); border-radius: 14px; overflow: hidden; background: var(--card-bg); transition: transform 0.3s var(--ease), border-color 0.3s var(--ease), box-shadow 0.3s var(--ease); }
-  figure.shot:hover { transform: translateY(-4px); border-color: var(--edge-hot); box-shadow: var(--shadow); }
+  figure.shot { margin: 0; border: 1px solid var(--edge); border-radius: 14px; overflow: hidden; background: var(--card-bg); box-shadow: inset 0 1px 0 var(--top-lit); transition: transform 0.3s var(--ease), border-color 0.3s var(--ease), box-shadow 0.3s var(--ease); }
+  figure.shot:hover { transform: translateY(-4px); border-color: var(--edge-hot); box-shadow: inset 0 1px 0 var(--top-lit), var(--shadow); }
   figure.shot img { width: 100%; height: auto; display: block; }
   figure.shot figcaption { padding: 16px 20px 18px; font-size: 14px; color: var(--dim); }
   figure.shot figcaption b { color: var(--ink); }
@@ -1169,6 +1197,7 @@
 <footer>
   <div class="wrap">
     <nav class="footer-nav">
+      <a href="#top">Back to top &uarr;</a>
       <a href="./provenance.html">Provenance</a>
       <a href="./requirements.html">Requirements</a>
       <a href="./app.html">Launch the platform</a>
