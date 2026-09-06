@@ -3,14 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Samudra 3D - Ocean model and in-situ co-visualisation for INCOIS</title>
+<title>Samudra 3D - Fly into the Indian Ocean</title>
 <meta name="description" content="A browser-native 3D ocean visualisation platform that renders INCOIS model fields as a ray-marched water column and overlays the Argo float profiles measured in the same water. Smart India Hackathon 2026, PS 26067.">
 <link rel="icon" type="image/png" href="./icon.png">
 <link rel="apple-touch-icon" href="./icon.png">
-<!-- Served from this build, not from fonts.googleapis.com. -->
-<link rel="stylesheet" href="./fonts.css">
 <script>
   // Shared with the platform: one key, so a choice made on either side holds on both.
+  // Dark is the default because the subject is an instrument console and the screenshots are
+  // dark; light is the parchment the redesign is built around, offered the moment it is stored
+  // or preferred.
   (function () {
     try {
       if (localStorage.getItem("samudra.theme") === "light") {
@@ -21,705 +22,553 @@
 </script>
 <style>
   /*
-   * Two themes, both painted explicitly so nothing depends on the host's setting. Dark is the
-   * default because the subject is an instrument console and the screenshots are dark; light is
-   * offered because a judge reading in a bright room should not have to squint.
+   * The redesigned landing: an editorial near-monochrome canvas whose one chromatic event is
+   * the hero globe. The dark theme is the default (the platform and its screenshots are dark);
+   * the same role tokens repaint to parchment under [data-theme=light], so every component that
+   * reads a token re-themes automatically and nothing below needs a theme-specific override.
+   *
+   * The two typefaces, Space Grotesk (display) and Inter (body), are served from this build,
+   * not from fonts.googleapis.com - the demo path makes zero network calls. These are woff2
+   * variable-font files covering the full weight range.
    */
+  @font-face {
+    font-family: "Space Grotesk";
+    src: url("./fonts/space-grotesk-400.woff2") format("woff2");
+    font-weight: 300 700;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Inter";
+    src: url("./fonts/inter-400.woff2") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
   :root {
-    --abyss: #04070d;
-    --deep: #071420;
-    --shelf: #0c1f2e;
-    --panel: #102737;
-    --edge: rgba(120, 170, 195, 0.16);
-    --edge-hot: rgba(120, 190, 210, 0.4);
+    --color-parchment: #0c0f11;    --color-parchment-rgb: 12,15,17;
+    --color-ink: #ececea;          --color-ink-rgb: 236,236,234;
+    --color-paper: #16191c;
+    --color-ash: #33383b;
+    --color-stone: #202426;
+    --gradient-sphere: linear-gradient(255deg, #e3f3fc 0%, #86c1ea 28%, #2f6fa8 62%, #0a2540 100%);
 
-    --ink: #e4eef6;
-    --body: #b3c8d8;
-    --dim: #8299ad;
-    --faint: #5d7488;
+    --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+    --font: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
-    --cyan: #3fb8c4;
-    --amber: #f5b841;
-    --coral: #f2765f;
-    --green: #5fd68a;
+    --text-caption: 11px;   --lh-caption: 1.4;  --ls-caption: 0.075em;
+    --text-body-sm: 15px;   --lh-body-sm: 1.4;  --ls-body-sm: 0.010em;
+    --text-body: 18px;      --lh-body: 1.4;     --ls-body: 0.013em;
+    --text-subheading: 34px;--lh-subheading: 1; --ls-subheading: 0.006em;
+    --text-heading-sm: 46px;--lh-heading-sm: 1; --ls-heading-sm: 0.002em;
+    --text-heading: 70px;   --lh-heading: 0.8;  --ls-heading: -0.010em;
+    --text-heading-lg: 76px;--lh-heading-lg: 0.8;--ls-heading-lg: -0.010em;
+    --text-display: 103px;  --lh-display: 0.8;  --ls-display: -0.012em;
 
-    --d: "Chivo", "Helvetica Neue", Arial, sans-serif;
-    --m: "IBM Plex Mono", ui-monospace, Consolas, monospace;
-    --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --sp-5: 5px; --sp-6: 6px; --sp-8: 8px; --sp-15: 15px; --sp-19: 19px;
+    --sp-30: 30px; --sp-32: 32px; --sp-46: 46px; --sp-76: 76px; --sp-119: 119px;
 
-    --nav-bg: rgba(7, 20, 32, 0.86);
-    --accent-wash: rgba(63, 184, 196, 0.12);
-    --accent-wash-strong: rgba(63, 184, 196, 0.24);
-    --accent-edge: rgba(63, 184, 196, 0.5);
-    --ghost-bg: rgba(16, 39, 55, 0.7);
-    --glow: rgba(63, 184, 196, 0.12);
-    --coral-wash: rgba(242, 118, 95, 0.1);
-    --coral-edge: rgba(242, 118, 95, 0.28);
-    --amber-wash: rgba(245, 184, 65, 0.07);
-    --good-edge: rgba(95, 214, 138, 0.45);
-    --cta-ink: #04222a;
-    --cyan-bright: #66d7e2;
+    --radius-links: 10px; --radius-inputs: 10px; --radius-buttons: 10px; --radius-cards: 0px;
 
-    --card-bg: rgba(16, 39, 55, 0.6);
-    --shadow: 0 22px 60px rgba(0, 0, 0, 0.4);
-    --top-lit: rgba(150, 205, 225, 0.16);
-
+    --max-w: 1400px;
     color-scheme: dark;
   }
-  /*
-   * Light console. The same page, inverted: surfaces come up, ink goes down, and the accent
-   * darkens so cyan still holds its contrast against a pale ground. Choice is shared with the
-   * platform through one localStorage key, so switching in either place switches both.
-   */
+
   :root[data-theme="light"] {
-    --abyss: #ffffff;
-    --deep: #f4f9fa;
-    --shelf: #ffffff;
-    --panel: #eef5f7;
-    --edge: rgba(14, 60, 78, 0.16);
-    --edge-hot: rgba(14, 110, 130, 0.42);
-
-    --ink: #0d1b22;
-    --body: #2f4450;
-    --dim: #4f6773;
-    --faint: #6d838e;
-
-    --cyan: #00707d;
-    --amber: #8a5c00;
-    --coral: #b2371d;
-    --green: #1d7a45;
-
-    --nav-bg: rgba(255, 255, 255, 0.9);
-    --accent-wash: rgba(0, 112, 125, 0.08);
-    --accent-wash-strong: rgba(0, 112, 125, 0.16);
-    --accent-edge: rgba(0, 112, 125, 0.42);
-    --ghost-bg: rgba(238, 245, 247, 0.9);
-    --glow: rgba(0, 112, 125, 0.09);
-    --coral-wash: rgba(178, 55, 29, 0.08);
-    --coral-edge: rgba(178, 55, 29, 0.3);
-    --amber-wash: rgba(138, 92, 0, 0.08);
-    --good-edge: rgba(29, 122, 69, 0.5);
-    --cta-ink: #ffffff;
-    --cyan-bright: #00889a;
-
-    /*
-     * No `--scrim` here. The hero is a dark band in both themes and paints its own scrim - see
-     * the token block on `.hero`. A light scrim over a dark photograph was the bug: it lightened
-     * the picture *and* the page ink went dark with the theme, so the headline was near-black
-     * over the darkest part of the image.
-     */
-    --card-bg: rgba(255, 255, 255, 0.72);
-    --shadow: 0 18px 44px rgba(12, 40, 55, 0.12);
-    --top-lit: rgba(14, 110, 130, 0.2);
-
+    --color-parchment: #e5e4e0;    --color-parchment-rgb: 229,228,224;
+    --color-ink: #1d1d1d;          --color-ink-rgb: 29,29,29;
+    --color-paper: #ffffff;
+    --color-ash: #bfbebe;
+    --color-stone: #cdcdc9;
     color-scheme: light;
   }
 
   * { box-sizing: border-box; }
-
   html { scroll-behavior: smooth; }
-  /* Anchor targets clear the 66 px sticky nav instead of sliding under it. Chromium's smooth
-     hash scroll lands about 22 px shy of the requested margin, so allow a little headroom. */
-  header[id], section[id] { scroll-margin-top: 110px; }
-  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  }
+
+  body, .card, nav, .pill-btn, .ghost-link {
+    transition: background-color 0.5s ease, border-color 0.5s ease, color 0.5s ease;
+  }
 
   body {
     margin: 0;
-    background: var(--deep);
-    color: var(--body);
-    font-family: var(--d);
-    font-size: 16px;
-    line-height: 1.65;
+    background: var(--color-parchment);
+    color: var(--color-ink);
+    font-family: var(--font);
+    font-size: var(--text-body);
+    line-height: var(--lh-body);
+    letter-spacing: var(--ls-body);
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
   }
 
-  /*
-   * One shell, and it is wide.
-   *
-   * This page used to hold everything in a 1140 px column, which on any modern display put the
-   * whole product in the middle third of the screen with two empty margins either side. The
-   * shell is wider now and, more importantly, the hero, the feature rail and the closing panel
-   * run **full bleed** - so the page reads as a site rather than as a document that happens to
-   * be on the web.
-   */
-  .wrap { max-width: 1320px; margin: 0 auto; padding: 0 32px; }
-  .wrap-narrow { max-width: 960px; margin: 0 auto; padding: 0 32px; }
+  .wrap { max-width: var(--max-w); margin: 0 auto; padding: 0 46px; position: relative; }
+  @media (max-width: 720px) { .wrap { padding: 0 22px; } }
 
-  a { color: var(--cyan); text-underline-offset: 3px; }
-  a:focus-visible, button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+  h1, h2, h3, h4 { font-family: var(--font-display); color: var(--color-ink); margin: 0; font-weight: 400; }
 
-  /* Reading a console means selecting one. Selection takes the accent instead of the default
-     blue so it matches the page, and the scrollbar is drawn in the panel tone rather than the
-     OS chrome, which is what a terminal already looks like. */
-  ::selection { background: var(--accent-wash-strong); color: var(--ink); }
-  html { scrollbar-color: var(--edge-hot) var(--shelf); scrollbar-width: thin; }
-  ::-webkit-scrollbar { width: 10px; height: 10px; }
-  ::-webkit-scrollbar-thumb { background: var(--edge-hot); border-radius: 6px; border: 2px solid var(--deep); }
-  ::-webkit-scrollbar-thumb:hover { background: var(--accent-edge); }
-  ::-webkit-scrollbar-track { background: transparent; }
+  p { margin: 0; }
 
-  h1, h2, h3 { font-family: var(--d); color: var(--ink); margin: 0; text-wrap: balance; }
+  a { color: inherit; text-decoration: none; }
 
-  .eyebrow {
-    display: flex; align-items: center; gap: 12px;
-    font-family: var(--m); font-size: 10.5px; font-weight: 500;
-    letter-spacing: 0.2em; text-transform: uppercase; color: var(--cyan);
-    margin-bottom: 16px;
+  /* Sections anchor underneath the fixed nav, so a heading is never hidden behind it. */
+  section[id], #top { scroll-margin-top: 104px; }
+
+  /* ---------------------------------------------------------- reveal-on-scroll */
+  .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.9s cubic-bezier(.16,1,.3,1), transform 0.9s cubic-bezier(.16,1,.3,1); }
+  .reveal.in-view { opacity: 1; transform: translateY(0); }
+  .reveal-1 { transition-delay: 0.06s; }
+  .reveal-2 { transition-delay: 0.14s; }
+  .reveal-3 { transition-delay: 0.22s; }
+
+  /* ---------------------------------------------------------- section label */
+  .section-label {
+    font-family: var(--font-display);
+    font-size: var(--text-caption); font-weight: 400; text-transform: uppercase;
+    letter-spacing: var(--ls-caption); color: var(--color-ink);
+    display: flex; align-items: center; gap: var(--sp-15);
+    margin-bottom: var(--sp-30);
   }
-  .eyebrow::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--edge-hot), transparent); }
+  .section-label::after { content: ""; flex: 1; height: 1px; background: var(--color-ash); }
 
-  /*
-   * The chapters carry their place in a deck of cards, like the cabinet lights on a console.
-   * Every content section numbers itself from one, the hero stays unnumbered because it is the
-   * cover, and the closing panel is a panel rather than a chapter.
-   */
-  body { counter-reset: chapter 0; }
-  section { counter-increment: chapter; }
-  section .eyebrow::before {
-    content: counter(chapter, decimal-leading-zero) " \00b7 ";
-    color: var(--dim);
-  }
-
-  section { position: relative; padding: 104px 0; }
-  section h2 { font-size: clamp(28px, 3.4vw, 44px); font-weight: 800; letter-spacing: -0.025em; line-height: 1.1; }
-  .section-lede { margin: 18px 0 0; font-size: 17px; color: var(--body); max-width: 68ch; }
-
-  /* ------------------------------------------------------------- motion */
-
-  .reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.7s var(--ease), transform 0.7s var(--ease); transition-delay: var(--delay, 0s); }
-  .reveal.shown { opacity: 1; transform: none; }
-
-  @media (prefers-reduced-motion: reduce) {
-    .reveal { opacity: 1; transform: none; transition: none; }
-    .hero-media img { animation: none !important; }
-    .rail { scroll-behavior: auto; }
-  }
-
-  /* ------------------------------------------------------------- nav */
-
-  nav {
-    position: sticky; top: 0; z-index: 30;
-    background: var(--nav-bg);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border-bottom: 1px solid var(--edge);
-  }
-  nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 66px; gap: 24px; }
-  .brand { font-family: var(--m); font-size: 15px; font-weight: 600; letter-spacing: 0.15em; color: var(--ink); text-decoration: none; white-space: nowrap; }
-  .brand i { color: var(--cyan); font-style: normal; }
-  .nav-links { display: flex; align-items: center; gap: 2px; }
-  /*
-   * `:not(.cta)` is load-bearing. Without it the Launch button matched `a[href$=".html"]`, which
-   * is more specific than `.cta`, so its label was painted in the muted nav colour on a
-   * saturated cyan pill: the one button on the page that has to be legible was the least
-   * legible thing on it.
-   */
-  .nav-links a[href^="#"], .nav-links a[href$=".html"]:not(.cta) {
-    position: relative; padding: 8px 11px; font-size: 13.5px; color: var(--dim);
-    text-decoration: none; border-radius: 6px; transition: color 0.18s var(--ease);
-  }
-  .nav-links a[href^="#"]:hover, .nav-links a[href$=".html"]:not(.cta):hover { color: var(--ink); }
-  .nav-links a.current { color: var(--ink); }
-  .nav-links a.current::after {
-    content: ""; position: absolute; left: 11px; right: 11px; bottom: 2px;
-    height: 2px; border-radius: 2px; background: var(--cyan);
-  }
-  .theme-toggle {
-    margin-left: 6px; width: 34px; height: 34px; border-radius: 50%;
-    border: 1px solid var(--edge); background: var(--ghost-bg); color: var(--ink);
-    font-size: 14px; cursor: pointer; transition: border-color 0.18s var(--ease), transform 0.18s var(--ease);
-  }
-  .theme-toggle:hover { border-color: var(--accent-edge); transform: rotate(-18deg); }
-
-  .cta {
-    display: inline-flex; align-items: center; gap: 9px;
-    padding: 10px 18px; border-radius: 8px; border: 1px solid var(--cyan);
-    background: var(--cyan); color: var(--cta-ink);
-    font-family: var(--m); font-size: 13px; font-weight: 600; text-decoration: none;
-    transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease), background 0.18s var(--ease);
-  }
-  .cta:hover { transform: translateY(-2px); background: var(--cyan-bright); box-shadow: 0 10px 26px var(--glow); }
-  .cta.big { padding: 15px 26px; font-size: 14px; }
-  .cta.ghost { background: var(--ghost-bg); color: var(--ink); border-color: var(--edge); }
-  .cta.ghost:hover { border-color: var(--accent-edge); background: var(--accent-wash); }
-
-  /* A hairline that fills as the reader moves down the page. */
-  #progress {
-    position: absolute; left: 0; bottom: -1px; height: 2px; width: 0%;
-    background: linear-gradient(90deg, var(--cyan), var(--amber));
-    transition: width 0.12s linear;
-  }
-
-  /* ------------------------------------------------------------- hero */
-
-  /*
-   * The hero is a dark band in both themes, and it carries its own colours to be one.
-   *
-   * The photograph is the same dark render on light and on dark, deliberately: the ray-marched
-   * water is calibrated against a dark console and a light capture of it is a worse picture.
-   * The type, though, followed the *page*. On light `--ink` is `#0d1b22`, so "Fly into the" was
-   * near-black over the darkest part of the image and the sub-paragraph was grey on mid-tone.
-   * Neither scrim could fix that: the vertical one hands the image back to the page colour at
-   * the bottom and the side one darkens the left, and the problem was the ink, not the ground.
-   *
-   * So the hero re-declares the dark palette for everything inside it. Nothing else in the file
-   * changes, because every child already reads these tokens. The scrim now stays dark to the
-   * hero's own bottom edge - it used to fade to `var(--deep)`, which on light is nearly white
-   * and would have put light ink and dark tiles on a pale ground - and the page meets it with a
-   * clean horizontal edge, which is what a dark band at the top of a light page looks like.
-   */
-  .hero {
-    --ink: #e4eef6;
-    --body: #b3c8d8;
-    --dim: #8299ad;
-    --faint: #5d7488;
-    --cyan: #3fb8c4;
-    --cyan-bright: #66d7e2;
-    --edge: rgba(120, 170, 195, 0.16);
-    --edge-hot: rgba(120, 190, 210, 0.4);
-    --card-bg: rgba(16, 39, 55, 0.6);
-    --ghost-bg: rgba(16, 39, 55, 0.7);
-    --accent-wash: rgba(63, 184, 196, 0.12);
-    --accent-edge: rgba(63, 184, 196, 0.5);
-    --cta-ink: #04222a;
-    --glow: rgba(63, 184, 196, 0.12);
-    --scrim: linear-gradient(180deg, rgba(4, 7, 13, 0.62) 0%, rgba(4, 7, 13, 0.42) 34%, rgba(7, 20, 32, 0.9) 82%, #071420 100%);
-    --scrim-side: rgba(4, 7, 13, 0.82);
-
+  /* ---------------------------------------------------------- ghost link */
+  .ghost-link {
+    font-family: var(--font-display);
+    display: inline-flex; align-items: center; gap: var(--sp-8);
+    font-size: var(--text-body-sm); font-weight: 400; color: var(--color-ink);
+    padding: var(--sp-5) 0; border-radius: var(--radius-links);
     position: relative;
-    min-height: min(92vh, 900px);
-    display: flex; align-items: flex-end;
-    padding: 120px 0 76px;
-    overflow: hidden;
   }
-  .hero-media { position: absolute; inset: 0; z-index: 0; }
-  .hero-media img {
-    width: 100%; height: 100%; object-fit: cover; object-position: 50% 42%;
-    animation: drift 34s var(--ease) infinite alternate;
+  .ghost-link .arrow { transition: transform 0.3s cubic-bezier(.16,1,.3,1); display: inline-block; }
+  .ghost-link::after {
+    content: ""; position: absolute; left: 0; right: 100%; bottom: -1px; height: 1px;
+    background: var(--color-ink); transition: right 0.3s cubic-bezier(.16,1,.3,1);
   }
-  @keyframes drift {
-    from { transform: scale(1.06) translate3d(0, 0, 0); }
-    to   { transform: scale(1.14) translate3d(-1.4%, -1.6%, 0); }
-  }
-  .hero-media::after { content: ""; position: absolute; inset: 0; background: var(--scrim); }
-  /*
-   * A second scrim, left to right.
-   *
-   * The vertical one hands the image back to the page colour at the bottom; it does nothing for
-   * the headline, which sits over the brightest part of the picture. This one darkens the left
-   * third so the type has ground under it at every window width, and fades to nothing so the
-   * water is still the subject.
-   */
-  .hero-media::before {
-    content: ""; position: absolute; inset: 0; z-index: 1;
-    background: linear-gradient(90deg, var(--scrim-side) 0%, transparent 62%);
-  }
+  .ghost-link:hover::after { right: 0; }
+  .ghost-link:hover .arrow { transform: translateX(4px); }
 
+  /* ---------------------------------------------------------- pill button (the one state-change button) */
+  .pill-btn {
+    font-family: var(--font-display);
+    display: inline-flex; align-items: center; gap: var(--sp-8);
+    border: 1px solid var(--color-ink); border-radius: var(--radius-buttons);
+    padding: var(--sp-15) var(--sp-30);
+    font-size: var(--text-body-sm); text-transform: uppercase; letter-spacing: var(--ls-caption);
+    color: var(--color-ink); background: transparent;
+    transition: background 0.35s cubic-bezier(.16,1,.3,1), color 0.35s cubic-bezier(.16,1,.3,1);
+  }
+  .pill-btn .arrow { transition: transform 0.3s ease; }
+  .pill-btn:hover { background: var(--color-ink); color: var(--color-parchment); }
+  .pill-btn:hover .arrow { transform: translateX(4px); }
+
+  /* ---------------------------------------------------------- nav */
+  /* Scoped to the one `<nav>` that is fixed: the grafted footer's `<nav class="footer-nav">`
+     is plain flow text and must not inherit fixed positioning. */
+  nav#nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 40;
+    padding: var(--sp-19) 0;
+    background: rgba(var(--color-parchment-rgb), 0);
+    border-bottom: 1px solid rgba(191,190,190,0);
+    backdrop-filter: blur(0px);
+    transition: background 0.4s ease, border-color 0.4s ease, backdrop-filter 0.4s ease, padding 0.4s ease;
+  }
+  nav#nav.scrolled {
+    background: rgba(var(--color-parchment-rgb), 0.88);
+    border-bottom: 1px solid var(--color-ash);
+    backdrop-filter: blur(10px);
+    padding: var(--sp-15) 0;
+  }
+  nav#nav .wrap { display: flex; align-items: center; justify-content: space-between; }
+  .brand { font-family: var(--font-display); font-size: var(--text-body-sm); font-weight: 700; letter-spacing: var(--ls-caption); text-transform: uppercase; }
+  .brand i { font-style: normal; color: var(--color-ink); opacity: 0.55; }
+  .nav-links { display: flex; align-items: center; gap: var(--sp-32); }
+  .nav-links a:not(.pill-btn) { font-family: var(--font-display); font-size: var(--text-caption); text-transform: uppercase; letter-spacing: var(--ls-caption); opacity: 0.72; transition: opacity 0.25s ease; }
+  .nav-links a:not(.pill-btn):hover { opacity: 1; }
+  .nav-links .pill-btn { padding: var(--sp-8) var(--sp-19); font-size: 11px; }
+  @media (max-width: 860px) { .nav-links a:not(.pill-btn) { display: none; } }
+
+  /* theme toggle: a ghost circle button holding a sun and moon glyph, crossfaded. Light is
+     recorded as data-theme=light against a dark default, matching the rest of the platform. */
+  .theme-toggle {
+    position: relative; width: 34px; height: 34px; flex: none;
+    border: 1px solid var(--color-ink); border-radius: 50%; background: transparent;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background 0.35s cubic-bezier(.16,1,.3,1), transform 0.4s cubic-bezier(.16,1,.3,1);
+    padding: 0;
+  }
+  .theme-toggle:hover { background: rgba(var(--color-ink-rgb), 0.08); transform: rotate(-14deg); }
+  .theme-toggle svg { position: absolute; width: 16px; height: 16px; color: var(--color-ink); transition: opacity 0.35s ease, transform 0.5s cubic-bezier(.16,1,.3,1); }
+  .theme-toggle .icon-sun { opacity: 0; transform: rotate(-90deg) scale(0.6); }
+  .theme-toggle .icon-moon { opacity: 1; transform: rotate(0deg) scale(1); }
+  :root[data-theme="light"] .theme-toggle .icon-sun { opacity: 1; transform: rotate(0deg) scale(1); }
+  :root[data-theme="light"] .theme-toggle .icon-moon { opacity: 0; transform: rotate(90deg) scale(0.6); }
+
+  /* ---------------------------------------------------------- hero */
+  header.hero { position: relative; padding: 168px 0 96px; overflow: hidden; }
+
+  .rings { position: absolute; top: 50%; right: 6%; transform: translateY(-50%); width: 900px; height: 900px; pointer-events: none; z-index: 0; }
+  .rings circle { fill: none; stroke: var(--color-ink); stroke-opacity: 0.10; }
+  .rings .r1 { animation: spin 140s linear infinite; transform-origin: 450px 450px; }
+  .rings .r2 { animation: spin 110s linear infinite reverse; transform-origin: 450px 450px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /*
+   * The hero is a two-column grid: the type owns its own column and the globe owns its own,
+   * so no text element box ever sits over the turning sphere - the landing probe measures
+   * each block's whole box against the ground under it, and a spinning planet in that box
+   * would break both the floor and the measurement. The `.wrap` stretches past its max-width
+   * here so the globe column has room to actually be a globe.
+   */
   .hero .wrap {
-    position: relative; z-index: 1;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(340px, 40%);
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 40%);
     column-gap: clamp(32px, 5vw, 84px);
     align-items: center;
+    max-width: 1320px;
   }
-  .hero h1 {
-    margin: 0;
-    font-size: clamp(40px, 6.6vw, 92px);
-    font-weight: 800; letter-spacing: -0.035em; line-height: 0.98;
-    max-width: 15ch;
+  .hero-inner { position: relative; z-index: 2; grid-column: 1; grid-row: 1; max-width: 760px; }
+  .eyebrow {
+    font-family: var(--font-display);
+    font-size: var(--text-caption); text-transform: uppercase; letter-spacing: var(--ls-caption);
+    margin-bottom: var(--sp-19); opacity: 0.7;
   }
-  .hero h1 em { font-style: normal; color: var(--cyan); }
-  .hero .lede { margin: 26px 0 0; font-size: clamp(17px, 1.5vw, 21px); line-height: 1.5; color: var(--ink); max-width: 54ch; }
-  .hero .sub { margin: 14px 0 0; font-size: 15.5px; color: var(--body); max-width: 58ch; }
-  .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+  h1.display {
+    font-size: clamp(46px, 7.2vw, 103px); font-weight: 400; line-height: var(--lh-display);
+    letter-spacing: var(--ls-display); text-transform: uppercase; margin: 0;
+  }
+  .hero-inner .lede { margin-top: var(--sp-30); font-size: var(--text-body); line-height: var(--lh-body); max-width: 46ch; }
+  .hero-inner .sub { margin-top: var(--sp-15); font-size: var(--text-body-sm); line-height: var(--lh-body-sm); max-width: 48ch; opacity: 0.72; }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: var(--sp-30); align-items: center; margin-top: var(--sp-46); }
 
-  /* The live figures, as a strip of tiles rather than a run of small print. */
-  .hero-stats {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 1px; margin-top: 48px;
-    background: var(--edge); border: 1px solid var(--edge); border-radius: 12px; overflow: hidden;
-  }
-  .hero-stats div { background: var(--card-bg); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 16px 18px; }
-  .hero-stats div:hover { background: var(--accent-wash); }
-  .hero-stats b { display: block; font-family: var(--m); font-size: 21px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; }
-  .hero-stats span { font-family: var(--m); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint); }
+  .hero-meta { display: flex; flex-wrap: wrap; gap: var(--sp-8) var(--sp-30); margin-top: var(--sp-46); }
+  .hero-meta span { font-size: var(--text-caption); text-transform: uppercase; letter-spacing: var(--ls-caption); opacity: 0.55; }
+  .hero-meta b { font-weight: 400; opacity: 1; }
 
-  .scroll-hint {
-    position: absolute; left: 50%; bottom: 20px; z-index: 1; transform: translateX(-50%);
-    font-family: var(--m); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--faint);
-    animation: bob 2.6s ease-in-out infinite;
-  }
-  @keyframes bob { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 6px); } }
-  @media (prefers-reduced-motion: reduce) { .scroll-hint { animation: none; } }
-
-  /*
-   * The globe: the same ocean seen as a turning sphere, in its own column of the hero grid, so
-   * no text element box ever spreads over it. `.sphere` is a real CSS fallback - a radial
-   * gradient over globe.jpg - so the hero gets a sphere even with WebGL absent or a script
-   * stuck. `src/landingGlobe.ts` mounts a Three.js canvas over it (pushed in only once the
-   * browser is idle and the hero is in view), labels the canvas `.ready`, hands the fallback
-   * `.handoff`, and the crossfade happens there. The texture and gradient are theme-agnostic,
-   * like the hero band itself, so light and dark keep agreeing. Hidden on narrow screens,
-   * where the type owns the hero and the stats strip has no right-hand neighbour.
+/*
+   * The globe, in its own column. `.sphere` is a real CSS fallback - a radial gradient, half
+   * a rehearsal for the real thing - so the hero gets a sphere even with WebGL absent or a
+   * script stuck, irising open like a lens. `src/landingGlobe.ts` mounts a Three.js canvas
+   * over it (pushed in only once the browser is idle and the hero is in view), labels the
+   * canvas `.ready`, hands the fallback `.handoff`, and the crossfade happens there. The real
+   * globe is drawn from data, not a picture: the world coastline set is projected onto a
+   * sphere per vertex, the study region glows from the manifest, and both theme palettes ship
+   * in the module, so there is no globe.jpg on this hero at all.
    */
   .sphere-wrap {
-    grid-column: 2; grid-row: 1 / -1;
-    align-self: center; justify-self: stretch;
-    width: 100%; max-width: 520px; margin-left: auto;
+    position: relative; z-index: 1;
+    grid-column: 2; grid-row: 1;
+    justify-self: center; align-self: center;
+    width: 100%; max-width: 560px;
     aspect-ratio: 1;
-    pointer-events: none; /* the hero's clicks stay on the type and the actions */
+    border-radius: 50%;
+    pointer-events: none; /* the hero's clicks stay on the type, the actions and the strip */
     clip-path: circle(0% at 50% 50%);
-    animation: iris-open 1.6s var(--ease) 0.15s forwards;
-    overflow: hidden;
+    animation: iris-open 1.6s 0.15s cubic-bezier(.16,1,.3,1) forwards;
   }
-  @keyframes iris-open {
-    to { clip-path: circle(52% at 50% 50%); }
-  }
+  @keyframes iris-open { to { clip-path: circle(52% at 50% 50%); } }
+
   .sphere {
-    position: absolute; inset: 0; border-radius: 50%;
-    background:
-      radial-gradient(circle at 34% 30%,
-        #e3f6fc 0%, #98cbEA 24%, #2f6fa8 55%, var(--deep) 88%),
-      url("./images/globe.jpg") center / cover no-repeat;
-    background-blend-mode: multiply;
-    box-shadow: inset 0 -28px 60px rgba(3, 12, 20, 0.55);
-    transition: opacity 1s var(--ease);
+    position: absolute; inset: 0;
+    background: var(--gradient-sphere);
+    background-size: 180% 180%;
+    animation: drift 16s ease-in-out infinite, hue 22s ease-in-out infinite;
+    will-change: transform, background-position;
+    transition: opacity 0.9s ease;
   }
-  .sphere.handoff { opacity: 0; }
+  .sphere.handoff { opacity: 0; } /* fades once the real 3D globe has drawn a frame */
+  @keyframes drift { 0%,100% { transform: translateY(0) translateX(0) scale(1); } 50% { transform: translateY(-2%) translateX(-14px) scale(1.02); } }
+  @keyframes hue { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
   #globeCanvas {
     position: absolute; inset: 0; width: 100%; height: 100%;
     border-radius: 50%;
-    opacity: 0; transition: opacity 1s var(--ease);
+    opacity: 0; transition: opacity 1.1s cubic-bezier(.16,1,.3,1);
+    /* the wrap is pointer-events-free so hero clicks stay on the type; the canvas opts back
+       in, and only over the sphere, because a globe you can grab is the point of it */
+    pointer-events: auto;
+    cursor: grab;
   }
   #globeCanvas.ready { opacity: 1; }
+  #globeCanvas.dragging { cursor: grabbing; }
+
   @media (max-width: 1180px) {
     .sphere-wrap { display: none; }
     .hero .wrap { grid-template-columns: minmax(0, 1fr); }
   }
-  @media (prefers-reduced-motion: reduce) {
-    .sphere-wrap { clip-path: none; animation: none; }
+
+  .stat-strip {
+    position: relative; z-index: 2;
+    grid-column: 1 / -1; grid-row: 2;
+    margin-top: var(--sp-119);
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    border-top: 1px solid var(--color-ash); border-bottom: 1px solid var(--color-ash);
   }
+  .stat-strip .cell { padding: var(--sp-30) var(--sp-19) var(--sp-19); border-left: 1px solid var(--color-ash); }
+  .stat-strip .cell:first-child { border-left: none; }
+  .stat-strip b { display: block; font-size: var(--text-heading-sm); font-weight: 400; line-height: 1; font-variant-numeric: tabular-nums; }
+  .stat-strip span { font-family: var(--font-display); display: block; margin-top: var(--sp-8); font-size: var(--text-caption); text-transform: uppercase; letter-spacing: var(--ls-caption); opacity: 0.6; }
+  @media (max-width: 900px) { .stat-strip { grid-template-columns: repeat(2, 1fr); } .stat-strip .cell:nth-child(2n+1) { border-left: none; } }
 
-  /* ------------------------------------------------------------- cards */
+  .scroll-cue {
+    position: fixed; right: 30px; bottom: 30px; z-index: 30;
+    font-size: var(--text-caption); text-transform: uppercase; letter-spacing: var(--ls-caption);
+    display: flex; align-items: center; gap: var(--sp-8);
+    transition: opacity 0.4s ease; pointer-events: none;
+  }
+  .scroll-cue .down { animation: bob 1.8s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
+  .scroll-cue.hidden { opacity: 0; }
 
-  .split { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 18px; margin-top: 44px; }
+  /* ---------------------------------------------------------- custom cursor */
+  .cursor-ring, .cursor-dot {
+    position: fixed; top: 0; left: 0; pointer-events: none; z-index: 9999;
+    border-radius: 50%;
+    /* hidden until the first real mousemove arms them (see the script at the foot)
+       and skipped entirely on coarse/touch pointers */
+    opacity: 0;
+    transition: opacity 0.4s ease, transform 0.15s linear;
+  }
+  .cursor-dot { width: 6px; height: 6px; background: var(--color-ink); }
+  .cursor-ring { width: 40px; height: 40px; border: 1px solid var(--color-ink); transition: opacity 0.4s ease, width 0.25s ease, height 0.25s ease, background 0.25s ease, transform 0.15s linear; }
+  .cursor-ring.hovering { width: 58px; height: 58px; background: rgba(var(--color-ink-rgb), 0.08); }
 
+  /* ---------------------------------------------------------- sections */
+  section { padding: var(--sp-119) 0; border-top: 1px solid var(--color-ash); position: relative; }
+  h2.heading {
+    font-size: clamp(30px, 4vw, 46px); font-weight: 400; line-height: 1.04;
+    letter-spacing: var(--ls-heading-sm); max-width: 18ch;
+  }
+  .section-lede { margin-top: var(--sp-19); font-size: var(--text-body); line-height: var(--lh-body); max-width: 62ch; opacity: 0.78; }
+
+  /* grid-paper card */
+  .split { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 1px; margin-top: var(--sp-46); background: var(--color-ash); border: 1px solid var(--color-ash); }
   .card {
-    padding: 26px 28px; border: 1px solid var(--edge); border-radius: 14px;
-    background: var(--card-bg);
-    box-shadow: inset 0 1px 0 var(--top-lit);
-    transition: transform 0.25s var(--ease), border-color 0.25s var(--ease), box-shadow 0.25s var(--ease);
+    background: var(--color-paper); padding: var(--sp-30);
+    background-image: radial-gradient(var(--color-ash) 1px, transparent 1px);
+    background-size: 16px 16px; background-position: -8px -8px;
   }
-  .card:hover { transform: translateY(-3px); border-color: var(--accent-edge); box-shadow: inset 0 1px 0 var(--top-lit), var(--shadow); }
-  .card h3 { font-size: 20px; font-weight: 700; letter-spacing: -0.015em; margin-bottom: 10px; }
-  .card p { margin: 0; font-size: 15px; }
-  .card .tag {
-    display: inline-block; margin-bottom: 12px; padding: 3px 9px; border-radius: 999px;
-    font-family: var(--m); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
-  }
-  .card.problem .tag { background: var(--coral-wash); border: 1px solid var(--coral-edge); color: var(--coral); }
-  .card.answer .tag { background: var(--accent-wash); border: 1px solid var(--accent-edge); color: var(--cyan); }
+  .card .tag { font-family: var(--font-display); display: inline-block; margin-bottom: var(--sp-19); font-size: var(--text-caption); text-transform: uppercase; letter-spacing: var(--ls-caption); opacity: 0.55; }
+  .card h3 { font-size: var(--text-subheading); font-weight: 400; line-height: 1.08; margin-bottom: var(--sp-15); }
+  .card p { font-size: var(--text-body-sm); line-height: var(--lh-body-sm); opacity: 0.78; }
 
-  /* ------------------------------------------------------------- the rolling rail */
+  /* steps */
+  .steps { margin-top: var(--sp-46); }
+  .step { display: grid; grid-template-columns: 140px 1fr; gap: var(--sp-30); padding: var(--sp-30) 0; border-top: 1px solid var(--color-ash); }
+  .step:last-child { border-bottom: 1px solid var(--color-ash); }
+  .step .n { font-family: var(--font-display); font-size: var(--text-caption); text-transform: uppercase; letter-spacing: var(--ls-caption); opacity: 0.55; padding-top: 4px; }
+  .step h3 { font-size: var(--text-heading-sm); font-weight: 400; margin-bottom: var(--sp-8); }
+  .step p { font-size: var(--text-body); line-height: var(--lh-body); max-width: 62ch; opacity: 0.78; }
+  @media (max-width: 720px) { .step { grid-template-columns: 1fr; gap: var(--sp-8); } }
 
-  /*
-   * A horizontal rail of feature cards, because a vertical list of fourteen features is a list
-   * nobody finishes. It scrolls with a wheel, a drag, the arrow buttons or the keyboard, snaps
-   * to a card, and each card opens a dialog with the detail and a picture of the real thing.
-   */
-  .rail-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
-  .rail-nav { display: flex; gap: 8px; }
+  /* featured work card */
+  figure.shot { margin: 0; background: var(--color-paper); border: 1px solid var(--color-ash); }
+  figure.shot img { display: block; width: 100%; height: auto; }
+  figure.shot figcaption { font-family: var(--font-display); padding: var(--sp-19); border-top: 1px solid var(--color-ash); font-size: var(--text-caption); line-height: 1.6; letter-spacing: var(--ls-caption); opacity: 0.65; }
+  figure.shot figcaption b { font-weight: 700; opacity: 1; }
+
+  .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: var(--sp-19); margin-top: var(--sp-46); }
+
+  /* ---------------------------------------------------------- the fourteen things, as a rail */
+  .rail-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-32); flex-wrap: wrap; }
+  .rail-nav { display: flex; gap: var(--sp-15); }
   .rail-nav button {
-    width: 42px; height: 42px; border-radius: 50%; cursor: pointer;
-    border: 1px solid var(--edge); background: var(--ghost-bg); color: var(--ink); font-size: 16px;
-    transition: border-color 0.18s var(--ease), background 0.18s var(--ease), transform 0.18s var(--ease);
+    width: 44px; height: 44px; border: 1px solid var(--color-ink); border-radius: 50%;
+    background: transparent; color: var(--color-ink); font-size: 18px; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background 0.3s cubic-bezier(.16,1,.3,1);
   }
-  .rail-nav button:hover { border-color: var(--accent-edge); background: var(--accent-wash); transform: translateY(-2px); }
-  .rail-nav button[disabled] { opacity: 0.35; cursor: default; transform: none; }
-
-  .rail-shell { position: relative; margin-top: 34px; }
-  /*
-   * Full bleed, but the first card lines up with the heading above it.
-   *
-   * The rail sits outside `.wrap` so it can run off both edges of the window, which is the whole
-   * point of it. That also means its left edge is the *window's*, not the shell's, so without
-   * this the first card started 140 px to the left of the heading on a wide display and read as
-   * a mistake. The padding is the shell's own gutter, computed the same way `.wrap` centres.
-   */
+  .rail-nav button:hover:not(:disabled) { background: var(--color-ink); color: var(--color-parchment); }
+  .rail-nav button:disabled { opacity: 0.3; cursor: default; }
+  .rail-shell { margin-top: var(--sp-46); }
   .rail {
-    display: flex; gap: 18px; overflow-x: auto; scroll-behavior: smooth;
-    scroll-snap-type: x mandatory;
-    padding: 6px max(32px, calc((100vw - 1320px) / 2 + 32px)) 26px;
-    scroll-padding-left: max(32px, calc((100vw - 1320px) / 2 + 32px));
-    scrollbar-width: thin; scrollbar-color: var(--edge-hot) transparent;
+    display: flex; gap: var(--sp-19);
+    overflow-x: auto; scroll-snap-type: x mandatory;
+    scrollbar-width: thin; scrollbar-color: var(--color-ash) transparent;
+    padding: 2px 2px var(--sp-19);
   }
-  .rail::-webkit-scrollbar { height: 7px; }
-  .rail::-webkit-scrollbar-thumb { background: var(--edge-hot); border-radius: 4px; }
-  .rail::-webkit-scrollbar-track { background: transparent; }
-
-  .feature {
-    flex: 0 0 330px; scroll-snap-align: start; text-align: left; cursor: pointer;
-    display: flex; flex-direction: column;
-    padding: 0; overflow: hidden;
-    border: 1px solid var(--edge); border-radius: 16px; background: var(--card-bg);
-    box-shadow: inset 0 1px 0 var(--top-lit);
-    color: inherit; font: inherit;
-    transition: transform 0.25s var(--ease), border-color 0.25s var(--ease), box-shadow 0.25s var(--ease);
+  .rail .feature {
+    flex: 0 0 330px; scroll-snap-align: start;
+    text-align: left; font: inherit; letter-spacing: inherit; color: inherit;
+    background: var(--color-paper); border: 1px solid var(--color-ash);
+    padding: 0; margin: 0; cursor: pointer; overflow: hidden;
+    transition: border-color 0.3s ease, transform 0.3s cubic-bezier(.16,1,.3,1);
   }
-  .feature:hover { transform: translateY(-5px); border-color: var(--accent-edge); box-shadow: inset 0 1px 0 var(--top-lit), var(--shadow); }
-  .feature img { width: 100%; height: 168px; object-fit: cover; display: block; background: var(--panel); }
-  .feature .feature-body { padding: 20px 22px 22px; }
-  .feature h3 { font-size: 18px; font-weight: 700; letter-spacing: -0.012em; margin-bottom: 8px; }
-  .feature p { margin: 0; font-size: 14px; color: var(--body); }
-  .feature .kind {
-    display: inline-block; margin-bottom: 10px; padding: 3px 9px; border-radius: 999px;
-    background: var(--accent-wash); border: 1px solid var(--accent-edge); color: var(--cyan);
-    font-family: var(--m); font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase;
-  }
-  .feature .more { margin-top: 14px; font-family: var(--m); font-size: 11.5px; color: var(--cyan); letter-spacing: 0.08em; }
+  .rail .feature:hover { border-color: var(--color-ink); transform: translateY(-3px); }
+  .rail .feature img { width: 100%; height: auto; display: block; border-bottom: 1px solid var(--color-ash); }
+  .rail .feature .feature-body { padding: var(--sp-19); }
+  .rail .feature .kind { font-family: var(--font-display); display: block; font-size: var(--text-caption); text-transform: uppercase; letter-spacing: var(--ls-caption); opacity: 0.55; margin-bottom: var(--sp-8); }
+  .rail .feature h3 { font-size: 24px; line-height: 1.05; font-weight: 400; margin: 0; color: var(--color-ink); }
+  .rail .feature p { font-size: var(--text-body-sm); line-height: var(--lh-body-sm); opacity: 0.78; margin: var(--sp-8) 0 0; }
+  .rail .feature .more { font-family: var(--font-display); font-size: var(--text-caption); text-transform: uppercase; letter-spacing: var(--ls-caption); margin-top: var(--sp-15); }
+  @media (max-width: 720px) { .rail .feature { flex-basis: 82vw; } }
 
-  /* ------------------------------------------------------------- the popup */
-
+  /* the one dialog behind all fourteen cards */
   dialog.sheet {
-    width: min(880px, calc(100vw - 40px)); max-height: min(86vh, 860px);
-    padding: 0; border: 1px solid var(--edge); border-radius: 18px;
-    background: var(--shelf); color: var(--body); box-shadow: var(--shadow); overflow: hidden;
+    width: min(760px, calc(100vw - 40px));
+    border: 1px solid var(--color-ash); border-radius: 14px;
+    background: var(--color-paper); color: var(--color-ink);
+    padding: 0; overflow: hidden;
+    font-family: var(--font);
   }
-  dialog.sheet::backdrop { background: rgba(2, 8, 14, 0.66); backdrop-filter: blur(4px); }
-  dialog.sheet img { width: 100%; max-height: 380px; object-fit: cover; display: block; background: var(--panel); }
-  .sheet-body { padding: 26px 30px 30px; }
-  .sheet-body h3 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 12px; }
-  .sheet-body p { margin: 0 0 12px; font-size: 15.5px; }
-  .sheet-body .measure {
-    margin-top: 16px; padding: 12px 15px; border-left: 2px solid var(--cyan);
-    background: var(--accent-wash); font-family: var(--m); font-size: 12.5px; color: var(--ink);
-  }
-  .sheet-foot { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+  dialog.sheet::backdrop { background: rgba(var(--color-parchment-rgb), 0.75); backdrop-filter: blur(6px); }
+  dialog.sheet[open] { animation: sheet-in 0.3s cubic-bezier(.16,1,.3,1); }
+  @keyframes sheet-in { from { opacity: 0; transform: translateY(14px) scale(0.98); } to { opacity: 1; transform: none; } }
+  dialog.sheet img { display: block; width: 100%; height: auto; }
+  dialog.sheet .sheet-body { padding: var(--sp-30); }
+  dialog.sheet h3 { font-size: var(--text-subheading); font-weight: 400; line-height: 1.05; }
+  dialog.sheet p { font-size: var(--text-body-sm); line-height: var(--lh-body-sm); opacity: 0.82; margin: var(--sp-15) 0 0; }
+  dialog.sheet .measure { font-family: var(--font-display); font-size: var(--text-caption); text-transform: uppercase; letter-spacing: var(--ls-caption); opacity: 0.6; border-top: 1px solid var(--color-ash); padding-top: var(--sp-15); }
   .sheet-close {
-    position: absolute; top: 14px; right: 16px; z-index: 2;
-    width: 34px; height: 34px; border-radius: 50%; cursor: pointer;
-    border: 1px solid var(--edge); background: var(--nav-bg); color: var(--ink); font-size: 15px;
+    position: absolute; top: 14px; right: 14px; z-index: 2;
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 1px solid var(--color-ash); background: var(--color-paper); color: var(--color-ink);
+    font-size: 15px; cursor: pointer;
   }
-  .sheet-close:hover { border-color: var(--accent-edge); }
+  .sheet-foot { display: flex; flex-wrap: wrap; gap: var(--sp-19); align-items: center; margin-top: var(--sp-30); }
 
-  /* ------------------------------------------------------------- steps */
-
-  .steps { display: grid; gap: 16px; margin-top: 44px; }
-  .step {
-    display: grid; grid-template-columns: 58px 1fr; gap: 22px; align-items: start;
-    padding: 24px 26px; border: 1px solid var(--edge); border-radius: 14px; background: var(--card-bg);
-    box-shadow: inset 0 1px 0 var(--top-lit);
-    transition: border-color 0.25s var(--ease);
-  }
-  .step:hover { border-color: var(--accent-edge); }
-  .step b {
-    font-family: var(--m); font-size: 26px; font-weight: 600; color: var(--cyan);
-    line-height: 1; letter-spacing: -0.02em;
-  }
-  .step h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
-  .step p { margin: 0; font-size: 15px; }
-
-  /* ------------------------------------------------------------- variables */
-
-  .chips { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 34px; }
+  /* ---------------------------------------------------------- the chips (fifteen variables) */
+  .chips { display: flex; flex-wrap: wrap; gap: var(--sp-15); margin-top: var(--sp-46); }
   .chip {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 9px 14px; border-radius: 999px; border: 1px solid var(--edge);
-    background: var(--card-bg); font-size: 13.5px; color: var(--ink);
-    transition: border-color 0.2s var(--ease), transform 0.2s var(--ease);
+    display: inline-flex; flex-direction: column; gap: 3px;
+    border: 1px solid var(--color-ash); border-radius: 10px;
+    background: var(--color-paper); color: var(--color-ink);
+    padding: var(--sp-15) var(--sp-19); font-family: var(--font-display); font-size: var(--text-body-sm);
   }
-  .chip:hover { border-color: var(--accent-edge); transform: translateY(-2px); }
-  .chip i { width: 9px; height: 9px; border-radius: 50%; font-style: normal; }
-  .chip small { font-family: var(--m); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
+  .chip small { font-size: var(--text-caption); text-transform: uppercase; letter-spacing: var(--ls-caption); opacity: 0.55; }
 
-  /* ------------------------------------------------------------- stats */
+  /* evidence */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1px; margin-top: var(--sp-46); background: var(--color-ash); border: 1px solid var(--color-ash); }
+  .stat { background: var(--color-paper); padding: var(--sp-30); }
+  .stat b { display: block; font-size: var(--text-heading); font-weight: 400; line-height: 0.9; font-variant-numeric: tabular-nums; }
+  .stat span { font-family: var(--font-display); display: block; margin-top: var(--sp-15); font-size: var(--text-caption); text-transform: uppercase; letter-spacing: var(--ls-caption); opacity: 0.6; }
 
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr)); gap: 16px; margin-top: 44px; }
-  .stat { padding: 24px 24px 22px; border: 1px solid var(--edge); border-radius: 14px; background: var(--card-bg); box-shadow: inset 0 1px 0 var(--top-lit); }
-  .stat b { display: block; font-family: var(--m); font-size: 34px; font-weight: 600; color: var(--ink); letter-spacing: -0.03em; line-height: 1.1; }
-  .stat span { display: block; margin-top: 8px; font-family: var(--m); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); }
-  .stat p { margin: 12px 0 0; font-size: 13.5px; color: var(--dim); }
+  .pull { margin-top: var(--sp-46); padding-left: var(--sp-30); border-left: 1px solid var(--color-ink); max-width: 62ch; }
+  .pull p { font-size: var(--text-subheading); line-height: 1.2; font-weight: 400; }
+  .pull cite { display: block; margin-top: var(--sp-19); font-size: var(--text-caption); font-style: normal; text-transform: uppercase; letter-spacing: var(--ls-caption); opacity: 0.55; }
 
-  .pull {
-    margin-top: 40px; padding: 28px 32px; border-left: 3px solid var(--amber);
-    background: var(--amber-wash); border-radius: 0 12px 12px 0;
-  }
-  .pull p { margin: 0; font-size: 18px; line-height: 1.52; color: var(--ink); max-width: 72ch; }
+  /* plain list */
+  ul.plain { margin: var(--sp-30) 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--sp-15); max-width: 74ch; }
+  ul.plain li { position: relative; padding-left: var(--sp-30); font-size: var(--text-body-sm); line-height: var(--lh-body-sm); opacity: 0.82; }
+  ul.plain li::before { content: ""; position: absolute; left: 0; top: 11px; width: 15px; height: 1px; background: var(--color-ink); opacity: 0.5; }
+  ul.plain li strong { font-weight: 700; opacity: 1; }
 
-  /* ------------------------------------------------------------- gallery */
+  .stack { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--sp-30); margin-top: var(--sp-46); }
+  .stack h3 { font-family: var(--font-display); font-size: var(--text-caption); text-transform: uppercase; letter-spacing: var(--ls-caption); margin-bottom: var(--sp-15); opacity: 0.6; }
+  .stack ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--sp-8); }
+  .stack li { font-size: var(--text-body-sm); opacity: 0.85; }
 
-  .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 18px; margin-top: 44px; }
-  figure.shot { margin: 0; border: 1px solid var(--edge); border-radius: 14px; overflow: hidden; background: var(--card-bg); box-shadow: inset 0 1px 0 var(--top-lit); transition: transform 0.3s var(--ease), border-color 0.3s var(--ease), box-shadow 0.3s var(--ease); }
-  figure.shot:hover { transform: translateY(-4px); border-color: var(--edge-hot); box-shadow: inset 0 1px 0 var(--top-lit), var(--shadow); }
-  figure.shot img { width: 100%; height: auto; display: block; }
-  figure.shot figcaption { padding: 16px 20px 18px; font-size: 14px; color: var(--dim); }
-  figure.shot figcaption b { color: var(--ink); }
+  /* final */
+  .final { text-align: center; padding: 140px 0; }
+  .final h2 { max-width: none; margin: 0 auto; }
+  .final p { margin: var(--sp-19) auto 0; max-width: 54ch; font-size: var(--text-body); opacity: 0.78; }
+  .final .hero-actions { justify-content: center; margin-top: var(--sp-46); }
 
-  ul.plain { list-style: none; margin: 26px 0 0; padding: 0; display: grid; gap: 11px; }
-  ul.plain li { position: relative; padding-left: 22px; max-width: 76ch; font-size: 15px; }
-  ul.plain li::before { content: ""; position: absolute; left: 2px; top: 10px; width: 7px; height: 1px; background: var(--cyan); }
-
-  /* ------------------------------------------------------------- closing */
-
-  .final { text-align: center; background: linear-gradient(180deg, transparent, var(--accent-wash)); }
-  .final h2 { font-size: clamp(30px, 4vw, 52px); }
-  .final p { margin: 18px auto 0; max-width: 58ch; font-size: 17px; }
-  .final .hero-actions { justify-content: center; }
-
-  footer {
-    padding: 44px 0 60px; border-top: 1px solid var(--edge);
-    font-size: 12.5px; color: var(--faint); line-height: 1.75;
-  }
-  .footer-nav {
-    display: flex; flex-wrap: wrap; gap: 6px 18px; margin-bottom: 14px;
-    font-family: var(--m); font-size: 12px;
-  }
-  .footer-nav a { color: var(--dim); text-decoration: none; }
-  .footer-nav a:hover { color: var(--ink); }
-
-  @media (max-width: 900px) {
-    section { padding: 76px 0; }
-    .wrap, .wrap-narrow { padding: 0 20px; }
-    .rail { padding-left: 20px; padding-right: 20px; scroll-padding-left: 20px; }
-    .nav-links a[href^="#"] { display: none; }
-    .hero { min-height: auto; padding: 80px 0 56px; }
-  }
-
-  /*
-   * The nav row is 499 px and cannot be shrunk onto an under-540 screen: brand, the two page
-   * links, the toggle and the Launch pill overflow the viewport with nothing to clip them.
-   * The page links move to the footer (shown below), the nav keeps brand + toggle + Launch,
-   * and nothing on a phone is left unreachable.
-   */
-  @media (max-width: 540px) {
-    nav .wrap { gap: 12px; }
-    .nav-links { gap: 0; }
-    .nav-links a[href$=".html"]:not(.cta) { display: none; }
-    #theme-toggle { width: 32px; height: 32px; margin-left: 4px; }
-  }
-  @media (max-width: 360px) {
-    .brand { font-size: 13px; letter-spacing: 0.1em; }
-    nav .wrap { gap: 10px; }
-    .cta { padding: 8px 11px; font-size: 12px; }
-    #theme-toggle { width: 30px; height: 30px; }
-  }
+  footer { border-top: 1px solid var(--color-ash); padding: var(--sp-46) 0 var(--sp-76); }
+  footer p { font-size: var(--text-caption); line-height: 1.8; opacity: 0.55; max-width: 80ch; }
+  footer a { text-decoration: underline; text-underline-offset: 3px; opacity: 0.85; }
+  footer .foot-row { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--sp-30); margin-top: var(--sp-30); flex-wrap: wrap; }
 </style>
 </head>
 <body>
 
-<nav>
+<nav id="nav">
   <div class="wrap">
-    <a class="brand" href="#top">SAMUDRA<i>&middot;3D</i></a>
+    <a class="brand" href="#top">SAMUDRA<i>&nbsp;&middot;&nbsp;3D</i></a>
     <div class="nav-links">
       <a href="#problem">The gap</a>
-      <a href="#features">What it does</a>
       <a href="#how">How it works</a>
-      <a href="#everyone">For everyone</a>
       <a href="#evidence">Evidence</a>
+      <a href="#built">How it is built</a>
       <a href="./provenance.html">Provenance</a>
-      <a href="./requirements.html">Requirements</a>
-      <button class="theme-toggle" id="theme-toggle" type="button">☀</button>
-      <a class="cta" href="./app.html">Launch</a>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch between light and dark theme" title="Switch theme">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.4 4.4l1.7 1.7M17.9 17.9l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.4 19.6l1.7-1.7M17.9 6.1l1.7-1.7"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20 14.2A8.5 8.5 0 1 1 9.8 4a7 7 0 0 0 10.2 10.2z"/></svg>
+      </button>
+      <a class="pill-btn" href="./app.html"><span class="btn-label">Launch <span class="arrow">&rarr;</span></span></a>
     </div>
   </div>
-  <div id="progress"></div>
 </nav>
 
 <header class="hero" id="top">
-  <!--
-    The hero is the water, full bleed, with the console taken away.
-    It used to be a shrunken screenshot of a working interface sitting in a page column, which
-    is a picture of some unreadable panels rather than a picture of the ocean. `capture.mjs`
-    shoots `00-hero` with every panel hidden for exactly this.
-  -->
-  <div class="hero-media" aria-hidden="true">
-    <img src="./images/hero.jpg" alt="">
-  </div>
+  <svg class="rings" viewBox="0 0 900 900" aria-hidden="true">
+    <circle class="r1" cx="450" cy="450" r="440"/>
+    <circle class="r1" cx="450" cy="450" r="360"/>
+    <circle class="r2" cx="450" cy="450" r="280"/>
+  </svg>
+
   <div class="wrap">
-    <div class="eyebrow">Smart India Hackathon 2026 &middot; PS 26067 &middot; MoES / INCOIS</div>
-    <h1>Fly into the <em>Indian Ocean.</em></h1>
-    <p class="lede">
-      See what the ocean model predicted and what the instruments in the water actually
-      measured, in one picture, at every depth.
-    </p>
-    <p class="sub">
-      A browser-native 3D visualisation of INCOIS ocean fields with Argo float profiles overlaid
-      in the same water. No install, no account, no plugin.
-    </p>
-    <div class="hero-actions">
-      <a class="cta big" href="./app.html">Launch the platform &rarr;</a>
-      <a class="cta big ghost" href="./app.html?explore=1">Explore by question</a>
-      <a class="cta big ghost" href="#how">See how it works</a>
+    <div class="hero-inner">
+      <div class="eyebrow reveal">Smart India Hackathon 2026 &middot; PS 26067 &middot; MoES / INCOIS</div>
+      <h1 class="display reveal reveal-1">Fly into<br>the Indian<br>Ocean.</h1>
+      <p class="lede reveal reveal-2">
+        See what the ocean model predicted and what the instruments in the water actually
+        measured - in one picture, at every depth.
+      </p>
+      <p class="sub reveal reveal-2">
+        A browser-native 3D visualisation of INCOIS ocean fields with Argo float profiles
+        overlaid in the same water. No install, no account, no plugin.
+      </p>
+      <div class="hero-actions reveal reveal-3">
+        <a class="pill-btn" href="./app.html"><span class="btn-label">Launch the platform <span class="arrow">&rarr;</span></span></a>
+        <a class="ghost-link" href="#how">See how it works <span class="arrow">&rarr;</span></a>
+      </div>
+      <div class="hero-meta reveal reveal-3">
+        <span>DATA <b>INCOIS public ERDDAP</b></span>
+        <span>ANALYSIS TO <b id="m-latest">&hellip;</b></span>
+        <span>FLOATS <b id="m-floats">&hellip;</b></span>
+        <span>DEPTH <b id="m-depth">&hellip;</b></span>
+      </div>
     </div>
-    <div class="hero-stats">
-      <div><b id="m-instruments">&hellip;</b><span>Instruments in the water</span></div>
-      <div><b id="m-fields">&hellip;</b><span>Variables</span></div>
-      <div><b id="m-depth">&hellip;</b><span>Depth range</span></div>
-      <div><b id="m-latest">&hellip;</b><span>Analysis to</span></div>
-      <div><b>0</b><span>Network calls to run</span></div>
-    </div>
-    <!--
-      The same ocean, as a globe you can watch turn. A real column of the hero, so no text
-      element box ever sits over it: the type keeps its own column and the globe keeps its own.
-      The CSS sphere paints instantly (no JS, no WebGL), and `src/landingGlobe.ts` mounts a Three.js
-      globe over it once the browser is idle and the hero is in view, textured with the same
-      globe.jpg used on the page below - so it is the real product, not a decoration. Hidden on
-      narrow screens, where the type owns the hero and a globe would crowd the stats.
-    -->
+
     <div class="sphere-wrap" id="sphereWrap" aria-hidden="true">
       <div class="sphere" id="sphereFallback"></div>
       <canvas id="globeCanvas"></canvas>
     </div>
+
+    <div class="stat-strip reveal">
+      <div class="cell"><b id="m-instruments">&hellip;</b><span>Instruments in the water</span></div>
+      <div class="cell"><b id="m-fields">&hellip;</b><span>Variables</span></div>
+      <div class="cell"><b id="m-depth2">&hellip;</b><span>Depth range</span></div>
+      <div class="cell"><b id="m-latest2">&hellip;</b><span>Analysis to</span></div>
+      <div class="cell"><b>0</b><span>Network calls to run</span></div>
+    </div>
   </div>
-  <div class="scroll-hint" aria-hidden="true">Scroll</div>
 </header>
 
 <section id="problem">
   <div class="wrap">
-    <div class="eyebrow">The gap</div>
-    <h2>The data already exists. Nobody can look at it together.</h2>
-    <p class="section-lede">
-      INCOIS runs ocean models, and INCOIS collects real measurements from robot floats drifting
-      in the same water. Both are valuable and both already exist. A forecaster who wants to know
-      whether they agree has to open two different desktop programs and hold the answer in their
-      head.
+    <div class="section-label reveal">The gap</div>
+    <h2 class="heading reveal">The data already exists. Nobody can look at it together.</h2>
+    <p class="section-lede reveal reveal-1">
+      INCOIS runs ocean models and INCOIS collects real measurements from robot floats drifting
+      in the same water. Both are valuable, and both already exist. A forecaster who wants to
+      know whether they agree has to open two different desktop programs and hold the answer
+      in their head.
     </p>
 
-    <div class="split">
-      <div class="card problem">
+    <div class="split reveal reveal-2">
+      <div class="card">
         <span class="tag">Today</span>
         <h3>Two windows, flat maps</h3>
-        <p>
-          Model output in one program, float measurements in another, and almost every tool draws
-          one depth at a time. The ocean is four kilometres deep and the structures that matter
-          are vertical.
-        </p>
+        <p>Model output in one program, float measurements in another, and almost every tool
+          draws one depth at a time. The ocean is four kilometres deep and the structures that
+          matter are vertical.</p>
       </div>
-      <div class="card problem">
+      <div class="card">
         <span class="tag">Today</span>
-        <h3>No answer to "is it right?"</h3>
-        <p>
-          A model has a value everywhere, whether or not anyone measured there. Nothing puts the
-          prediction and the measurement on the same axes and sizes the disagreement.
-        </p>
+        <h3>Agreement judged by eye</h3>
+        <p>Whether the model matches reality is worked out mentally and never recorded. There
+          is no number, so there is nothing to check later or hand to anyone else.</p>
       </div>
-      <div class="card answer">
-        <span class="tag">Here</span>
-        <h3>One block of water, both things in it</h3>
-        <p>
-          The model is a solid, see-through 3D volume you fly inside. The floats are in it, where
-          they actually were. Click one and you get the comparison, quantified.
-        </p>
-      </div>
-      <div class="card answer">
-        <span class="tag">Here</span>
-        <h3>And it says where nobody looked</h3>
-        <p>
-          One variable is not the model at all: it is the evidence behind it, counting the float
-          casts near every point. Where that is empty, the platform says so instead of colouring
-          it in.
-        </p>
+      <div class="card">
+        <span class="tag">Today</span>
+        <h3>Every new sensor is a rewrite</h3>
+        <p>Adding a mooring, an ADCP or an HF-radar feed means re-engineering the tool, so new
+          observing capability sits unused.</p>
       </div>
     </div>
   </div>
@@ -727,10 +576,10 @@
 
 <section id="features">
   <div class="wrap rail-head">
-    <div>
-      <div class="eyebrow">What it does</div>
-      <h2>Fourteen things you can do with it.</h2>
-      <p class="section-lede">
+    <div class="reveal">
+      <div class="section-label">What it does</div>
+      <h2 class="heading reveal reveal-1">Fourteen things you can do with it.</h2>
+      <p class="section-lede reveal reveal-1">
         Drag the rail, or use the arrows. Open any card for the detail and the measurement
         behind it.
       </p>
@@ -741,324 +590,305 @@
     </div>
   </div>
 
-  <div class="rail-shell">
-    <div class="rail" id="rail" tabindex="0" aria-label="Feature list, scrolls sideways">
-      <!-- Each card's detail lives in data- attributes, so one dialog serves all of them. -->
-      <button class="feature" type="button"
-        data-title="A block of water you fly inside"
-        data-image="./images/volume.jpg"
-        data-image-light="./images/light/volume.jpg"
-        data-body="The model is ray-marched on your GPU as a translucent volume: temperature at every depth from 5 m to 2000 m, all at once, rather than one flat map at a time. The depth axis is stretched 1800 times so the column is readable, and a ruler down the side keeps the real metres honest."
-        data-measure="56 x 36 x 48 voxels, WebGL2, no install"
-        data-link="./app.html?dive=1">
-        <img src="./images/volume.jpg" data-light="./images/light/volume.jpg" alt="A three-dimensional block of ocean water, warm at the surface fading to cold violet at 2000 metres.">
-        <div class="feature-body">
-          <span class="kind">3D rendering</span>
-          <h3>The water column</h3>
-          <p>The full ocean depth as one solid, see-through body you can fly into.</p>
-          <div class="more">Open &rarr;</div>
-        </div>
-      </button>
+  <div class="wrap">
+    <div class="rail-shell reveal" id="railShell">
+      <div class="rail" id="rail" tabindex="0" aria-label="Feature list, scrolls sideways">
+        <!-- Each card's detail lives in data- attributes, so one dialog serves all of them. -->
+        <button class="feature" type="button"
+          data-title="A block of water you fly inside"
+          data-image="./images/volume.jpg"
+          data-image-light="./images/light/volume.jpg"
+          data-body="The model is ray-marched on your GPU as a translucent volume: temperature at every depth from 5 m to 2000 m, all at once, rather than one flat map at a time. The depth axis is stretched 1800 times so the column is readable, and a ruler down the side keeps the real metres honest."
+          data-measure="56 x 36 x 48 voxels, WebGL2, no install"
+          data-link="./app.html?dive=1">
+          <img src="./images/volume.jpg" data-light="./images/light/volume.jpg" alt="A three-dimensional block of ocean water, warm at the surface fading to cold violet at 2000 metres.">
+          <div class="feature-body">
+            <span class="kind">3D rendering</span>
+            <h3>The water column</h3>
+            <p>The full ocean depth as one solid, see-through body you can fly into.</p>
+            <div class="more">Open &rarr;</div>
+          </div>
+        </button>
 
-      <button class="feature" type="button"
-        data-title="Model against instrument, quantified"
-        data-image="./images/collocation.jpg"
-        data-image-light="./images/light/collocation.jpg"
-        data-body="Click any float and a chart appears: what that instrument measured on its way up, drawn on top of what the model said at that exact place and date. The gap between the two lines is shaded and sized as a number. This is the thing that does not exist in any other tool."
-        data-measure="230 instruments compared, typical temperature gap 0.19 degC"
-        data-link="./app.html?dive=1&amp;tour=1">
-        <img src="./images/collocation.jpg" data-light="./images/light/collocation.jpg" alt="The ocean block with one float highlighted and a panel comparing measured against modelled temperature.">
-        <div class="feature-body">
-          <span class="kind">The contribution</span>
-          <h3>Click a float, get the truth</h3>
-          <p>What was predicted and what was measured, on the same axes, with the disagreement sized.</p>
-          <div class="more">Open &rarr;</div>
-        </div>
-      </button>
+        <button class="feature" type="button"
+          data-title="Model against instrument, quantified"
+          data-image="./images/collocation.jpg"
+          data-image-light="./images/light/collocation.jpg"
+          data-body="Click any float and a chart appears: what that instrument measured on its way up, drawn on top of what the model said at that exact place and date. The gap between the two lines is shaded and sized as a number. This is the thing that does not exist in any other tool."
+          data-measure="230 instruments compared, typical temperature gap 0.19 degC"
+          data-link="./app.html?dive=1&amp;tour=1">
+          <img src="./images/collocation.jpg" data-light="./images/light/collocation.jpg" alt="The ocean block with one float highlighted and a panel comparing measured against modelled temperature.">
+          <div class="feature-body">
+            <span class="kind">The contribution</span>
+            <h3>Click a float, get the truth</h3>
+            <p>What was predicted and what was measured, on the same axes, with the disagreement sized.</p>
+            <div class="more">Open &rarr;</div>
+          </div>
+        </button>
 
-      <button class="feature" type="button"
-        data-title="Currents you can watch moving"
-        data-image="./images/flow.jpg"
-        data-image-light="./images/light/flow.jpg"
-        data-body="A few thousand dots carried by the analysed current at whatever depth you have sliced to, each with a fading trail. Drag the depth slider from 5 m to 1000 m and the whole basin changes direction. One click switches to arrows. The dots run the same integrator as the drift model, so this is the only current animation anywhere with a published error attached."
-        data-measure="A dot and a drift pin land 0.002 km apart after 724 km of travel"
-        data-link="./app.html?dive=1&amp;field=current_speed">
-        <img src="./images/flow.jpg" data-light="./images/light/flow.jpg" alt="Thousands of fine light trails streaming across the Indian Ocean, showing the current.">
-        <div class="feature-body">
-          <span class="kind">Circulation</span>
-          <h3>Living flow</h3>
-          <p>The current drawn as moving dots, at any depth, with a measured skill behind it.</p>
-          <div class="more">Open &rarr;</div>
-        </div>
-      </button>
+        <button class="feature" type="button"
+          data-title="Currents you can watch moving"
+          data-image="./images/flow.jpg"
+          data-image-light="./images/light/flow.jpg"
+          data-body="A few thousand dots carried by the analysed current at whatever depth you have sliced to, each with a fading trail. Drag the depth slider from 5 m to 1000 m and the whole basin changes direction. One click switches to arrows. The dots run the same integrator as the drift model, so this is the only current animation anywhere with a published error attached."
+          data-measure="A dot and a drift pin land 0.002 km apart after 724 km of travel"
+          data-link="./app.html?dive=1&amp;field=current_speed">
+          <img src="./images/flow.jpg" data-light="./images/light/flow.jpg" alt="Thousands of fine light trails streaming across the Indian Ocean, showing the current.">
+          <div class="feature-body">
+            <span class="kind">Circulation</span>
+            <h3>Living flow</h3>
+            <p>The current drawn as moving dots, at any depth, with a measured skill behind it.</p>
+            <div class="more">Open &rarr;</div>
+          </div>
+        </button>
 
-      <button class="feature" type="button"
-        data-title="Where nobody actually measured"
-        data-image="./images/coverage.jpg"
-        data-image-light="./images/light/coverage.jpg"
-        data-body="The model disappears and the evidence takes its place: how many Argo casts were taken near each point. Grey is water no instrument went near, where the analysis is interpolating between distant floats. Almost nobody outside science knows a model has a value everywhere whether or not anyone measured."
-        data-measure="9.9% of the block has no cast behind it at all"
-        data-link="./app.html?dive=1&amp;field=coverage">
-        <img src="./images/coverage.jpg" data-light="./images/light/coverage.jpg" alt="The ocean block drawn as observation coverage in four flat colour bands.">
-        <div class="feature-body">
-          <span class="kind">Evidence</span>
-          <h3>Observation coverage</h3>
-          <p>Not the model. The evidence for it, and where there is none.</p>
-          <div class="more">Open &rarr;</div>
-        </div>
-      </button>
+        <button class="feature" type="button"
+          data-title="Where nobody actually measured"
+          data-image="./images/coverage.jpg"
+          data-image-light="./images/light/coverage.jpg"
+          data-body="The model disappears and the evidence takes its place: how many Argo casts were taken near each point. Grey is water no instrument went near, where the analysis is interpolating between distant floats. Almost nobody outside science knows a model has a value everywhere whether or not anyone measured."
+          data-measure="9.9% of the block has no cast behind it at all"
+          data-link="./app.html?dive=1&amp;field=coverage">
+          <img src="./images/coverage.jpg" data-light="./images/light/coverage.jpg" alt="The ocean block drawn as observation coverage in four flat colour bands.">
+          <div class="feature-body">
+            <span class="kind">Evidence</span>
+            <h3>Observation coverage</h3>
+            <p>Not the model. The evidence for it, and where there is none.</p>
+            <div class="more">Open &rarr;</div>
+          </div>
+        </button>
 
-      <button class="feature" type="button"
-        data-title="A surface of one value"
-        data-image="./images/isosurface.jpg"
-        data-image-light="./images/light/isosurface.jpg"
-        data-body="Every point in the block at one temperature, drawn as a solid skin: the 20 degC line, the conventional marker for the thermocline. Watch it dome up and collapse across the season. On a variable that runs through zero it is drawn on both sides, so a departure of plus and minus half a degree is two surfaces and the panel says so."
-        data-measure="Extracted live in the shader, not precomputed"
-        data-link="./app.html?dive=1&amp;field=temperature&amp;iso=1">
-        <img src="./images/isosurface.jpg" data-light="./images/light/isosurface.jpg" alt="A shaded three-dimensional surface showing the undulating 20 degree Celsius isotherm.">
-        <div class="feature-body">
-          <span class="kind">3D rendering</span>
-          <h3>Isosurfaces</h3>
-          <p>The shape of one temperature through the whole basin.</p>
-          <div class="more">Open &rarr;</div>
-        </div>
-      </button>
+        <button class="feature" type="button"
+          data-title="A surface of one value"
+          data-image="./images/isosurface.jpg"
+          data-image-light="./images/light/isosurface.jpg"
+          data-body="Every point in the block at one temperature, drawn as a solid skin: the 20 degC line, the conventional marker for the thermocline. Watch it dome up and collapse across the season. On a variable that runs through zero it is drawn on both sides, so a departure of plus and minus half a degree is two surfaces and the panel says so."
+          data-measure="Extracted live in the shader, not precomputed"
+          data-link="./app.html?dive=1&amp;field=temperature&amp;iso=1">
+          <img src="./images/isosurface.jpg" data-light="./images/light/isosurface.jpg" alt="A shaded three-dimensional surface showing the undulating 20 degree Celsius isotherm.">
+          <div class="feature-body">
+            <span class="kind">3D rendering</span>
+            <h3>Isosurfaces</h3>
+            <p>The shape of one temperature through the whole basin.</p>
+            <div class="more">Open &rarr;</div>
+          </div>
+        </button>
 
-      <button class="feature" type="button"
-        data-title="Cut the ocean open along a line"
-        data-image="./images/section.jpg"
-        data-image-light="./images/light/section.jpg"
-        data-body="Draw a line on the map and the platform slices the model along it: depth down, distance across, the variable as colour, with every float cast within 150 km of the line on the same axes and each drawn to the depth it actually reached. This is the standard figure of physical oceanography, cut live from the model's own grid rather than from the rendered block, and it works with the network unplugged."
-        data-measure="Checked value by value against the API: 1,102 values, worst gap 0.00005 degC"
-        data-link="./app.html?dive=1&amp;field=temperature&amp;section=80,5,90,20">
-        <img src="./images/section.jpg" data-light="./images/light/section.jpg" alt="A vertical section through the Bay of Bengal with float casts drawn on it.">
-        <div class="feature-body">
-          <span class="kind">Analysis</span>
-          <h3>Vertical section</h3>
-          <p>The textbook figure, cut live along any line you draw.</p>
-          <div class="more">Open &rarr;</div>
-        </div>
-      </button>
+        <button class="feature" type="button"
+          data-title="Cut the ocean open along a line"
+          data-image="./images/section.jpg"
+          data-image-light="./images/light/section.jpg"
+          data-body="Draw a line on the map and the platform slices the model along it: depth down, distance across, the variable as colour, with every float cast within 150 km of the line on the same axes and each drawn to the depth it actually reached. This is the standard figure of physical oceanography, cut live from the model's own grid rather than from the rendered block, and it works with the network unplugged."
+          data-measure="Checked value by value against the API: 1,102 values, worst gap 0.00005 degC"
+          data-link="./app.html?dive=1&amp;field=temperature&amp;section=80,5,90,20">
+          <img src="./images/section.jpg" data-light="./images/light/section.jpg" alt="A vertical section through the Bay of Bengal with float casts drawn on it.">
+          <div class="feature-body">
+            <span class="kind">Analysis</span>
+            <h3>Vertical section</h3>
+            <p>The textbook figure, cut live along any line you draw.</p>
+            <div class="more">Open &rarr;</div>
+          </div>
+        </button>
 
-      <button class="feature" type="button"
-        data-title="Where would something adrift go?"
-        data-image="./images/drift.jpg"
-        data-image-light="./images/light/drift.jpg"
-        data-body="Drop a pin and the analysed current carries it forward. What makes it worth having is the second half: an Argo float's track is measured drift at 1000 m, so the same maths was run from 195 real floats' own positions and the error published rather than assumed. The panel's first line says what it is not, because a real search needs wind, waves and the object's own leeway."
-        data-measure="Median 38.5 km out over one Argo cycle, 87 km at the 90th percentile, 1,908 cycles"
-        data-link="./app.html?dive=1&amp;field=current_speed&amp;pin=51.5,9.5">
-        <img src="./images/drift.jpg" data-light="./images/light/drift.jpg" alt="A pin dropped in the Arabian Sea with the purple track the analysed currents imply running away from it, over the moving current flow, and the panel beside it reporting the distance, the bearing and the method's own measured error.">
-        <div class="feature-body">
-          <span class="kind">Search and rescue</span>
-          <h3>Drift, with a score</h3>
-          <p>A trajectory from any pin, and the measured error of the method behind it.</p>
-          <div class="more">Open &rarr;</div>
-        </div>
-      </button>
+        <button class="feature" type="button"
+          data-title="Where would something adrift go?"
+          data-image="./images/drift.jpg"
+          data-image-light="./images/light/drift.jpg"
+          data-body="Drop a pin and the analysed current carries it forward. What makes it worth having is the second half: an Argo float's track is measured drift at 1000 m, so the same maths was run from 195 real floats' own positions and the error published rather than assumed. The panel's first line says what it is not, because a real search needs wind, waves and the object's own leeway."
+          data-measure="Median 38.5 km out over one Argo cycle, 87 km at the 90th percentile, 1,908 cycles"
+          data-link="./app.html?dive=1&amp;field=current_speed&amp;pin=51.5,9.5">
+          <img src="./images/drift.jpg" data-light="./images/light/drift.jpg" alt="A pin dropped in the Arabian Sea with the purple track the analysed currents imply running away from it, over the moving current flow, and the panel beside it reporting the distance, the bearing and the method's own measured error.">
+          <div class="feature-body">
+            <span class="kind">Search and rescue</span>
+            <h3>Drift, with a score</h3>
+            <p>A trajectory from any pin, and the measured error of the method behind it.</p>
+            <div class="more">Open &rarr;</div>
+          </div>
+        </button>
 
-      <button class="feature" type="button"
-        data-title="Every departure gets a ring"
-        data-image="./images/anomaly.jpg"
-        data-image-light="./images/light/anomaly.jpg"
-        data-body="Every body of water that departed from its own average is ringed. Click one and the panel says where it is, how unusual, why it is there, what kind of water it is, and how many instruments checked it. Then press one button and the rest of the water clears away so you can see the shape of the body itself."
-        data-measure="A feature is marked only past 0.5 degC and two standard deviations"
-        data-link="./app.html?dive=1&amp;field=temperature_anomaly">
-        <img src="./images/anomaly.jpg" data-light="./images/light/anomaly.jpg" alt="The ocean block as a temperature anomaly, with rings marking each departure.">
-        <div class="feature-body">
-          <span class="kind">Change</span>
-          <h3>Anomaly features</h3>
-          <p>Not just that water changed. Which body, how much, why, and whether anything saw it.</p>
-          <div class="more">Open &rarr;</div>
-        </div>
-      </button>
+        <button class="feature" type="button"
+          data-title="Every departure gets a ring"
+          data-image="./images/anomaly.jpg"
+          data-image-light="./images/light/anomaly.jpg"
+          data-body="Every body of water that departed from its own average is ringed. Click one and the panel says where it is, how unusual, why it is there, what kind of water it is, and how many instruments checked it. Then press one button and the rest of the water clears away so you can see the shape of the body itself."
+          data-measure="A feature is marked only past 0.5 degC and two standard deviations"
+          data-link="./app.html?dive=1&amp;field=temperature_anomaly">
+          <img src="./images/anomaly.jpg" data-light="./images/light/anomaly.jpg" alt="The ocean block as a temperature anomaly, with rings marking each departure.">
+          <div class="feature-body">
+            <span class="kind">Change</span>
+            <h3>Anomaly features</h3>
+            <p>Not just that water changed. Which body, how much, why, and whether anything saw it.</p>
+            <div class="more">Open &rarr;</div>
+          </div>
+        </button>
 
-      <button class="feature" type="button"
-        data-title="Every instrument at once"
-        data-image="./images/collocation.jpg"
-        data-image-light="./images/light/collocation.jpg"
-        data-body="Turn on the bias map and every dot stops meaning 'here is an instrument' and starts meaning 'here is how wrong the analysis was here'. A ranked list names the worst. INCOIS assimilate Argo, so a float largely shows the model agreeing with itself; the nine moored buoys are the independent check, and the panel prints both rather than pooling them."
-        data-measure="Typical temperature gap 0.17 degC across 221 floats against 0.75 degC across 9 buoys"
-        data-link="./app.html?dive=1&amp;bias=1">
-        <img src="./images/collocation.jpg" data-light="./images/light/collocation.jpg" alt="Instrument markers recoloured by how far the model sat from each measurement.">
-        <div class="feature-body">
-          <span class="kind">The contribution</span>
-          <h3>The bias map</h3>
-          <p>The whole basin's disagreement in one picture, split by instrument kind.</p>
-          <div class="more">Open &rarr;</div>
-        </div>
-      </button>
+        <button class="feature" type="button"
+          data-title="Every instrument at once"
+          data-image="./images/collocation.jpg"
+          data-image-light="./images/light/collocation.jpg"
+          data-body="Turn on the bias map and every dot stops meaning 'here is an instrument' and starts meaning 'here is how wrong the analysis was here'. A ranked list names the worst. INCOIS assimilate Argo, so a float largely shows the model agreeing with itself; the nine moored buoys are the independent check, and the panel prints both rather than pooling them."
+          data-measure="Typical temperature gap 0.17 degC across 221 floats against 0.75 degC across 9 buoys"
+          data-link="./app.html?dive=1&amp;bias=1">
+          <img src="./images/collocation.jpg" data-light="./images/light/collocation.jpg" alt="Instrument markers recoloured by how far the model sat from each measurement.">
+          <div class="feature-body">
+            <span class="kind">The contribution</span>
+            <h3>The bias map</h3>
+            <p>The whole basin's disagreement in one picture, split by instrument kind.</p>
+            <div class="more">Open &rarr;</div>
+          </div>
+        </button>
 
-      <button class="feature" type="button"
-        data-title="Set up a cyclone question in one press"
-        data-image="./images/kiosk.jpg"
-        data-body="A cyclone runs on the heat stored down the whole water column, not on a warm skin at the surface. One press swaps the variable list for the five things a cyclone forecaster asks for and arranges the scene for them: heat potential, the depth of the 26 degC line, the mixed layer, the isothermal layer and the barrier layer between them."
-        data-measure="Above 60 kJ/cm2 is the usual threshold for rapid intensification"
-        data-link="./app.html?dive=1&amp;preset=hazard">
-        <img src="./images/kiosk.jpg" alt="Cyclone heat potential drawn over the Indian Ocean.">
-        <div class="feature-body">
-          <span class="kind">Disaster management</span>
-          <h3>Cyclone mode</h3>
-          <p>Five hazard variables and a scene arranged for the question.</p>
-          <div class="more">Open &rarr;</div>
-        </div>
-      </button>
+        <button class="feature" type="button"
+          data-title="Set up a cyclone question in one press"
+          data-image="./images/kiosk.jpg"
+          data-body="A cyclone runs on the heat stored down the whole water column, not on a warm skin at the surface. One press swaps the variable list for the five things a cyclone forecaster asks for and arranges the scene for them: heat potential, the depth of the 26 degC line, the mixed layer, the isothermal layer and the barrier layer between them."
+          data-measure="Above 60 kJ/cm2 is the usual threshold for rapid intensification"
+          data-link="./app.html?dive=1&amp;preset=hazard">
+          <img src="./images/kiosk.jpg" alt="Cyclone heat potential drawn over the Indian Ocean.">
+          <div class="feature-body">
+            <span class="kind">Disaster management</span>
+            <h3>Cyclone mode</h3>
+            <p>Five hazard variables and a scene arranged for the question.</p>
+            <div class="more">Open &rarr;</div>
+          </div>
+        </button>
 
-      <button class="feature" type="button"
-        data-title="Has this ocean changed?"
-        data-image="./images/normal.jpg"
-        data-image-light="./images/light/normal.jpg"
-        data-body="Two variables answer this and the difference between them is the point. One is a departure from this build's own four months, which is a seasonal swing and says so. The other is a departure from NOAA's World Ocean Atlas 1991-2020 mean for the same calendar month, which is what a forecaster means by 'warmer than usual'."
-        data-measure="Across 349,692 cells: mean -0.01 degC, 95th percentile of the magnitude 2.10 degC"
-        data-link="./app.html?dive=1&amp;field=temperature_normal_anomaly">
-        <img src="./images/normal.jpg" data-light="./images/light/normal.jpg" alt="Departure from the thirty-year normal drawn through the water column, with warm red patches and cool blue ones in the same block.">
-        <div class="feature-body">
-          <span class="kind">Climate</span>
-          <h3>Against a thirty-year normal</h3>
-          <p>A real climatology, not this season's own average pretending to be one.</p>
-          <div class="more">Open &rarr;</div>
-        </div>
-      </button>
+        <button class="feature" type="button"
+          data-title="Has this ocean changed?"
+          data-image="./images/normal.jpg"
+          data-image-light="./images/light/normal.jpg"
+          data-body="Two variables answer this and the difference between them is the point. One is a departure from this build's own four months, which is a seasonal swing and says so. The other is a departure from NOAA's World Ocean Atlas 1991-2020 mean for the same calendar month, which is what a forecaster means by 'warmer than usual'."
+          data-measure="Across 349,692 cells: mean -0.01 degC, 95th percentile of the magnitude 2.10 degC"
+          data-link="./app.html?dive=1&amp;field=temperature_normal_anomaly">
+          <img src="./images/normal.jpg" data-light="./images/light/normal.jpg" alt="Departure from the thirty-year normal drawn through the water column, with warm red patches and cool blue ones in the same block.">
+          <div class="feature-body">
+            <span class="kind">Climate</span>
+            <h3>Against a thirty-year normal</h3>
+            <p>A real climatology, not this season's own average pretending to be one.</p>
+            <div class="more">Open &rarr;</div>
+          </div>
+        </button>
 
-      <button class="feature" type="button"
-        data-title="Drop your own NetCDF file on it"
-        data-image="./images/salinity.jpg"
-        data-image-light="./images/light/salinity.jpg"
-        data-body="Drag a CF-conventions NetCDF file onto the panel and its variables appear in the selector under a tab of their own, behaving exactly like the built-in ones: same colourbar, same depth slice, same isosurface, same 3D water. A file it cannot read is refused by name, with the axis it could not find, rather than drawing something wrong."
-        data-measure="Nine source adapters behind two protocols; adding one touches no renderer"
-        data-link="./app.html?dive=1">
-        <img src="./images/salinity.jpg" data-light="./images/light/salinity.jpg" alt="The ocean block drawn in the salinity palette.">
-        <div class="feature-body">
-          <span class="kind">Extensibility</span>
-          <h3>Bring your own data</h3>
-          <p>The extensibility claim, made falsifiable in front of you.</p>
-          <div class="more">Open &rarr;</div>
-        </div>
-      </button>
+        <button class="feature" type="button"
+          data-title="Drop your own NetCDF file on it"
+          data-image="./images/salinity.jpg"
+          data-image-light="./images/light/salinity.jpg"
+          data-body="Drag a CF-conventions NetCDF file onto the panel and its variables appear in the selector under a tab of their own, behaving exactly like the built-in ones: same colourbar, same depth slice, same isosurface, same 3D water. A file it cannot read is refused by name, with the axis it could not find, rather than drawing something wrong."
+          data-measure="Nine source adapters behind two protocols; adding one touches no renderer"
+          data-link="./app.html?dive=1">
+          <img src="./images/salinity.jpg" data-light="./images/light/salinity.jpg" alt="The ocean block drawn in the salinity palette.">
+          <div class="feature-body">
+            <span class="kind">Extensibility</span>
+            <h3>Bring your own data</h3>
+            <p>The extensibility claim, made falsifiable in front of you.</p>
+            <div class="more">Open &rarr;</div>
+          </div>
+        </button>
 
-      <button class="feature" type="button"
-        data-title="An exhibition screen that repairs itself"
-        data-image="./images/kiosk.jpg"
-        data-body="A screen at a stall has nobody standing at it. Kiosk mode hides every panel, scales the type up for reading across a room, plays the questions on a loop, and resets to the start sixty seconds after the last visitor walks away, so the next one does not arrive at a broken view. The depth ruler grows a second line there: 1000 m becomes 'a sperm whale hunting'."
-        data-measure="Tested by standing in front of it for 22 seconds and checking it moved on"
-        data-link="./app.html?kiosk=1">
-        <img src="./images/kiosk.jpg" alt="The exhibition screen: no panels, one large caption over the water.">
-        <div class="feature-body">
-          <span class="kind">Outreach</span>
-          <h3>Kiosk mode</h3>
-          <p>Leave it running all day. It puts itself back.</p>
-          <div class="more">Open &rarr;</div>
-        </div>
-      </button>
+        <button class="feature" type="button"
+          data-title="An exhibition screen that repairs itself"
+          data-image="./images/kiosk.jpg"
+          data-body="A screen at a stall has nobody standing at it. Kiosk mode hides every panel, scales the type up for reading across a room, plays the questions on a loop, and resets to the start sixty seconds after the last visitor walks away, so the next one does not arrive at a broken view. The depth ruler grows a second line there: 1000 m becomes 'a sperm whale hunting'."
+          data-measure="Tested by standing in front of it for 22 seconds and checking it moved on"
+          data-link="./app.html?kiosk=1">
+          <img src="./images/kiosk.jpg" alt="The exhibition screen: no panels, one large caption over the water.">
+          <div class="feature-body">
+            <span class="kind">Outreach</span>
+            <h3>Kiosk mode</h3>
+            <p>Leave it running all day. It puts itself back.</p>
+            <div class="more">Open &rarr;</div>
+          </div>
+        </button>
 
-      <button class="feature" type="button"
-        data-title="Open standards, served back out"
-        data-image="./images/globe.jpg"
-        data-image-light="./images/light/globe.jpg"
-        data-body="The same analysis this platform draws is served to anything else that speaks the standards: OPeNDAP for a Python client, CF-1.8 NetCDF for a file, and OGC WMS for a GIS. Every one of them reads the model's own grid and never the rendering volume, because a consumer pulling a file over the wire cannot see that they have been handed a quantised picture."
-        data-measure="The OPeNDAP endpoint is checked by opening it with a real pydap client"
-        data-link="./requirements.html">
-        <img src="./images/globe.jpg" data-light="./images/light/globe.jpg" alt="The Indian Ocean on a globe.">
-        <div class="feature-body">
-          <span class="kind">Interoperability</span>
-          <h3>OPeNDAP, CF and WMS</h3>
-          <p>Not a dead end. Other systems can read it back.</p>
-          <div class="more">Open &rarr;</div>
+        <button class="feature" type="button"
+          data-title="Open standards, served back out"
+          data-image="./images/globe.jpg"
+          data-image-light="./images/light/globe.jpg"
+          data-body="The same analysis this platform draws is served to anything else that speaks the standards: OPeNDAP for a Python client, CF-1.8 NetCDF for a file, and OGC WMS for a GIS. Every one of them reads the model's own grid and never the rendering volume, because a consumer pulling a file over the wire cannot see that they have been handed a quantised picture."
+          data-measure="The OPeNDAP endpoint is checked by opening it with a real pydap client"
+          data-link="./requirements.html">
+          <img src="./images/globe.jpg" data-light="./images/light/globe.jpg" alt="The Indian Ocean on a globe.">
+          <div class="feature-body">
+            <span class="kind">Interoperability</span>
+            <h3>OPeNDAP, CF and WMS</h3>
+            <p>Not a dead end. Other systems can read it back.</p>
+            <div class="more">Open &rarr;</div>
+          </div>
+        </button>
+      </div>
+
+      <dialog class="sheet" id="sheet" aria-label="Feature detail">
+        <button class="sheet-close" type="button" id="sheet-close" aria-label="Close">&#10005;</button>
+        <img id="sheet-image" src="" alt="">
+        <div class="sheet-body">
+          <h3 id="sheet-title"></h3>
+          <p id="sheet-text"></p>
+          <p class="measure" id="sheet-measure"></p>
+          <div class="sheet-foot">
+            <a class="ghost-link" id="sheet-link" href="./app.html">Open this in the platform <span class="arrow">&rarr;</span></a>
+            <button class="pill-btn" type="button" id="sheet-dismiss"><span class="btn-label">Close</span></button>
+          </div>
         </div>
-      </button>
+      </dialog>
     </div>
   </div>
 </section>
 
-<dialog class="sheet" id="sheet" aria-label="Feature detail">
-  <button class="sheet-close" type="button" id="sheet-close" aria-label="Close">✕</button>
-  <img id="sheet-image" src="" alt="">
-  <div class="sheet-body">
-    <h3 id="sheet-title"></h3>
-    <p id="sheet-text"></p>
-    <p class="measure" id="sheet-measure"></p>
-    <div class="sheet-foot">
-      <a class="cta" id="sheet-link" href="./app.html">Open this in the platform &rarr;</a>
-      <button class="cta ghost" type="button" id="sheet-dismiss">Close</button>
-    </div>
-  </div>
-</dialog>
-
 <section id="how">
   <div class="wrap">
-    <div class="eyebrow">How it works</div>
-    <h2>Four steps, and nothing between you and the data.</h2>
-    <p class="section-lede">
-      Everything the demo needs is baked into the build, so it runs with the network cable pulled
-      out. A dead venue connection cannot kill it.
-    </p>
+    <div class="section-label reveal">How it works</div>
+    <h2 class="heading reveal">Three moves, one continuous scene</h2>
 
     <div class="steps">
-      <div class="step">
-        <b>01</b>
+      <div class="step reveal">
+        <div class="n">01 &middot; Surface</div>
         <div>
-          <h3>Read the real thing</h3>
-          <p>
-            INCOIS's own gridded analysis over their public ERDDAP, and the Argo float profiles
-            measured in the same water from the global data centre. Nine independent sources,
-            each behind one small adapter, so a new instrument is a class rather than a rewrite.
-          </p>
+          <h3>Start on the globe</h3>
+          <p>India's exclusive economic zone, coloured with INCOIS's own gridded analysis.
+            Every marker is an Argo float that reported in the last 60 days.</p>
         </div>
       </div>
-      <div class="step">
-        <b>02</b>
+      <div class="step reveal reveal-1">
+        <div class="n">02 &middot; Descent</div>
         <div>
-          <h3>Do the science once, in Python</h3>
-          <p>
-            Resample the depth levels, reject implausible values channel by channel, work out
-            density with TEOS-10, find the anomalies, compute the hazard fields, and collocate
-            every float cast against the model at that exact place and date. All of it tested.
-          </p>
+          <h3>Dive into the water</h3>
+          <p>The globe unrolls into a map and the ocean opens into a solid, see-through block.
+            Every coastline vertex slides from its position on a sphere to its position on a
+            flat map: one continuous deformation of one piece of geometry, not a cut between
+            screens.</p>
         </div>
       </div>
-      <div class="step">
-        <b>03</b>
+      <div class="step reveal reveal-2">
+        <div class="n">03 &middot; 2000 m</div>
         <div>
-          <h3>Render it on your GPU</h3>
-          <p>
-            The volume is ray-marched in WebGL2, in one scene that morphs between a globe and a
-            block of water. Sheets, drapes and moving dots handle the variables that are not a
-            volume, because drawing a depth as a body of water would be drawing the wrong thing.
-          </p>
-        </div>
-      </div>
-      <div class="step">
-        <b>04</b>
-        <div>
-          <h3>Answer questions from the grid, never from the picture</h3>
-          <p>
-            Every number you read comes from the model's own full-precision grid, not from the
-            rendered block, which is quantised and depth-warped for the GPU's benefit. That
-            distinction is the difference between a visualisation and an instrument.
-          </p>
+          <h3>Click a float</h3>
+          <p>What the instrument measured on the way down, drawn against what the model said
+            at that exact place and time, with the disagreement shaded between them and
+            reported as a number.</p>
         </div>
       </div>
     </div>
 
     <div class="gallery">
-      <figure class="shot">
-        <img src="./images/globe.jpg" data-light="./images/light/globe.jpg" width="1400" height="788" loading="lazy"
-             alt="A dark globe showing the Indian Ocean with a warm-coloured temperature field over India's exclusive economic zone and small float markers across it.">
-        <figcaption><b>Start on the globe.</b> India's exclusive economic zone, with the instruments that were reporting on the date shown.</figcaption>
+      <figure class="shot reveal">
+        <img src="./images/globe.jpg" data-light="./images/light/globe.jpg" width="1400" height="787" loading="lazy"
+             alt="A globe showing the Indian Ocean with a warm-coloured temperature field over India's exclusive economic zone and small float markers across it.">
+        <figcaption><b>Globe view.</b> The colour on the sea is the same field you are about to fly into.</figcaption>
       </figure>
-      <figure class="shot">
-        <img src="./images/isosurface.jpg" data-light="./images/light/isosurface.jpg" width="1400" height="874" loading="lazy"
+      <figure class="shot reveal reveal-1">
+        <img src="./images/isosurface.jpg" data-light="./images/light/isosurface.jpg" width="1270" height="760" loading="lazy"
              alt="A shaded three-dimensional surface inside a wireframe box, showing the undulating topography of the 20 degree Celsius isotherm.">
-        <figcaption><b>Then look at one value.</b> The 20 degC isotherm, whose depth drives cyclone intensity forecasts.</figcaption>
+        <figcaption><b>Isosurface.</b> The 20&deg;C isotherm, the standard thermocline proxy, visibly doming.</figcaption>
       </figure>
-      <figure class="shot">
-        <img src="./images/flow.jpg" data-light="./images/light/flow.jpg" width="1400" height="788" loading="lazy"
-             alt="Fine light trails streaming across the ocean, drawing the shape of the currents.">
+      <figure class="shot reveal reveal-2">
+        <img src="./images/flow.jpg" data-light="./images/light/flow.jpg" width="1400" height="787" loading="lazy"
+             alt="Thousands of fine light trails streaming across the Indian Ocean, showing the shape of the current.">
         <figcaption><b>Watch the water move.</b> The current at the depth you have sliced to, drawn as thousands of drifting dots.</figcaption>
       </figure>
-      <figure class="shot">
-        <img src="./images/collocation.jpg" data-light="./images/light/collocation.jpg" width="1400" height="788" loading="lazy"
-             alt="The three-dimensional ocean block with one float highlighted by a vertical line, and a side panel showing a depth profile chart comparing observed Argo temperature against the INCOIS analysis.">
-        <figcaption><b>And check it against reality.</b> One float's own profile against the model at that place, with the gap sized.</figcaption>
+      <figure class="shot reveal">
+        <img src="./images/volume.jpg" data-light="./images/light/volume.jpg" width="1270" height="760" loading="lazy"
+             alt="A three-dimensional rendering of ocean water masses, showing distinct layered bodies of water separated by temperature and salinity boundaries.">
+        <figcaption><b>Water masses.</b> Distinct bodies of water, separated by temperature and salinity, not just depth.</figcaption>
       </figure>
     </div>
   </div>
@@ -1066,17 +896,17 @@
 
 <section id="everyone">
   <div class="wrap">
-    <div class="eyebrow">For everyone, not just forecasters</div>
-    <h2>The problem statement asks for a science communication tool. So there are two doors.</h2>
-    <p class="section-lede">
+    <div class="section-label reveal reveal-1">For everyone, not just forecasters</div>
+    <h2 class="heading reveal reveal-1">The problem statement asks for a science communication tool. So there are two doors.</h2>
+    <p class="section-lede reveal reveal-2">
       It names school and college students, the general public at awareness campaigns, and
       policymakers, and three settings: outreach events, exhibitions and e-learning. Fifteen
       variables in five groups is the right toolkit for a forecaster and the wrong first minute
       for any of those. So the same platform has a second way in, and the console gained nothing.
     </p>
 
-    <div class="split">
-      <div class="card answer">
+    <div class="split reveal reveal-2">
+      <div class="card">
         <span class="tag">Students</span>
         <h3>Explore by question</h3>
         <p>
@@ -1085,7 +915,7 @@
           caveat its simplification costs, beside the answer and never after it.
         </p>
       </div>
-      <div class="card answer">
+      <div class="card">
         <span class="tag">Exhibitions</span>
         <h3>Kiosk mode</h3>
         <p>
@@ -1094,7 +924,7 @@
           straight back.
         </p>
       </div>
-      <div class="card answer">
+      <div class="card">
         <span class="tag">E-learning</span>
         <h3>Copy this view</h3>
         <p>
@@ -1103,7 +933,7 @@
           without an e-learning platform.
         </p>
       </div>
-      <div class="card answer">
+      <div class="card">
         <span class="tag">Anyone</span>
         <h3>Show me around</h3>
         <p>
@@ -1114,24 +944,24 @@
       </div>
     </div>
 
-    <div class="hero-actions" style="margin-top:34px">
-      <a class="cta big" href="./app.html?explore=1">Open Explore</a>
-      <a class="cta big ghost" href="./app.html?kiosk=1">Open the exhibition screen</a>
-      <a class="cta big ghost" href="./app.html?tour=1">Start the guided walk</a>
+    <div class="hero-actions reveal" style="margin-top:34px">
+      <a class="pill-btn" href="./app.html?explore=1"><span class="btn-label">Open Explore <span class="arrow">&rarr;</span></span></a>
+      <a class="ghost-link" href="./app.html?kiosk=1">Open the exhibition screen <span class="arrow">&rarr;</span></a>
+      <a class="ghost-link" href="./app.html?tour=1">Start the guided walk <span class="arrow">&rarr;</span></a>
     </div>
   </div>
 </section>
 
 <section id="variables">
   <div class="wrap">
-    <div class="eyebrow">Fifteen variables</div>
-    <h2>INCOIS publish two of these. The rest are worked out here.</h2>
-    <p class="section-lede">
+    <div class="section-label reveal reveal-1">Fifteen variables</div>
+    <h2 class="heading reveal reveal-1">INCOIS publish two of these. The rest are worked out here.</h2>
+    <p class="section-lede reveal reveal-2">
       Which is the problem statement's "additional model variables with minimal code change"
       demonstrated rather than asserted. They are grouped the way a forecaster thinks rather than
       the way the data arrived.
     </p>
-    <div class="chips">
+    <div class="chips reveal reveal-2">
       <span class="chip"><small>Ocean state</small> Temperature</span>
       <span class="chip"><small>Ocean state</small> Salinity</span>
       <span class="chip"><small>Ocean state</small> Density</span>
@@ -1154,144 +984,238 @@
 
 <section id="evidence">
   <div class="wrap">
-    <div class="eyebrow">Evidence</div>
-    <h2>Every number on this page is read from the build it describes.</h2>
-    <p class="section-lede">
-      Not typed in. The figures below are fetched from the same files the platform draws, so this
-      page cannot quietly go stale while the data moves underneath it.
+    <div class="section-label reveal">The contribution</div>
+    <h2 class="heading reveal">Model against observation, in the same view</h2>
+    <p class="section-lede reveal reveal-1">
+      This is the thing the problem statement says no existing tool does. It is also not a
+      contrived comparison: INCOIS's analysis is derived from Argo profiles, so asking whether
+      it reproduced the observations that fed it is a real operational question.
     </p>
 
-    <div class="stats">
-      <div class="stat">
-        <b id="m-compared">&hellip;</b>
-        <span>Instruments compared</span>
-        <p>Every one with a profile the model can be held against, at the depths it actually reached.</p>
-      </div>
-      <div class="stat">
-        <b id="m-gap">&hellip;</b>
-        <span>Typical gap, degC</span>
-        <p>How far the analysis sits from what the instruments measured, across the whole basin.</p>
-      </div>
-      <div class="stat">
-        <b id="m-buoys">&hellip;</b>
-        <span id="m-buoys-label">Against moored buoys, degC</span>
-        <p>The honest number. INCOIS assimilate Argo, so a float is largely the model agreeing with itself.</p>
-      </div>
-      <div class="stat">
-        <b id="m-median">&hellip;</b>
-        <span>Median instrument RMS, degC</span>
-        <!--
-          Named for the statistic it actually is. It used to read "Median instrument" under
-          "the middle of the distribution rather than its mean", beside the 0.19 above - and it
-          is not the median of that distribution. 0.19 is the mean of each instrument's average
-          gap; this is the median of each instrument's RMS, which is a different and harsher
-          measure. The median of the 0.19 distribution is 0.10, so the old pair read as though
-          the typical instrument were worse than average when it is better.
-        -->
-        <p>Root-mean-square, so a big gap at one depth counts for more than the average gap does. Half the instruments sit under this and half above.</p>
-      </div>
+    <figure class="shot reveal reveal-2" style="margin-top: 46px">
+      <img src="./images/collocation.jpg" data-light="./images/light/collocation.jpg" width="1400" height="787" loading="lazy"
+           alt="The three-dimensional ocean block with one float highlighted by a vertical line, and a side panel showing a depth profile chart comparing observed Argo temperature against the INCOIS analysis, with statistics beneath.">
+      <figcaption><b>A float, compared.</b> Solid is measured, dashed is the analysis, and the
+        shaded gap is the residual - every profile in the platform opens like this.</figcaption>
+    </figure>
+
+    <div class="stats-grid reveal">
+      <div class="stat"><b id="m-levels">&hellip;</b><span>Model depth levels</span></div>
+      <div class="stat"><b id="m-compared">&hellip;</b><span>Instruments compared</span></div>
+      <div class="stat"><b id="m-mean">&hellip;</b><span>Mean residual &deg;C</span></div>
+      <div class="stat"><b id="m-rms">&hellip;</b><span>RMS &deg;C</span></div>
+      <div class="stat"><b id="m-median">&hellip;</b><span>Median RMS across profiles</span></div>
+      <div class="stat"><b id="m-gap">&hellip;</b><span>Typical gap &deg;C</span></div>
+      <div class="stat"><b id="m-buoys">&hellip;</b><span id="m-buoys-label">Against moored buoys, &deg;C</span></div>
     </div>
 
-    <div class="pull">
-      <p>
-        A model has a value everywhere whether or not anyone measured there. This platform draws
-        that distinction rather than hiding it, and the number it is least comfortable with is
-        the one it prints largest.
-      </p>
+    <div class="pull reveal">
+      <p>On average the analysis agrees with the floats. What that average hides - a cold
+        upwelling off Oman that a one-degree grid smooths away - is exactly the departure the
+        tool exists to show, before an advisory goes out.</p>
+      <cite>The tool finding a real discrepancy is the tool working</cite>
     </div>
-
-    <ul class="plain">
-      <li><b>377 automated tests</b> over the science: the depth warp, the volume encoding, grid interpolation, collocation, the Argo parser, every derived variable, and the standards endpoints.</li>
-      <li><b>Thirteen browser probes</b> that drive the built application and measure what actually reaches the screen, because every bad bug in this project looked like a shader bug and was not. One of them measures this page: no picture it names is missing, no request leaves the build, and the headline clears its contrast floor in both themes.</li>
-      <li><b>Two modules implemented twice on purpose</b>, in Python and in the browser, and both copies measured against each other so the demo works with the network unplugged.</li>
-      <li><b>Nothing is smoothed over the gaps.</b> Where the atlas has no normal the field is blank rather than zero, and where no cast reached the water the panel says so.</li>
-    </ul>
   </div>
 </section>
 
 <section id="built">
   <div class="wrap">
-    <div class="eyebrow">How it is built</div>
-    <h2>Boring technology, used carefully.</h2>
-    <div class="split">
+    <div class="section-label reveal">How it is built</div>
+    <h2 class="heading reveal">Open standards in, WebGL out</h2>
+
+    <div class="split reveal reveal-1">
       <div class="card">
-        <h3>Front end</h3>
-        <p>
-          TypeScript, React and Three.js on WebGL2. One scene renders both the globe and the
-          volume and morphs between them, so there is no second viewer to keep in step.
-        </p>
+        <span class="tag">Rendering</span>
+        <h3>Featureless water is transparent</h3>
+        <p>Ocean temperature falls smoothly with depth, so a plain render is an opaque warm
+          lid over an invisible abyss. Opacity is weighted by how fast the field is changing,
+          so the thermocline and fronts become the solid things in the picture.</p>
       </div>
       <div class="card">
-        <h3>Pipeline</h3>
-        <p>
-          Python with xarray and NumPy. Every source sits behind one adapter interface, and the
-          scientific truth lives in one grid class that nothing else may go around.
-        </p>
+        <span class="tag">Correctness</span>
+        <h3>Land cannot fake upwelling</h3>
+        <p>GPUs interpolate before a shader sees a voxel, so a "no data" marker gets averaged
+          with the sea beside it and paints a cold fringe along every coast. A separate
+          coverage channel means land can never contribute a temperature.</p>
       </div>
       <div class="card">
-        <h3>API</h3>
-        <p>
-          FastAPI, serving REST plus OPeNDAP, CF-1.8 NetCDF and OGC WMS from the native analysis
-          grids. It also accepts a NetCDF file a visitor drops in, and stores nothing.
-        </p>
-      </div>
-      <div class="card">
-        <h3>Deployment</h3>
-        <p>
-          A static bundle. Push to the repository and it publishes. The demo path makes zero
-          network calls, fonts included, so it survives a dead venue connection.
-        </p>
+        <span class="tag">Extensibility</span>
+        <h3>A new instrument is one class</h3>
+        <p>Two Argo providers that name every column differently are absorbed by one parser
+          driven by a column description. The renderer, the API and the UI have never heard
+          of ERDDAP.</p>
       </div>
     </div>
+
+    <div class="stack reveal">
+      <div><h3>Data and science</h3><ul><li>Python 3.10</li><li>xarray + netCDF4</li><li>NumPy / SciPy</li><li>cmocean</li></ul></div>
+      <div><h3>Backend</h3><ul><li>FastAPI</li><li>Uvicorn</li><li>ERDDAP / OPeNDAP</li><li>CF-1.6 conventions</li></ul></div>
+      <div><h3>Frontend</h3><ul><li>TypeScript</li><li>React 19 + Vite</li><li>Three.js / WebGL2</li><li>GLSL ES 3.00</li></ul></div>
+      <div><h3>Quality</h3><ul><li>377 automated tests</li><li>17 decision records</li><li>0 network calls at demo time</li></ul></div>
+    </div>
+
+    <ul class="plain reveal">
+      <li><strong>Runs on INCOIS's own server.</strong> Their gridded Argo analysis across 24
+        depth levels and 12 timesteps, current to 30 July 2026.</li>
+      <li><strong>Deployable anywhere.</strong> A static site plus a lightweight API, with no
+        client-side dependency, no plugin and no access token.</li>
+      <li><strong>Honest by construction.</strong> The stretched depth axis is labelled on
+        screen rather than left to be assumed proportional.</li>
+      <li><strong>The demo makes zero network calls.</strong> Everything it draws is baked into
+        this build, fonts included - a dead venue network cannot kill the demo.</li>
+    </ul>
   </div>
 </section>
 
 <section class="final">
-  <div class="wrap-narrow">
-    <h2>Open it and fly into the water.</h2>
-    <p>
-      No install, no account, no plugin. It runs entirely in your browser on real INCOIS data.
-    </p>
-    <div class="hero-actions">
-      <a class="cta big" href="./app.html">Launch the platform &rarr;</a>
-      <a class="cta big ghost" href="./requirements.html">Every requirement, clause by clause</a>
-      <a class="cta big ghost" href="https://github.com/RAK2315/samudra-sih26">View the source</a>
+  <div class="wrap">
+    <div class="section-label reveal" style="justify-content:center;">Ready</div>
+    <h2 class="heading reveal">Open it and fly into the water.</h2>
+    <p class="reveal reveal-1">No install, no account, no plugin. It runs entirely in your browser on real INCOIS data.</p>
+    <div class="hero-actions reveal reveal-2">
+      <a class="pill-btn" href="./app.html"><span class="btn-label">Launch the platform <span class="arrow">&rarr;</span></span></a>
+      <a class="ghost-link" href="https://github.com/RAK2315/samudra-sih26">View the source <span class="arrow">&rarr;</span></a>
     </div>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
-    <nav class="footer-nav">
+    <nav class="footer-nav" style="display: flex; flex-wrap: wrap; gap: var(--sp-19); font-family: var(--font-display); font-size: var(--text-caption); text-transform: uppercase; letter-spacing: var(--ls-caption);">
       <a href="#top">Back to top &uarr;</a>
       <a href="./provenance.html">Provenance</a>
       <a href="./requirements.html">Requirements</a>
       <a href="./app.html">Launch the platform</a>
     </nav>
-    Argo data are collected and made freely available by the International Argo Program and the
-    national programmes that contribute to it. The Argo Program is part of the Global Ocean
-    Observing System.<br>
-    Gridded analysis products are produced by the Indian National Centre for Ocean Information
-    Services (INCOIS), Ministry of Earth Sciences, Government of India.<br>
-    Current velocity is E.U. Copernicus Marine Service Information. Climatology is NOAA World
-    Ocean Atlas 2023.<br>
-    Colour scales are cmocean (Thyng et al., 2016). Coastlines are Natural Earth.<br>
-    <a href="https://github.com/RAK2315/samudra-sih26">github.com/RAK2315/samudra-sih26</a>
+    <p style="margin-top: var(--sp-19);">
+      Argo data are collected and made freely available by the International Argo Program and the
+      national programmes that contribute to it. The Argo Program is part of the Global Ocean
+      Observing System. Gridded analysis products are produced by the Indian National Centre for
+      Ocean Information Services (INCOIS), Ministry of Earth Sciences, Government of India.
+      Current velocity is E.U. Copernicus Marine Service Information. Climatology is NOAA World
+      Ocean Atlas 2023. Colour scales are cmocean (Thyng et al., 2016). Coastlines are Natural
+      Earth.
+    </p>
+    <div class="foot-row">
+      <span class="brand" style="font-size: var(--text-caption);">SAMUDRA &nbsp;&middot;&nbsp; 3D</span>
+      <a href="https://github.com/RAK2315/samudra-sih26">github.com/RAK2315/samudra-sih26</a>
+    </div>
   </div>
 </footer>
 
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<div class="scroll-cue" id="scrollCue"><span>Scroll</span><span class="down">&darr;</span></div>
+
+<script>
+  // nav shrink/blur on scroll
+  var nav = document.getElementById('nav');
+  var cue = document.getElementById('scrollCue');
+  window.addEventListener('scroll', function () {
+    var y = window.scrollY;
+    nav.classList.toggle('scrolled', y > 40);
+    cue.classList.toggle('hidden', y > 120);
+  }, { passive: true });
+
+  // scroll reveal
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in-view'); io.unobserve(e.target); } });
+  }, { threshold: 0.15, rootMargin: '0px 0px -60px 0px' });
+  document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+
+  // theme toggle: light is recorded as data-theme=light against a dark default, one shared key.
+  // The toggle swaps tokens on <html>; it could not swap the *screenshots*, because an `<img src>`
+  // is not a CSS property. Every picture with a light twin carries it in data-light and this
+  // rewrites src on each toggle - and on load, so a reader who arrives already-light does not see
+  // the dark copies of a dozen pictures. A picture with no data-light never changes; exactly one
+  // is meant not to: kiosk mode, which is a photograph of a dark screen where the dark is the
+  // subject. Both sets ship in this build, so switching still makes zero external requests.
+  var themeBtn = document.getElementById('themeToggle');
+  var isLightTheme = function () { return document.documentElement.getAttribute('data-theme') === 'light'; };
+  var paintThemeImages = function () {
+    var light = isLightTheme();
+    document.querySelectorAll('img[data-light]').forEach(function (img) {
+      if (!img.getAttribute('data-dark')) img.setAttribute('data-dark', img.getAttribute('src'));
+      var wanted = light ? img.getAttribute('data-light') : img.getAttribute('data-dark');
+      if (img.getAttribute('src') !== wanted) img.setAttribute('src', wanted);
+    });
+    // The open dialog, if there is one. It is filled from the card that opened it, so it has to
+    // be repainted here too rather than only when it opens.
+    var sheetImage = document.getElementById('sheet-image');
+    if (sheetImage && sheetImage.getAttribute('data-dark')) {
+      var want = light && sheetImage.getAttribute('data-light') ? sheetImage.getAttribute('data-light') : sheetImage.getAttribute('data-dark');
+      if (sheetImage.getAttribute('src') !== want) sheetImage.setAttribute('src', want);
+    }
+  };
+  window.__paintThemeImages = paintThemeImages;
+  themeBtn.addEventListener('click', function () {
+    if (isLightTheme()) { document.documentElement.removeAttribute('data-theme'); }
+    else { document.documentElement.setAttribute('data-theme', 'light'); }
+    try { localStorage.setItem('samudra.theme', isLightTheme() ? 'light' : 'dark'); } catch (e) { /* private mode */ }
+    paintThemeImages();
+  });
+  paintThemeImages();
+
+  // custom cursor: a trailing dot + ring that leads the pointer, in keeping with the
+  // "no default chrome" editorial feel. Hidden until the first real movement, so a headless
+  // browser or a touch screen never sees it sitting mid-page; skipped on coarse pointers.
+  var hasFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  if (hasFinePointer) {
+    var dot = document.getElementById('cursorDot');
+    var ring = document.getElementById('cursorRing');
+    var armed = false;
+    var mouseX = 0, mouseY = 0, ringX = 0, ringY = 0;
+    window.addEventListener('mousemove', function (e) {
+      if (!armed) {
+        armed = true;
+        dot.style.opacity = '1';
+        ring.style.opacity = '0.5';
+      }
+      mouseX = e.clientX; mouseY = e.clientY;
+      dot.style.transform = 'translate(' + mouseX + 'px, ' + mouseY + 'px) translate(-50%,-50%)';
+    });
+    dot.style.opacity = '0';
+    ring.style.opacity = '0';
+    function ringLoop() {
+      ringX += (mouseX - ringX) * 0.18;
+      ringY += (mouseY - ringY) * 0.18;
+      ring.style.transform = 'translate(' + ringX + 'px, ' + ringY + 'px) translate(-50%,-50%)';
+      requestAnimationFrame(ringLoop);
+    }
+    ringLoop();
+
+    document.querySelectorAll('a, button').forEach(function (el) {
+      el.addEventListener('mouseenter', function () { ring.classList.add('hovering'); });
+      el.addEventListener('mouseleave', function () { ring.classList.remove('hovering'); });
+    });
+
+    // magnetic pull: the pill button leans toward the cursor within range, springs back on exit.
+    document.querySelectorAll('.pill-btn').forEach(function (btn) {
+      var label = btn.querySelector('.btn-label');
+      btn.addEventListener('mousemove', function (e) {
+        var r = btn.getBoundingClientRect();
+        var relX = e.clientX - (r.left + r.width / 2);
+        var relY = e.clientY - (r.top + r.height / 2);
+        btn.style.transform = 'translate(' + (relX * 0.28) + 'px, ' + (relY * 0.5) + 'px)';
+        if (label) label.style.transform = 'translate(' + (relX * 0.12) + 'px, ' + (relY * 0.22) + 'px)';
+      });
+      btn.addEventListener('mouseleave', function () {
+        btn.style.transform = 'translate(0,0)';
+        if (label) label.style.transform = 'translate(0,0)';
+      });
+    });
+  }
+</script>
 
 <script>
   /*
    * Every figure on this page, read from the bake it describes.
    *
-   * The landing page used to hard-code `INSTRUMENTS 237`, `ANALYSIS TO 30 Jul 2026` and four
-   * comparison statistics as literal text, while `provenance.html` and `requirements.html`
-   * both read the manifest live. So the one page a visitor sees first was the one page that
-   * could quietly go stale, and it had: the four statistics were from an August bake.
-   *
-   * Nothing here changes the layout if the fetch fails. A figure that cannot be read stays as
-   * an ellipsis rather than becoming a zero, because a zero reads as a measurement.
+   * The landing page used to hard-code the hero strip and a set of comparison statistics as
+   * literal text and quietly went stale against the bake. Nothing here changes the layout if
+   * a fetch fails: a figure that cannot be read stays an ellipsis rather than becoming a
+   * zero, because a zero reads as a measurement.
    */
   (function () {
     var DATA = "./data/";
@@ -1309,21 +1233,23 @@
         var steps = m.timesteps || [];
         var last = steps.length ? new Date(steps[steps.length - 1]) : null;
         if (last) {
-          set("m-latest", last.toLocaleDateString("en-GB", {
-            day: "numeric", month: "short", year: "numeric"
-          }));
+          var date = last.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+          set("m-latest", date);
+          set("m-latest2", date);
         }
         var kinds = m.instruments;
         set("m-instruments", String(kinds ? kinds.floats + kinds.moorings : m.floatCount));
-        // The Fields a visitor can actually select, counted rather than typed. An uploaded
-        // file's variables are not in the bake, so this is the built-in list.
+        set("m-floats", String(kinds ? kinds.floats : m.floatCount));
         if (m.fields) set("m-fields", String(m.fields.length));
         var volume = m.volume || {};
         if (volume.surfaceMetres != null && volume.floorMetres != null) {
-          set("m-depth", volume.surfaceMetres + "-" + volume.floorMetres + " m");
+          var range = volume.surfaceMetres + "-" + volume.floorMetres + " m";
+          set("m-depth", range);
+          set("m-depth2", range);
         }
+        if (volume.levelMetres) set("m-levels", String(volume.levelMetres.length));
         if (kinds && kinds.moorings) {
-          set("m-buoys-label", "Against " + kinds.moorings + " moored buoys, degC");
+          set("m-buoys-label", "Against " + kinds.moorings + " moored buoys, \u00b0C");
         }
       })
       .catch(function () {});
@@ -1332,231 +1258,91 @@
       .then(function (r) { return r.json(); })
       .then(function (all) {
         var block = all.fields && all.fields.temperature;
-        if (!block) return;
+        if (!block || !block.summary) return;
         set("m-compared", String(block.summary.count));
+        set("m-mean", fixed(block.summary.meanBias, 2));
+        set("m-rms", fixed(block.summary.rms, 2));
+        set("m-gap", fixed(block.summary.meanAbsBias, 2));
+        var buoys = block.byKind && block.byKind.mooring;
+        if (buoys) set("m-buoys", fixed(buoys.meanAbsBias, 2));
         var rms = (block.instruments || [])
           .map(function (row) { return row.rms; })
           .filter(function (v) { return typeof v === "number" && isFinite(v); })
           .sort(function (a, b) { return a - b; });
         if (rms.length) set("m-median", fixed(rms[Math.floor(rms.length / 2)], 2));
-        set("m-gap", fixed(block.summary.meanAbsBias, 2));
-        var buoys = block.byKind && block.byKind.mooring;
-        if (buoys) set("m-buoys", fixed(buoys.meanAbsBias, 2));
       })
       .catch(function () {});
   })();
-
-  /*
-   * Scroll behaviour, in three parts.
-   *
-   * Reveals: every section, card, stat and figure is tagged and shown once as it enters view.
-   * The observer unobserves on first reveal, so scrolling back up does not replay anything.
-   *
-   * Nav state: the link for the section currently filling the viewport is marked, and a hairline
-   * under the bar fills as the reader moves down the page.
-   *
-   * All of it is skipped when the reader has asked for reduced motion, and it degrades to
-   * "everything visible" if IntersectionObserver is missing.
-   */
-  (function () {
-    var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    var targets = document.querySelectorAll(
-      "section, .card, .stat, .step, figure.shot, .pull, .chip, .hero-stats > div"
-    );
-
-    if (!reduced && "IntersectionObserver" in window) {
-      targets.forEach(function (el) { el.classList.add("reveal"); });
-
-      // Stagger children within a group so a grid arrives as a sequence, not a slab.
-      document.querySelectorAll(".split, .stats, .gallery, .steps, .chips, .hero-stats").forEach(function (group) {
-        Array.prototype.forEach.call(group.children, function (child, i) {
-          child.style.setProperty("--delay", Math.min(i * 0.06, 0.4) + "s");
-        });
-      });
-
-      var reveal = new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) {
-          if (!entry.isIntersecting) return;
-          entry.target.classList.add("shown");
-          reveal.unobserve(entry.target);
-        });
-      }, { rootMargin: "0px 0px -10% 0px", threshold: 0.06 });
-
-      targets.forEach(function (el) { reveal.observe(el); });
-
-      var links = {};
-      document.querySelectorAll('.nav-links a[href^="#"]').forEach(function (a) {
-        links[a.getAttribute("href").slice(1)] = a;
-      });
-      var sections = Object.keys(links)
-        .map(function (id) { return document.getElementById(id); })
-        .filter(Boolean);
-
-      if (sections.length) {
-        var current = new IntersectionObserver(function (entries) {
-          entries.forEach(function (entry) {
-            var link = links[entry.target.id];
-            if (!link) return;
-            if (entry.isIntersecting) {
-              Object.keys(links).forEach(function (k) { links[k].classList.remove("current"); });
-              link.classList.add("current");
-            }
-          });
-        }, { rootMargin: "-45% 0px -50% 0px" });
-        sections.forEach(function (el) { current.observe(el); });
-      }
-    }
-
-    // The progress hairline. Cheap enough to run on scroll without a frame request.
-    var bar = document.getElementById("progress");
-    if (bar) {
-      var paint = function () {
-        var height = document.documentElement.scrollHeight - window.innerHeight;
-        var at = height > 0 ? window.scrollY / height : 0;
-        bar.style.width = Math.max(0, Math.min(1, at)) * 100 + "%";
-      };
-      window.addEventListener("scroll", paint, { passive: true });
-      window.addEventListener("resize", paint);
-      paint();
-    }
-  })();
-
-  /*
-   * The feature rail, and the dialog behind it.
-   *
-   * Fourteen features as a vertical list is a list nobody finishes, so they are a rail that
-   * snaps. The arrows page it by one card's width, read from the card itself rather than from a
-   * number typed here, so changing the card size cannot put the two out of step. Every card is a
-   * real <button>, so it is reachable by keyboard and announced as pressable, and one <dialog>
-   * serves all of them from data- attributes rather than fourteen hidden copies of the markup.
-   */
-  (function () {
-    var rail = document.getElementById("rail");
-    var prev = document.getElementById("rail-prev");
-    var next = document.getElementById("rail-next");
-    if (!rail || !prev || !next) return;
-
-    var step = function () {
-      var card = rail.querySelector(".feature");
-      return card ? card.getBoundingClientRect().width + 18 : 340;
-    };
-    var paint = function () {
-      var max = rail.scrollWidth - rail.clientWidth - 4;
-      prev.disabled = rail.scrollLeft <= 2;
-      next.disabled = rail.scrollLeft >= max;
-    };
-    prev.addEventListener("click", function () { rail.scrollBy({ left: -step(), behavior: "smooth" }); });
-    next.addEventListener("click", function () { rail.scrollBy({ left: step(), behavior: "smooth" }); });
-    rail.addEventListener("scroll", paint, { passive: true });
-    window.addEventListener("resize", paint);
-    paint();
-
-    // Arrow keys move the rail when it has focus, which is what a horizontal list should do.
-    rail.addEventListener("keydown", function (event) {
-      if (event.key === "ArrowRight") { rail.scrollBy({ left: step(), behavior: "smooth" }); event.preventDefault(); }
-      if (event.key === "ArrowLeft") { rail.scrollBy({ left: -step(), behavior: "smooth" }); event.preventDefault(); }
-    });
-
-    var sheet = document.getElementById("sheet");
-    if (!sheet || typeof sheet.showModal !== "function") return;
-    var image = document.getElementById("sheet-image");
-    var title = document.getElementById("sheet-title");
-    var text = document.getElementById("sheet-text");
-    var measure = document.getElementById("sheet-measure");
-    var link = document.getElementById("sheet-link");
-
-    rail.querySelectorAll(".feature").forEach(function (card) {
-      card.addEventListener("click", function () {
-        title.textContent = card.dataset.title || "";
-        text.textContent = card.dataset.body || "";
-        measure.textContent = card.dataset.measure || "";
-        measure.style.display = card.dataset.measure ? "" : "none";
-        // Both paths go on the element, and the theme decides which is shown. Without this the
-        // dialog opened on the dark copy while the page behind it was light.
-        image.dataset.dark = card.dataset.image || "";
-        if (card.dataset.imageLight) image.dataset.light = card.dataset.imageLight;
-        else delete image.dataset.light;
-        image.src = card.dataset.image || "";
-        image.alt = "";
-        if (window.__paintThemeImages) window.__paintThemeImages();
-        link.href = card.dataset.link || "./app.html";
-        sheet.showModal();
-      });
-    });
-
-    var close = function () { sheet.close(); };
-    document.getElementById("sheet-close").addEventListener("click", close);
-    document.getElementById("sheet-dismiss").addEventListener("click", close);
-    // Clicking the backdrop closes it, which is what everybody expects and what Escape already
-    // does for free on a <dialog>.
-    sheet.addEventListener("click", function (event) {
-      if (event.target === sheet) close();
-    });
-  })();
 </script>
 
+<!--
+  The feature rail, and the dialog behind it.
+  Fourteen features as a vertical list is a list nobody finishes, so they are a rail that snaps.
+  The arrows page it by one card's width, read from the card itself rather than from a number
+  typed here. Every card is a real <button>, so it is reachable by keyboard, and one <dialog>
+  serves all of them from data- attributes rather than fourteen hidden copies of the markup.
+-->
 <script>
-  /*
-   * The theme, and the pictures that go with it.
-   *
-   * The toggle swaps custom properties on <html>, which repaints every colour on the page. It
-   * could not repaint the *screenshots*, because an `<img src>` is not a CSS property - so a
-   * light page carried a dozen dark screenshots that read as holes in it. `<picture>` with a
-   * `prefers-color-scheme` media query would follow the operating system rather than this
-   * button, which is the wrong master: the choice here is the site's own and is shared with the
-   * platform through one localStorage key.
-   *
-   * So each picture that has a light twin carries the path to it in `data-light`, and this
-   * rewrites `src` on every toggle. A picture with no `data-light` never changes, and exactly
-   * two are meant not to: the **hero**, which is a dark band in both themes on purpose, and
-   * **kiosk mode**, which is a photograph of a dark screen where the darkness is the subject.
-   *
-   * Both sets ship in the build, so this still makes zero external requests. The light copies
-   * are only fetched if a reader actually switches.
-   */
-  (function () {
-    var button = document.getElementById("theme-toggle");
-    if (!button) return;
+(function () {
+  var rail = document.getElementById('rail');
+  var prev = document.getElementById('rail-prev');
+  var next = document.getElementById('rail-next');
+  if (!rail || !prev || !next) return;
 
-    var isLight = function () { return document.documentElement.dataset.theme === "light"; };
+  var step = function () {
+    var card = rail.querySelector('.feature');
+    return card ? card.getBoundingClientRect().width + 19 : 349;
+  };
+  var paint = function () {
+    var max = rail.scrollWidth - rail.clientWidth - 4;
+    prev.disabled = rail.scrollLeft <= 2;
+    next.disabled = rail.scrollLeft >= max;
+  };
+  prev.addEventListener('click', function () { rail.scrollBy({ left: -step(), behavior: 'smooth' }); });
+  next.addEventListener('click', function () { rail.scrollBy({ left: step(), behavior: 'smooth' }); });
+  rail.addEventListener('scroll', paint, { passive: true });
+  window.addEventListener('resize', paint);
+  paint();
 
-    /** Point every twinned picture at the copy for the theme now on screen. */
-    var paintImages = function () {
-      var light = isLight();
-      document.querySelectorAll("img[data-light]").forEach(function (img) {
-        if (!img.dataset.dark) img.dataset.dark = img.getAttribute("src");
-        var wanted = light ? img.dataset.light : img.dataset.dark;
-        if (img.getAttribute("src") !== wanted) img.setAttribute("src", wanted);
-      });
-      // The open dialog, if there is one. It is filled from the card that opened it, so it has
-      // to be repainted here too rather than only when it opens.
-      var sheetImage = document.getElementById("sheet-image");
-      if (sheetImage && sheetImage.dataset.dark) {
-        var want = light && sheetImage.dataset.light ? sheetImage.dataset.light : sheetImage.dataset.dark;
-        if (sheetImage.getAttribute("src") !== want) sheetImage.setAttribute("src", want);
-      }
-    };
+  rail.addEventListener('keydown', function (event) {
+    if (event.key === 'ArrowRight') { rail.scrollBy({ left: step(), behavior: 'smooth' }); event.preventDefault(); }
+    if (event.key === 'ArrowLeft') { rail.scrollBy({ left: -step(), behavior: 'smooth' }); event.preventDefault(); }
+  });
 
-    var paint = function () {
-      var light = isLight();
-      button.textContent = light ? "☾" : "☀";
-      button.setAttribute("aria-label", light ? "Switch to dark" : "Switch to light");
-      button.title = button.getAttribute("aria-label");
-      paintImages();
-    };
+  var sheet = document.getElementById('sheet');
+  if (!sheet || typeof sheet.showModal !== 'function') return;
+  var image = document.getElementById('sheet-image');
+  var title = document.getElementById('sheet-title');
+  var text = document.getElementById('sheet-text');
+  var measure = document.getElementById('sheet-measure');
+  var link = document.getElementById('sheet-link');
 
-    button.addEventListener("click", function () {
-      var next = isLight() ? "dark" : "light";
-      if (next === "light") document.documentElement.dataset.theme = "light";
-      else delete document.documentElement.dataset.theme;
-      try { localStorage.setItem("samudra.theme", next); } catch (e) { /* no memory, still applied */ }
-      paint();
+  rail.querySelectorAll('.feature').forEach(function (card) {
+    card.addEventListener('click', function () {
+      title.textContent = card.dataset.title || '';
+      text.textContent = card.dataset.body || '';
+      measure.textContent = card.dataset.measure || '';
+      measure.style.display = card.dataset.measure ? '' : 'none';
+      // Both paths go on the element, and the theme decides which is shown. Without this the
+      // dialog opened on the dark copy while the page behind it was light.
+      image.setAttribute('data-dark', card.dataset.image || '');
+      if (card.dataset.imageLight) image.setAttribute('data-light', card.dataset.imageLight);
+      else image.removeAttribute('data-light');
+      image.src = card.dataset.image || '';
+      image.alt = '';
+      if (window.__paintThemeImages) window.__paintThemeImages();
+      link.href = card.dataset.link || './app.html';
+      sheet.showModal();
     });
+  });
 
-    // Exposed so the dialog can repaint itself the moment it is filled.
-    window.__paintThemeImages = paintImages;
-    paint();
-  })();
+  var close = function () { sheet.close(); };
+  document.getElementById('sheet-close').addEventListener('click', close);
+  document.getElementById('sheet-dismiss').addEventListener('click', close);
+  sheet.addEventListener('click', function (event) {
+    if (event.target === sheet) close();
+  });
+})();
 </script>
 
 <!--
