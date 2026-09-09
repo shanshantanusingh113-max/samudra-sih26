@@ -11,6 +11,9 @@
 <link rel="stylesheet" href="./fonts.css">
 <script>
   // Shared with the platform: one key, so a choice made on either side holds on both.
+  // Dark is the default because the subject is an instrument console and the screenshots are
+  // dark; light is the parchment the redesign is built around, offered the moment it is stored
+  // or preferred.
   (function () {
     try {
       if (localStorage.getItem("samudra.theme") === "light") {
@@ -20,355 +23,271 @@
   })();
 </script>
 <style>
-  /* Same two themes as the landing page, painted explicitly. */
+  /*
+   * The landing page's design system, carried over to provenance. Near-monochrome canvas,
+   * two typefaces served from this build, dark default with a parchment light variant. Every
+   * component that reads a token re-themes automatically through the shared role tokens.
+   */
   :root {
-    --abyss: #04070d; --deep: #071420; --shelf: #0c1f2e; --panel: #102737;
-    --edge: rgba(120, 170, 195, 0.16); --edge-hot: rgba(120, 190, 210, 0.4);
-    --ink: #e4eef6; --body: #b3c8d8; --dim: #8299ad; --faint: #5d7488;
-    --cyan: #3fb8c4; --amber: #f5b841; --coral: #f2765f; --green: #5fd68a;
-    --d: "Chivo", "Helvetica Neue", Arial, sans-serif;
-    --m: "IBM Plex Mono", ui-monospace, Consolas, monospace;
-    --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --color-parchment: #0c0f11;    --color-parchment-rgb: 12,15,17;
+    --color-ink: #ececea;          --color-ink-rgb: 236,236,234;
+    --color-paper: #16191c;
+    --color-ash: #33383b;
+    --color-stone: #202426;
 
-    --nav-bg: rgba(7, 20, 32, 0.86);
-    --accent-wash: rgba(63, 184, 196, 0.12);
-    --accent-wash-strong: rgba(63, 184, 196, 0.24);
-    --accent-edge: rgba(63, 184, 196, 0.5);
-    --ghost-bg: rgba(16, 39, 55, 0.7);
-    --glow: rgba(63, 184, 196, 0.12);
-    --coral-wash: rgba(242, 118, 95, 0.1);
-    --coral-edge: rgba(242, 118, 95, 0.28);
-    --amber-wash: rgba(245, 184, 65, 0.07);
-    --good-edge: rgba(95, 214, 138, 0.45);
-    --cta-ink: #04222a;
-    --cyan-bright: #66d7e2;
+    --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+    --font: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
+    --text-caption: 11px;   --lh-caption: 1.4;  --ls-caption: 0.075em;
+    --text-body-sm: 15px;   --lh-body-sm: 1.4;  --ls-body-sm: 0.010em;
+    --text-body: 18px;      --lh-body: 1.4;     --ls-body: 0.013em;
+    --text-subheading: 34px;--lh-subheading: 1; --ls-subheading: 0.006em;
+    --text-heading-sm: 46px;--lh-heading-sm: 1; --ls-heading-sm: 0.002em;
+    --text-heading: 70px;   --lh-heading: 0.8;  --ls-heading: -0.010em;
+
+    --sp-5: 5px; --sp-6: 6px; --sp-8: 8px; --sp-15: 15px; --sp-19: 19px;
+    --sp-30: 30px; --sp-32: 32px; --sp-46: 46px; --sp-76: 76px; --sp-119: 119px;
+
+    --radius-links: 10px; --radius-inputs: 10px; --radius-buttons: 10px; --radius-cards: 0px;
+
+    --max-w: 1400px;
     color-scheme: dark;
   }
-  /*
-   * Light console. The same page, inverted: surfaces come up, ink goes down, and the accent
-   * darkens so cyan still holds its contrast against a pale ground. Choice is shared with the
-   * platform through one localStorage key, so switching in either place switches both.
-   */
+
   :root[data-theme="light"] {
-    --abyss: #ffffff;
-    --deep: #f4f9fa;
-    --shelf: #ffffff;
-    --panel: #eef5f7;
-    --edge: rgba(14, 60, 78, 0.16);
-    --edge-hot: rgba(14, 110, 130, 0.42);
-
-    --ink: #0d1b22;
-    --body: #2f4450;
-    --dim: #4f6773;
-    --faint: #6d838e;
-
-    --cyan: #00707d;
-    --amber: #8a5c00;
-    --coral: #b2371d;
-    --green: #1d7a45;
-
-    --nav-bg: rgba(255, 255, 255, 0.9);
-    --accent-wash: rgba(0, 112, 125, 0.08);
-    --accent-wash-strong: rgba(0, 112, 125, 0.16);
-    --accent-edge: rgba(0, 112, 125, 0.42);
-    --ghost-bg: rgba(238, 245, 247, 0.9);
-    --glow: rgba(0, 112, 125, 0.09);
-    --coral-wash: rgba(178, 55, 29, 0.08);
-    --coral-edge: rgba(178, 55, 29, 0.3);
-    --amber-wash: rgba(138, 92, 0, 0.08);
-    --good-edge: rgba(29, 122, 69, 0.5);
-    --cta-ink: #ffffff;
-    --cyan-bright: #00889a;
-
+    --color-parchment: #e5e4e0;    --color-parchment-rgb: 229,228,224;
+    --color-ink: #1d1d1d;          --color-ink-rgb: 29,29,29;
+    --color-paper: #ffffff;
+    --color-ash: #bfbebe;
+    --color-stone: #cdcdc9;
     color-scheme: light;
   }
 
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--deep); color: var(--body); font-family: var(--d); font-size: 16px; line-height: 1.65; -webkit-font-smoothing: antialiased; }
-  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 28px; }
-  a { color: var(--cyan); text-underline-offset: 3px; }
-  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
-  h1, h2 { font-family: var(--d); color: var(--ink); margin: 0; text-wrap: balance; }
-
-  .eyebrow { display: flex; align-items: center; gap: 12px; font-family: var(--m); font-size: 10.5px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--cyan); margin-bottom: 16px; }
-  .eyebrow::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--edge-hot), transparent); }
-
-  /* ------------------------------------------------------------- motion */
-
-  /*
-   * Scroll motion, kept honest.
-   *
-   * Everything here is a fade and a short rise. Nothing slides in from off-screen, nothing
-   * bounces, and nothing moves after it has arrived - a page about measurement should not
-   * fidget. Elements are revealed by an IntersectionObserver rather than on a timer, so the
-   * animation is tied to the reader rather than to the clock, and every rule is disabled
-   * wholesale under prefers-reduced-motion.
-   */
-  .reveal {
-    opacity: 0;
-    transform: translateY(18px);
-    transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
-    transition-delay: var(--delay, 0s);
-    will-change: opacity, transform;
-  }
-  .reveal.shown { opacity: 1; transform: none; }
-
-  /* A card lifts a little as it arrives, then settles and stays put. */
-  .card.reveal { transform: translateY(22px) scale(0.985); }
-  .card.reveal.shown { transform: none; }
-
-  .card {
-    transition: border-color 0.22s ease, transform 0.22s var(--ease), box-shadow 0.22s ease;
-  }
-  .card:hover {
-    border-color: var(--edge-hot);
-    transform: translateY(-3px);
-    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.18);
-  }
-
-  .stat { transition: background 0.22s ease; }
-  .stat:hover { background: var(--panel); }
-
-  /*
-   * The one piece of ambient motion: a slow swell behind the hero.
-   *
-   * Two very large, very soft radial gradients drifting against each other at different speeds.
-   * It reads as water without being a literal wave, it costs one compositor layer, and it is the
-   * only thing on the page that moves on its own.
-   */
-  @keyframes swell-a {
-    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-    50%      { transform: translate3d(3%, -2%, 0) scale(1.06); }
-  }
-  @keyframes swell-b {
-    0%, 100% { transform: translate3d(0, 0, 0) scale(1.04); }
-    50%      { transform: translate3d(-4%, 3%, 0) scale(1); }
-  }
-
-  .swell { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
-  .swell::before, .swell::after { content: ""; position: absolute; border-radius: 50%; }
-  .swell::before {
-    inset: -40% 30% 20% -25%;
-    background: radial-gradient(closest-side, var(--glow), transparent 70%);
-    animation: swell-a 26s ease-in-out infinite;
-  }
-  .swell::after {
-    inset: -25% -20% 30% 40%;
-    background: radial-gradient(closest-side, var(--amber-wash), transparent 72%);
-    animation: swell-b 34s ease-in-out infinite;
-  }
-
-  /* A hairline that draws itself across the top of each section as it comes into view. */
-  section { position: relative; }
-  section::before {
-    content: ""; position: absolute; top: -1px; left: 0; height: 1px; width: 0;
-    background: linear-gradient(90deg, var(--edge-hot), transparent);
-    transition: width 1.1s var(--ease);
-  }
-  section.shown::before { width: min(320px, 40%); }
-
-  /* Screenshots settle into place and lift very slightly under the cursor. */
-  .shot { transition: transform 0.3s var(--ease), box-shadow 0.3s ease, border-color 0.3s ease; }
-  .shot:hover { transform: translateY(-4px); border-color: var(--edge-hot); box-shadow: 0 18px 44px rgba(0, 0, 0, 0.22); }
-
+  html { scroll-behavior: smooth; }
   @media (prefers-reduced-motion: reduce) {
-    .reveal, .card.reveal { opacity: 1; transform: none; transition: none; }
-    .swell::before, .swell::after { animation: none; }
-    section::before { transition: none; width: min(320px, 40%); }
-    .card:hover, .shot:hover { transform: none; }
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   }
 
-  /* ------------------------------------------------------------- nav */
-
-  nav {
-    position: sticky; top: 0; z-index: 10;
-    background: var(--nav-bg);
-    backdrop-filter: blur(14px);
-    border-bottom: 1px solid var(--edge);
-  }
-  nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 66px; gap: 24px; }
-  .brand { font-family: var(--m); font-size: 15px; font-weight: 600; letter-spacing: 0.15em; color: var(--ink); text-decoration: none; }
-  .brand i { color: var(--cyan); font-style: normal; }
-  .nav-links { display: flex; align-items: center; gap: 4px; }
-
-  /* Nav items get real hit targets and an accent rule that grows from the centre, so the
-     current section is legible without the link changing size and shifting its neighbours. */
-  .nav-links a:not(.cta) {
-    position: relative;
-    padding: 8px 12px; border-radius: 6px;
-    font-size: 13.5px; color: var(--dim); text-decoration: none;
-    transition: color 0.16s ease, background 0.16s ease;
-  }
-  .nav-links a:not(.cta)::after {
-    content: ""; position: absolute; left: 50%; right: 50%; bottom: 3px; height: 1.5px;
-    background: var(--cyan); border-radius: 1px;
-    transition: left 0.22s var(--ease), right 0.22s var(--ease);
-  }
-  .nav-links a:not(.cta):hover { color: var(--ink); background: var(--accent-wash); }
-  .nav-links a:not(.cta):hover::after,
-  .nav-links a.current::after { left: 12px; right: 12px; }
-  .nav-links a.current { color: var(--ink); }
-  .nav-sep { width: 1px; height: 22px; background: var(--edge); margin: 0 8px; }
-
-  /*
-   * Buttons.
-   *
-   * The previous pair were a soft gradient wash inside a rounded rectangle, which is the shape
-   * every template ships and says nothing about what this is. These are instrument controls: a
-   * solid accent fill that commits to being the primary action, a tighter radius, and the arrow
-   * moving on hover rather than the whole button lifting.
-   */
-  .cta {
-    position: relative;
-    display: inline-flex; align-items: center; gap: 10px;
-    padding: 12px 20px; border-radius: 7px;
-    border: 1px solid transparent;
-    background: var(--cyan);
-    color: var(--cta-ink);
-    font-family: var(--d); font-size: 14px; font-weight: 700;
-    letter-spacing: -0.005em; text-decoration: none; white-space: nowrap;
-    transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
-  }
-  .cta::after {
-    content: "→"; font-size: 15px; line-height: 1;
-    transition: transform 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
-  }
-  .cta:hover { background: var(--cyan-bright); box-shadow: 0 6px 20px var(--accent-wash-strong); }
-  .cta:hover::after { transform: translateX(4px); }
-  .cta:active { transform: translateY(1px); }
-
-  .cta.big { padding: 16px 28px; font-size: 16px; border-radius: 8px; }
-
-  /* Secondary: an outline that fills on hover, so the hierarchy is never ambiguous. */
-  .cta.ghost {
-    background: transparent; border-color: var(--edge-hot); color: var(--ink);
-    font-weight: 500;
-  }
-  .cta.ghost::after { content: none; }
-  .cta.ghost:hover { background: var(--accent-wash); border-color: var(--cyan); box-shadow: none; }
-
-  /* A quiet third level: reads as a link, behaves as a button. */
-  .cta.plain {
-    background: transparent; border-color: transparent; color: var(--cyan);
-    padding-left: 4px; padding-right: 4px; font-weight: 500;
-  }
-  .cta.plain:hover { background: transparent; box-shadow: none; color: var(--ink); }
-
-
-  nav { position: sticky; top: 0; z-index: 10; background: var(--nav-bg); backdrop-filter: blur(14px); border-bottom: 1px solid var(--edge); }
-  nav .wrap { max-width: 1140px; }
-  .brand { font-family: var(--m); font-size: 15px; font-weight: 600; letter-spacing: 0.15em; color: var(--ink); text-decoration: none; }
-  .brand i { color: var(--cyan); font-style: normal; }
-
-  header.head { padding: 70px 0 40px; }
-  h1 { font-size: clamp(34px, 4.6vw, 52px); font-weight: 900; line-height: 1.02; letter-spacing: -0.03em; }
-  .lede { margin: 20px 0 0; font-size: 18px; line-height: 1.55; color: var(--ink); max-width: 60ch; }
-  .sub { margin: 12px 0 0; font-size: 14.5px; color: var(--dim); max-width: 62ch; }
-
-  section { padding: 34px 0; border-top: 1px solid var(--edge); }
-  h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.015em; }
-  p { margin: 10px 0 14px; }
-
-  /* A live figure: the number comes from the manifest, never from this file. */
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 12px; margin-top: 22px; }
-  .fact { border: 1px solid var(--edge); border-radius: 10px; background: var(--shelf); padding: 15px 17px; }
-  .fact dt { font-family: var(--m); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint); margin-bottom: 7px; }
-  .fact dd { margin: 0; font-family: var(--m); font-size: 15px; color: var(--ink); line-height: 1.4; word-break: break-word; }
-  .fact dd small { display: block; font-family: var(--d); font-size: 12.5px; color: var(--dim); margin-top: 5px; letter-spacing: 0; text-transform: none; }
-
-  table { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 14px; }
-  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--edge); vertical-align: top; }
-  th { font-family: var(--m); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint); font-weight: 500; }
-  td { color: var(--body); }
-  td.mono { font-family: var(--m); font-size: 13px; color: var(--ink); }
-  .scroll { overflow-x: auto; }
-
-  pre { margin: 16px 0 0; padding: 16px 18px; border: 1px solid var(--edge); border-radius: 10px; background: var(--abyss); overflow-x: auto; font-family: var(--m); font-size: 12.5px; line-height: 1.7; color: var(--ink); white-space: pre; }
-  code { font-family: var(--m); font-size: 0.92em; color: var(--ink); }
-
-  .tag { display: inline-block; font-family: var(--m); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--edge); color: var(--dim); vertical-align: middle; }
-  .tag.live { border-color: var(--good-edge); color: var(--green); }
-  .sub-head { font-family: var(--d); font-size: 15px; font-weight: 700; color: var(--ink); margin: 28px 0 0; }
-  .sub-head + .sub { margin-top: 6px; }
-  td.num { font-family: var(--m); font-size: 13px; text-align: right; }
-  table caption { caption-side: top; text-align: left; font-family: var(--m); font-size: 10.5px;
-    letter-spacing: 0.08em; color: var(--faint); padding: 0 0 8px; }
-  td.neg { color: var(--coral); }
-  td.pos { color: var(--cyan); }
-  .note { font-size: 14px; color: var(--dim); border-left: 2px solid var(--edge-hot); padding-left: 14px; margin-top: 18px; }
-  .err { color: var(--coral); font-family: var(--m); font-size: 13.5px; }
-  footer { padding: 40px 0 60px; border-top: 1px solid var(--edge); font-size: 13px; color: var(--faint); }
-  footer a { color: var(--dim); }
-  @media (max-width: 640px) { .nav-links a:not(.cta) { display: none; } }
-
-  /*
-   * Under 600 px even the compact nav is 85 px too wide: brand, toggle and the "Launch the
-   * platform" pill plus the 28 px gutters cannot share a 320-390 px phone. The pill keeps just
-   * "Launch" (its arrow already says go), the gutters drop to the landing's 16 px, and the gap
-   * tightens. The result fits a 320 px screen with room to spare and lands the page links on
-   * the footer rather than off the edge - same trade the landing page makes.
-   */
-  @media (max-width: 600px) {
-    nav .wrap { gap: 8px; }
-    .wrap { padding: 0 16px; }
-    .brand { letter-spacing: 0.11em; }
-    .cta { padding: 10px 13px; gap: 8px; }
-    .cta .cta-t { display: none; }
-    #theme-toggle { width: 30px; height: 30px; }
-  }
-  @media (max-width: 380px) {
-    .brand { font-size: 13px; }
+  body, nav, .pill-btn, .ghost-link {
+    transition: background-color 0.5s ease, border-color 0.5s ease, color 0.5s ease;
   }
 
+  body {
+    margin: 0;
+    background: var(--color-parchment);
+    color: var(--color-ink);
+    font-family: var(--font);
+    font-size: var(--text-body);
+    line-height: var(--lh-body);
+    letter-spacing: var(--ls-body);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 46px; position: relative; }
+  @media (max-width: 720px) { .wrap { padding: 0 22px; } }
+
+  h1, h2, h3 { font-family: var(--font-display); color: var(--color-ink); margin: 0; font-weight: 400; }
+  p { margin: 0; }
+  a { color: inherit; text-decoration: none; }
+
+  /* Sections anchor underneath the fixed nav, so a heading is never hidden behind it. */
+  section[id] { scroll-margin-top: 104px; }
+
+  /* ---------------------------------------------------------- reveal-on-scroll */
+  .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.9s cubic-bezier(.16,1,.3,1), transform 0.9s cubic-bezier(.16,1,.3,1); }
+  .reveal.in-view { opacity: 1; transform: translateY(0); }
+  .reveal-1 { transition-delay: 0.06s; }
+  .reveal-2 { transition-delay: 0.14s; }
+  .reveal-3 { transition-delay: 0.22s; }
+
+  /* ---------------------------------------------------------- section label */
+  .section-label {
+    font-family: var(--font-display);
+    font-size: var(--text-caption); font-weight: 400; text-transform: uppercase;
+    letter-spacing: var(--ls-caption); color: var(--color-ink);
+    display: flex; align-items: center; gap: var(--sp-15);
+    margin-bottom: var(--sp-30);
+  }
+  .section-label::after { content: ""; flex: 1; height: 1px; background: var(--color-ash); }
+
+  /* ---------------------------------------------------------- pill button (the one state-change button) */
+  .pill-btn {
+    font-family: var(--font-display);
+    display: inline-flex; align-items: center; gap: var(--sp-8);
+    border: 1px solid var(--color-ink); border-radius: var(--radius-buttons);
+    padding: var(--sp-15) var(--sp-30);
+    font-size: var(--text-body-sm); text-transform: uppercase; letter-spacing: var(--ls-caption);
+    color: var(--color-ink); background: transparent;
+    transition: background 0.35s cubic-bezier(.16,1,.3,1), color 0.35s cubic-bezier(.16,1,.3,1);
+  }
+  .pill-btn .arrow { transition: transform 0.3s ease; }
+  .pill-btn:hover { background: var(--color-ink); color: var(--color-parchment); }
+  .pill-btn:hover .arrow { transform: translateX(4px); }
+
+  /* ---------------------------------------------------------- nav */
+  nav#nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 40;
+    padding: var(--sp-19) 0;
+    background: rgba(var(--color-parchment-rgb), 0);
+    border-bottom: 1px solid rgba(191,190,190,0);
+    backdrop-filter: blur(0px);
+    transition: background 0.4s ease, border-color 0.4s ease, backdrop-filter 0.4s ease, padding 0.4s ease;
+  }
+  nav#nav.scrolled {
+    background: rgba(var(--color-parchment-rgb), 0.88);
+    border-bottom: 1px solid var(--color-ash);
+    backdrop-filter: blur(10px);
+    padding: var(--sp-15) 0;
+  }
+  nav#nav .wrap { display: flex; align-items: center; justify-content: space-between; }
+  .brand { font-family: var(--font-display); font-size: var(--text-body-sm); font-weight: 700; letter-spacing: var(--ls-caption); text-transform: uppercase; }
+  .brand i { font-style: normal; color: var(--color-ink); opacity: 0.55; }
+  .nav-links { display: flex; align-items: center; gap: var(--sp-32); }
+  .nav-links a:not(.pill-btn) { font-family: var(--font-display); font-size: var(--text-caption); text-transform: uppercase; letter-spacing: var(--ls-caption); opacity: 0.72; transition: opacity 0.25s ease; }
+  .nav-links a:not(.pill-btn):hover { opacity: 1; }
+  .nav-links a:not(.pill-btn).current { opacity: 1; }
+  .nav-links .pill-btn { padding: var(--sp-8) var(--sp-19); font-size: 11px; }
+  @media (max-width: 860px) { .nav-links a:not(.pill-btn) { display: none; } }
+
+  /* theme toggle: a ghost circle button holding a sun and moon glyph, crossfaded. */
   .theme-toggle {
+    position: relative; width: 34px; height: 34px; flex: none;
+    border: 1px solid var(--color-ink); border-radius: 50%; background: transparent;
     display: inline-flex; align-items: center; justify-content: center;
-    width: 34px; height: 34px; padding: 0;
-    border: 1px solid var(--edge); border-radius: 50%;
-    background: var(--ghost-bg); color: var(--dim);
-    font-size: 14px; line-height: 1; cursor: pointer;
-    transition: color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+    transition: background 0.35s cubic-bezier(.16,1,.3,1), transform 0.4s cubic-bezier(.16,1,.3,1);
+    padding: 0;
   }
-  .theme-toggle:hover { color: var(--cyan); border-color: var(--edge-hot); transform: translateY(-1px); }
+  .theme-toggle:hover { background: rgba(var(--color-ink-rgb), 0.08); transform: rotate(-14deg); }
+  .theme-toggle svg { position: absolute; width: 16px; height: 16px; color: var(--color-ink); transition: opacity 0.35s ease, transform 0.5s cubic-bezier(.16,1,.3,1); }
+  .theme-toggle .icon-sun { opacity: 0; transform: rotate(-90deg) scale(0.6); }
+  .theme-toggle .icon-moon { opacity: 1; transform: rotate(0deg) scale(1); }
+  :root[data-theme="light"] .theme-toggle .icon-sun { opacity: 1; transform: rotate(0deg) scale(1); }
+  :root[data-theme="light"] .theme-toggle .icon-moon { opacity: 0; transform: rotate(90deg) scale(0.6); }
+
+  /* ---------------------------------------------------------- page header */
+  header.head { padding: 168px 0 var(--sp-46); }
+  header.head h1 {
+    font-size: clamp(34px, 4.6vw, 52px); font-weight: 400; line-height: 1.02;
+    letter-spacing: -0.03em; max-width: 18ch;
+  }
+  header.head .lede { margin-top: var(--sp-19); font-size: var(--text-body); line-height: var(--lh-body); max-width: 60ch; }
+  header.head .sub { margin-top: var(--sp-8); font-size: var(--text-body-sm); color: var(--color-stone); max-width: 62ch; }
+
+  /* ---------------------------------------------------------- sections */
+  section { padding: var(--sp-46) 0; border-top: 1px solid var(--color-ash); position: relative; }
+  section h2 { font-size: clamp(22px, 3vw, 28px); font-weight: 400; line-height: 1.1; margin-bottom: var(--sp-15); }
+  section p { margin-top: var(--sp-15); max-width: 62ch; }
+
+  /* ---------------------------------------------------------- fact grid: the live figures */
+  /* The 1px seams between the white cells are the cells' own outlines, drawn by `box-shadow`,
+     and the container is parchment. A grid container backed by `var(--color-ash)` showed as a
+     solid grey slab wherever its cells did not cover it - a full-width, unpopulated grid reads
+     as parchment now, never as a block of ash. The outer border is the grid's own. */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 1px; margin-top: var(--sp-30); padding: 1px; background: var(--color-parchment); border: 1px solid var(--color-ash); }
+  .fact { background: var(--color-paper); box-shadow: 0 0 0 1px var(--color-ash); padding: var(--sp-19); }
+  .fact dt { font-family: var(--font-display); font-size: var(--text-caption); letter-spacing: var(--ls-caption); text-transform: uppercase; color: var(--color-stone); margin-bottom: var(--sp-8); }
+  .fact dd { margin: 0; font-size: var(--text-subheading); font-weight: 400; color: var(--color-ink); line-height: 1.2; word-break: break-word; }
+  .fact dd small { display: block; font-family: var(--font); font-size: var(--text-body-sm); color: var(--color-stone); margin-top: var(--sp-8); letter-spacing: 0; text-transform: none; font-weight: 400; }
+
+  /* ---------------------------------------------------------- tables */
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; margin-top: var(--sp-19); font-size: var(--text-body-sm); }
+  th, td { text-align: left; padding: var(--sp-8) var(--sp-15); border-bottom: 1px solid var(--color-ash); vertical-align: top; }
+  th { font-family: var(--font-display); font-size: var(--text-caption); letter-spacing: var(--ls-caption); text-transform: uppercase; color: var(--color-stone); font-weight: 400; }
+  td { color: var(--color-ink); }
+  td.mono { font-family: var(--font-display); font-size: var(--text-body-sm); }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table caption { caption-side: top; text-align: left; font-size: var(--text-caption); letter-spacing: var(--ls-caption); color: var(--color-stone); padding: 0 0 var(--sp-8); }
+  td.neg { color: var(--color-ink); opacity: 0.65; }
+  td.pos { color: var(--color-ink); }
+
+  /* ---------------------------------------------------------- code and pre */
+  pre { margin: var(--sp-19) 0 0; padding: var(--sp-19); border: 1px solid var(--color-ash); background: var(--color-paper); overflow-x: auto; font-family: var(--font); font-size: var(--text-body-sm); line-height: 1.7; color: var(--color-ink); white-space: pre; }
+  code { font-family: var(--font); font-size: 0.92em; }
+
+  /* ---------------------------------------------------------- tags */
+  .tag { display: inline-block; font-family: var(--font-display); font-size: var(--text-caption); letter-spacing: var(--ls-caption); text-transform: uppercase; padding: var(--sp-6) var(--sp-8); border: 1px solid var(--color-ash); color: var(--color-stone); vertical-align: middle; }
+  .tag.live { border-color: var(--color-ink); color: var(--color-ink); }
+
+  /* ---------------------------------------------------------- subheadings and notes */
+  .sub-head { font-size: var(--text-body); font-weight: 700; color: var(--color-ink); margin: var(--sp-30) 0 0; }
+  .sub-head + .sub { margin-top: var(--sp-6); }
+  .sub { margin-top: var(--sp-8); font-size: var(--text-body-sm); color: var(--color-stone); max-width: 62ch; }
+  .note { font-size: var(--text-body-sm); color: var(--color-stone); border-left: 1px solid var(--color-ash); padding-left: var(--sp-19); margin-top: var(--sp-19); max-width: 62ch; }
+  .err { color: var(--color-ink); font-family: var(--font); font-size: var(--text-body-sm); opacity: 0.65; }
+
+  /* ---------------------------------------------------------- footer */
+  footer { border-top: 1px solid var(--color-ash); padding: var(--sp-46) 0 var(--sp-76); }
+  footer p { font-size: var(--text-caption); line-height: 1.8; opacity: 0.55; max-width: 80ch; }
+  footer a { text-decoration: underline; text-underline-offset: 3px; opacity: 0.85; }
+
+  /* ---------------------------------------------------------- scroll cue */
+  .scroll-cue {
+    position: fixed; right: 30px; bottom: 30px; z-index: 30;
+    font-size: var(--text-caption); text-transform: uppercase; letter-spacing: var(--ls-caption);
+    display: flex; align-items: center; gap: var(--sp-8);
+    transition: opacity 0.4s ease; pointer-events: none;
+  }
+  .scroll-cue .down { animation: bob 1.8s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
+  .scroll-cue.hidden { opacity: 0; }
+
+  /* ---------------------------------------------------------- custom cursor */
+  .cursor-ring, .cursor-dot {
+    position: fixed; top: 0; left: 0; pointer-events: none; z-index: 9999;
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.4s ease, transform 0.15s linear;
+  }
+  .cursor-dot { width: 6px; height: 6px; background: var(--color-ink); }
+  .cursor-ring { width: 40px; height: 40px; border: 1px solid var(--color-ink); transition: opacity 0.4s ease, width 0.25s ease, height 0.25s ease, background 0.25s ease, transform 0.15s linear; }
+  .cursor-ring.hovering { width: 58px; height: 58px; background: rgba(var(--color-ink-rgb), 0.08); }
 </style>
 </head>
 <body>
 
-<nav>
+<nav id="nav">
   <div class="wrap">
-    <a class="brand" href="./index.html">SAMUDRA<i>&middot;3D</i></a>
+    <a class="brand" href="./index.html">SAMUDRA<i>&nbsp;&middot;&nbsp;3D</i></a>
     <div class="nav-links">
       <a href="./index.html">Overview</a>
+      <a href="./provenance.html" class="current">Provenance</a>
       <a href="./requirements.html">Requirements</a>
-      <button class="theme-toggle" id="theme-toggle" type="button">☀</button>
-      <a class="cta" href="./app.html">Launch<span class="cta-t"> the platform</span></a>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch between light and dark theme" title="Switch theme">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.4 4.4l1.7 1.7M17.9 17.9l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.4 19.6l1.7-1.7M17.9 6.1l1.7-1.7"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20 14.2A8.5 8.5 0 1 1 9.8 4a7 7 0 0 0 10.2 10.2z"/></svg>
+      </button>
+      <a class="pill-btn" href="./app.html"><span class="btn-label">Launch <span class="arrow">&rarr;</span></span></a>
     </div>
   </div>
 </nav>
 
 <div class="wrap">
 
-  <header class="head">
-    <p class="eyebrow">Data provenance</p>
-    <h1>This is INCOIS's data.<br>Not a simulation.</h1>
-    <p class="lede">
+  <header class="head" id="top">
+    <div class="section-label reveal">Data provenance</div>
+    <h1 class="reveal reveal-1">This is INCOIS's data.<br>Not a simulation.</h1>
+    <p class="lede reveal reveal-2">
       Every figure below is read out of the build's own manifest when this page loads. Nothing
       here is typed by hand, so it cannot drift away from what the platform is actually serving.
     </p>
-    <p class="sub">
+    <p class="sub reveal reveal-3">
       The sources are public endpoints. The request we issue is printed in full, so you can fetch
       the same bytes yourself and check them against what the platform draws.
     </p>
   </header>
 
-  <section>
+  <section class="reveal">
     <h2>What the build contains <span class="tag live" id="live-tag">read live</span></h2>
     <p>Written by <code>python -m samudra.bake</code>, which fetched it from the endpoints below.</p>
     <dl class="grid" id="facts"></dl>
     <p class="err" id="error" hidden></p>
   </section>
 
-  <section>
+  <section class="reveal">
     <h2>The model field</h2>
     <div class="scroll"><table id="model"></table></div>
     <p class="note">
@@ -379,7 +298,7 @@
     </p>
   </section>
 
-  <section>
+  <section class="reveal">
     <h2>Fetch it yourself</h2>
     <p>
       This is the request the pipeline issues for the most recent analysis step in this build,
@@ -394,7 +313,7 @@
     </p>
   </section>
 
-  <section>
+  <section class="reveal">
     <h2>The sources</h2>
     <div class="scroll"><table id="obs"></table></div>
     <p class="note">
@@ -406,7 +325,7 @@
   </section>
 
 
-  <section>
+  <section class="reveal">
     <h2>What the raw data looks like</h2>
     <p>
       Two providers, two formats, two conventions. Neither was designed for us, and neither is
@@ -472,7 +391,7 @@ variables:
     <div class="scroll"><table id="sample-cast"></table></div>
   </section>
 
-  <section>
+  <section class="reveal">
     <h2>What the pipeline does to it</h2>
     <p>
       Five stages between the provider and the screen. Every number in this table is the shape
@@ -488,7 +407,7 @@ variables:
     </p>
   </section>
 
-  <section>
+  <section class="reveal">
     <h2>How it is tested</h2>
     <p>
       <b id="test-count">&hellip;</b> automated tests, all on the scientific logic. Not on glue,
@@ -508,7 +427,7 @@ python -m pytest -q
     </p>
   </section>
 
-  <section>
+  <section class="reveal">
     <h2>Reproduce the whole build</h2>
     <pre>cd pipeline
 python -m samudra.bake</pre>
@@ -528,6 +447,69 @@ python -m samudra.bake</pre>
   </footer>
 
 </div>
+
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<div class="scroll-cue" id="scrollCue"><span>Scroll</span><span class="down">&darr;</span></div>
+
+<script>
+  // nav shrink/blur on scroll
+  var nav = document.getElementById('nav');
+  var cue = document.getElementById('scrollCue');
+  window.addEventListener('scroll', function () {
+    var y = window.scrollY;
+    nav.classList.toggle('scrolled', y > 40);
+    cue.classList.toggle('hidden', y > 120);
+  }, { passive: true });
+
+  // scroll reveal
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in-view'); io.unobserve(e.target); } });
+  }, { threshold: 0.15, rootMargin: '0px 0px -60px 0px' });
+  document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+
+  // custom cursor: a trailing dot + ring that leads the pointer.
+  var hasFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  if (hasFinePointer) {
+    var dot = document.getElementById('cursorDot');
+    var ring = document.getElementById('cursorRing');
+    var armed = false;
+    var mouseX = 0, mouseY = 0, ringX = 0, ringY = 0;
+    window.addEventListener('mousemove', function (e) {
+      if (!armed) {
+        armed = true;
+        dot.style.opacity = '1';
+        ring.style.opacity = '0.5';
+      }
+      mouseX = e.clientX; mouseY = e.clientY;
+      dot.style.transform = 'translate(' + mouseX + 'px, ' + mouseY + 'px) translate(-50%,-50%)';
+    });
+    dot.style.opacity = '0';
+    ring.style.opacity = '0';
+    function ringLoop() {
+      ringX += (mouseX - ringX) * 0.18;
+      ringY += (mouseY - ringY) * 0.18;
+      ring.style.transform = 'translate(' + ringX + 'px, ' + ringY + 'px) translate(-50%,-50%)';
+      requestAnimationFrame(ringLoop);
+    }
+    ringLoop();
+
+    document.querySelectorAll('a, button').forEach(function (el) {
+      el.addEventListener('mouseenter', function () { ring.classList.add('hovering'); });
+      el.addEventListener('mouseleave', function () { ring.classList.remove('hovering'); });
+    });
+  }
+
+  // theme toggle: light is recorded as data-theme=light against a dark default, one shared key.
+  var themeBtn = document.getElementById('themeToggle');
+  var isLightTheme = function () { return document.documentElement.getAttribute('data-theme') === 'light'; };
+  themeBtn.addEventListener('click', function () {
+    if (isLightTheme()) { document.documentElement.removeAttribute('data-theme'); }
+    else { document.documentElement.setAttribute('data-theme', 'light'); }
+    try { localStorage.setItem('samudra.theme', isLightTheme() ? 'light' : 'dark'); } catch (e) { /* private mode */ }
+  });
+</script>
 
 <script>
 // Everything on this page comes from the same files the application loads. If the numbers here
@@ -588,7 +570,7 @@ python -m samudra.bake</pre>
   var collocations = {};
 
   function degrees(value, positive, negative) {
-    return Math.abs(value).toFixed(1) + "°" + (value >= 0 ? positive : negative);
+    return Math.abs(value).toFixed(1) + "\u00b0" + (value >= 0 ? positive : negative);
   }
 
   Promise.all([
@@ -600,6 +582,7 @@ python -m samudra.bake</pre>
     var floats = loaded[1];
     collocations = loaded[2];
     var volume = manifest.volume;
+    var region = manifest.region;
     var steps = manifest.timesteps;
 
     // Cadence is measured off the time axis rather than assumed.
@@ -649,14 +632,14 @@ python -m samudra.bake</pre>
     ));
     facts.appendChild(fact(
       "Region",
-      degrees(volume.south, "N", "S") + " to " + degrees(volume.north, "N", "S") + ", " +
-        degrees(volume.west, "E", "W") + " to " + degrees(volume.east, "E", "W"),
+      degrees(region.south, "N", "S") + " to " + degrees(region.north, "N", "S") + ", " +
+        degrees(region.west, "E", "W") + " to " + degrees(region.east, "E", "W"),
       "Arabian Sea, Bay of Bengal and the equatorial Indian Ocean"
     ));
     facts.appendChild(fact(
       "Grid",
       volume.width + " x " + volume.height + " nodes",
-      cellSize.toFixed(2) + "° per cell, the provider's own resolution, never upsampled"
+      cellSize.toFixed(2) + "\u00b0 per cell, the provider's own resolution, never upsampled"
     ));
     facts.appendChild(fact(
       "Water column",
@@ -687,7 +670,7 @@ python -m samudra.bake</pre>
       facts.appendChild(fact(
         "Current vectors",
         flow.files.length + " x " + flow.levels + " levels",
-        "Copernicus Marine's own analysis at 1/12°, landed on this grid as float32 eastward and " +
+        "Copernicus Marine's own analysis at 1/12\u00b0, landed on this grid as float32 eastward and " +
           "northward velocity. Numbers, not a picture: the speed under the cursor is read from them"
       ));
     }
@@ -722,7 +705,6 @@ python -m samudra.bake</pre>
     // names the step this build actually holds.
     var last = steps[steps.length - 1];
     var stamp = new Date(last).toISOString().slice(0, 19) + "Z";
-    var region = manifest.region;
     var selector =
       "TEMP%5B(" + stamp + "):(" + stamp + ")%5D" +
       "%5B(" + volume.surfaceMetres + "):(" + volume.floorMetres + ")%5D" +
@@ -770,12 +752,12 @@ python -m samudra.bake</pre>
         ]);
       }
       rows(el("sample-cast"),
-        ["Depth (m)", "Float measured (°C)", "Model predicted (°C)", "Difference"],
+        ["Depth (m)", "Float measured (\u00b0C)", "Model predicted (\u00b0C)", "Difference"],
         shown, true);
       var caption = document.createElement("caption");
       caption.textContent =
         "Argo " + worst + ", cast " + day(collocations[worst].time) + ", " +
-        t.matched + " depths matched, RMS " + t.rmsResidual.toFixed(2) + " °C";
+        t.matched + " depths matched, RMS " + t.rmsResidual.toFixed(2) + " \u00b0C";
       el("sample-cast").insertBefore(caption, el("sample-cast").firstChild);
     }
 
@@ -831,28 +813,6 @@ python -m samudra.bake</pre>
       "Run python -m samudra.bake in pipeline/ to regenerate web/public/data.";
   });
 })();
-</script>
-
-
-<script>
-  (function () {
-    var button = document.getElementById("theme-toggle");
-    if (!button) return;
-    var paint = function () {
-      var light = document.documentElement.dataset.theme === "light";
-      button.textContent = light ? "☾" : "☀";
-      button.setAttribute("aria-label", light ? "Switch to dark" : "Switch to light");
-      button.title = button.getAttribute("aria-label");
-    };
-    button.addEventListener("click", function () {
-      var next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
-      if (next === "light") document.documentElement.dataset.theme = "light";
-      else delete document.documentElement.dataset.theme;
-      try { localStorage.setItem("samudra.theme", next); } catch (e) { /* no memory, still applied */ }
-      paint();
-    });
-    paint();
-  })();
 </script>
 
 </body>
